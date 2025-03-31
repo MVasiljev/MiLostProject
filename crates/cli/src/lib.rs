@@ -126,11 +126,12 @@ fn generate_package_json(project_dir: &Path, project_name: &str) -> Result<()> {
             // instead of using npm dependencies
         },
         "devDependencies": {
-            "typescript": "^5.0.0"
+            "typescript": "^5.0.0",
+             "ts-node": "^10.9.2"
         },
         "scripts": {
             "build": "tsc",
-            "start": "node dist/index.js"
+            "start": "ts-node src/index.ts"
         }
     });
     

@@ -56,6 +56,10 @@ export class Owned<T> {
     return Str.fromRaw(`[Owned ${this._consumed ? "consumed" : "active"}]`);
   }
 
+  isAlive(): boolean {
+    return this._value !== null;
+  }
+
   get [Symbol.toStringTag](): Str {
     return Str.fromRaw(Owned._type);
   }

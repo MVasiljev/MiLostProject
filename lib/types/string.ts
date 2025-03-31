@@ -31,7 +31,7 @@ export class Str {
   }
 
   static brand(): StringBrand {
-    return Str.fromRaw("Str");
+    return "Str" as unknown as StringBrand;
   }
 
   static isStr(value: unknown): value is Str {
