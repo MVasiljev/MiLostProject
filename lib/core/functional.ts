@@ -21,7 +21,6 @@ export function toVec<T>(iterator: Iter<T>): Vec<T> {
   return Vec.from(iterator.collect());
 }
 
-// Type for objects with Str keys
 export type StrKeyedRecord<K extends Str, V> = { [key: string]: V };
 
 export function mapObject<T, U, K extends Str>(

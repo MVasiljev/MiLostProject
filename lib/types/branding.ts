@@ -8,64 +8,29 @@ export class Branded<T, B extends Str> {
   private readonly _value: T;
   private readonly _brand: B;
 
-  static readonly _type = Str.fromRaw("Branded");
-
   private constructor(value: T, brand: B) {
     this._value = value;
     this._brand = brand;
   }
 
-  get [Symbol.toStringTag](): Str {
-    return Branded._type;
-  }
-
-  static create<T, B extends Str>(value: T, brand: B): Branded<T, B> {
-    return new Branded(value, brand);
-  }
-
-  static createConstructor<T, B extends Str>(
-    brand: B,
-    validator?: (value: T) => boolean,
-    errorMsg?: Str
-  ): (value: T) => Branded<T, B> {
-    return (value: T): Branded<T, B> => {
-      if (validator && !validator(value)) {
-        throw new ValidationError(
-          Str.fromRaw(
-            errorMsg?.unwrap() ??
-              Str.fromRaw(
-                "Invalid " + brand.unwrap() + " value: " + value
-              ).unwrap()
-          )
-        );
-      }
-      return Branded.create(value, brand);
-    };
-  }
-
-  static createSafeConstructor<T, B extends Str>(
+  static create<T, B extends Str>(
+    value: T,
     brand: B,
     validator: (value: T) => boolean,
-    errorMsg?: Str
-  ): (value: T) => Result<Branded<T, B>, ValidationError> {
-    return (value: T): Result<Branded<T, B>, ValidationError> => {
-      if (!validator(value)) {
-        return Err(
-          new ValidationError(
-            Str.fromRaw(
-              errorMsg?.unwrap() ??
-                Str.fromRaw(
-                  "Invalid " + brand.unwrap() + " value: " + value
-                ).unwrap()
-            )
-          )
-        );
-      }
-      return Ok(Branded.create(value, brand));
-    };
+    errorMessage?: Str
+  ): Result<Branded<T, B>, ValidationError> {
+    if (!validator(value)) {
+      return Err(
+        new ValidationError(
+          errorMessage ||
+            Str.fromRaw(`Invalid ${brand.unwrap()} value: ${value}`)
+        )
+      );
+    }
+    return Ok(new Branded(value, brand));
   }
 
-  static isBranded<T, B extends Str>(
+  static is<T, B extends Str>(
     value: unknown,
     brand: B
   ): value is Branded<T, B> {
@@ -85,10 +50,6 @@ export class Branded<T, B extends Str> {
   }
 
   toString(): Str {
-    return Str.fromRaw("[Branded " + this._brand.unwrap() + "]");
-  }
-
-  static unsafeBrand<B extends Str>(brand: B): B {
-    return brand;
+    return Str.fromRaw(`[Branded ${this._brand.unwrap()}]`);
   }
 }

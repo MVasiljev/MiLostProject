@@ -1,4 +1,4 @@
-import { f64, i32, u32 } from ".";
+import { f64, i32, limits, u32 } from ".";
 import { Brand } from "./branding";
 import { Str } from "./string";
 import { Option } from "../core/option";
@@ -57,11 +57,21 @@ export function isStr(value: unknown): value is Str {
   return value instanceof Str;
 }
 
-export function isNumeric(value: unknown): value is f64 | i32 | u32 {
-  if (typeof value !== "number" || isNaN(value)) return false;
-  // This is a simplification - ideally we would check if it's actually a branded type
-  // but that's hard to do at runtime. This at least checks if it's a number.
-  return true;
+export function isNumeric(value: unknown): value is u32 | i32 | f64 {
+  if (typeof value !== "number" || Number.isNaN(value)) return false;
+
+  const numValue = value as number;
+
+  if (Number.isInteger(numValue)) {
+    if (numValue >= limits.u32[0] && numValue <= limits.u32[1]) return true;
+    if (numValue >= limits.i32[0] && numValue <= limits.i32[1]) return true;
+  }
+
+  if (Number.isFinite(numValue)) {
+    if (numValue >= limits.f64[0] && numValue <= limits.f64[1]) return true;
+  }
+
+  return false;
 }
 
 export function isBoolean(value: unknown): value is boolean {
@@ -80,35 +90,20 @@ export interface Disposable {
   dispose(): void;
 }
 
-// Update branded types to use Str instead of string literals
-export type Path = Brand<string, Str>;
-export type Email = Brand<string, Str>;
-export type Url = Brand<string, Str>;
 export type Json = Brand<string, Str>;
-export type Uuid = Brand<string, Str>;
-export type IsoDate = Brand<string, Str>;
-export type PhoneNumber = Brand<string, Str>;
 export type Positive = Brand<number, Str>;
 export type Negative = Brand<number, Str>;
 export type NonNegative = Brand<number, Str>;
 export type Percentage = Brand<number, Str>;
 
-// Branded type constants
 export const BrandTypes = {
-  PATH: Str.fromRaw("Path"),
-  EMAIL: Str.fromRaw("Email"),
-  URL: Str.fromRaw("Url"),
   JSON: Str.fromRaw("Json"),
-  UUID: Str.fromRaw("Uuid"),
-  ISO_DATE: Str.fromRaw("IsoDate"),
-  PHONE_NUMBER: Str.fromRaw("PhoneNumber"),
   POSITIVE: Str.fromRaw("Positive"),
   NEGATIVE: Str.fromRaw("Negative"),
   NON_NEGATIVE: Str.fromRaw("NonNegative"),
   PERCENTAGE: Str.fromRaw("Percentage"),
 };
 
-// Helper functions for Vec conversions
 export function iterableToVec<T>(iterable: Iterable<T>): Vec<T> {
   return Vec.from(iterable);
 }

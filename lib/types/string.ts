@@ -1,22 +1,37 @@
 import { u32 } from "./primitives";
-import { Branded, Brand } from "./branding";
-import { AppError } from "../core/error";
+import { Branded } from "./branding";
+import { Result, Ok, Err } from "../core/result";
+import { ValidationError } from "../core/error";
+import { Str as StringBrand } from "./string";
 
 export class Str {
-  private readonly inner: Branded<string, Str>;
+  private readonly _inner: Branded<string, StringBrand>;
 
-  private static makeSelfType(): Str {
-    return new Str(Branded.create("Str" as string, null as unknown as Str));
+  private constructor(inner: Branded<string, StringBrand>) {
+    this._inner = inner;
   }
 
-  static readonly _type = Str.makeSelfType();
-
-  private constructor(inner: Branded<string, Str>) {
-    this.inner = inner;
+  static createStr(raw: string): Result<Str, ValidationError> {
+    return Branded.create(
+      raw,
+      Str.brand(),
+      (value) => typeof value === "string" && value.length >= 0,
+      Str.fromRaw("Invalid string value")
+    ).map((branded) => new Str(branded));
   }
 
   static fromRaw(raw: string): Str {
-    return new Str(Branded.create(raw, Str._type));
+    return new Str(
+      Branded.create(
+        raw,
+        Str.brand(),
+        (value) => typeof value === "string" && value.length >= 0
+      ).unwrap()
+    );
+  }
+
+  static brand(): StringBrand {
+    return Str.fromRaw("Str");
   }
 
   static isStr(value: unknown): value is Str {
@@ -24,11 +39,11 @@ export class Str {
   }
 
   unwrap(): string {
-    return this.inner.unwrap();
+    return this._inner.unwrap();
   }
 
   len(): u32 {
-    return u32(this.inner.unwrap().length);
+    return u32(this.unwrap().length);
   }
 
   isEmpty(): boolean {
@@ -38,7 +53,9 @@ export class Str {
   push(char: Str): Str {
     const c = char.unwrap();
     if (c.length !== 1) {
-      throw new AppError(Str.fromRaw("push requires a single character"));
+      throw new ValidationError(
+        Str.fromRaw("push requires a single character")
+      );
     }
     return Str.fromRaw(this.unwrap() + c);
   }
@@ -84,5 +101,13 @@ export class Str {
 
   get [Symbol.toStringTag](): string {
     return this.unwrap();
+  }
+
+  equals(other: Str): boolean {
+    return this.unwrap() === other.unwrap();
+  }
+
+  compare(other: Str): number {
+    return this.unwrap().localeCompare(other.unwrap());
   }
 }

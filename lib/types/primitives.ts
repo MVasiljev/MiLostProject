@@ -18,7 +18,7 @@ export type isize = Brand<RawNumber, Str>;
 export type f32 = Brand<RawNumber, Str>;
 export type f64 = Brand<RawNumber, Str>;
 
-const limits = {
+export const limits = {
   u8: [0, 255],
   u16: [0, 65535],
   u32: [0, 0xffffffff],
