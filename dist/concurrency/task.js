@@ -7,11 +7,9 @@ export class TaskError extends AppError {
     }
 }
 export class Task {
-    _promise;
-    _isCancelled = false;
-    _controller = new AbortController();
-    static _type = "Task";
     constructor(promise) {
+        this._isCancelled = false;
+        this._controller = new AbortController();
         this._promise = promise;
     }
     static new(executor) {
@@ -84,3 +82,5 @@ export class Task {
         return Str.fromRaw(Task._type);
     }
 }
+Task._type = "Task";
+//# sourceMappingURL=task.js.map

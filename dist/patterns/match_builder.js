@@ -1,8 +1,7 @@
 export const __ = Symbol("Wildcard");
 export class MatchBuilder {
-    value;
-    arms = [];
     constructor(value) {
+        this.arms = [];
         this.value = value;
     }
     with(pattern, handler) {
@@ -28,3 +27,4 @@ export class MatchBuilder {
 export function build(value) {
     return new MatchBuilder(value);
 }
+//# sourceMappingURL=match_builder.js.map

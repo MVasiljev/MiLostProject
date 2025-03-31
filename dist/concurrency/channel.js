@@ -8,7 +8,6 @@ export class ChannelError extends AppError {
     }
 }
 export class Sender {
-    _channel;
     constructor(channel) {
         this._channel = channel;
     }
@@ -23,7 +22,6 @@ export class Sender {
     }
 }
 export class Receiver {
-    _channel;
     constructor(channel) {
         this._channel = channel;
     }
@@ -35,12 +33,11 @@ export class Receiver {
     }
 }
 class Channel {
-    _queue = [];
-    _closed = false;
-    _capacity;
-    _senders = [];
-    _receivers = [];
     constructor(capacity = u32(Infinity)) {
+        this._queue = [];
+        this._closed = false;
+        this._senders = [];
+        this._receivers = [];
         this._capacity = capacity;
     }
     async send(value) {
@@ -99,3 +96,4 @@ export function createChannel(capacity = u32(Infinity)) {
     const channel = new Channel(capacity);
     return [new Sender(channel), new Receiver(channel)];
 }
+//# sourceMappingURL=channel.js.map

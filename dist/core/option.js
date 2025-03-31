@@ -1,9 +1,6 @@
-import { Str, Vec } from "../types";
-import { ValidationError } from "./error";
+import { Str, Vec } from "../types.js";
+import { ValidationError } from "./error.js";
 export class Option {
-    _value;
-    _some;
-    static _type = "Option";
     constructor(some, value) {
         this._some = some;
         this._value = value;
@@ -99,3 +96,5 @@ export class Option {
         return Str.fromRaw(Option._type);
     }
 }
+Option._type = "Option";
+//# sourceMappingURL=option.js.map

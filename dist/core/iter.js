@@ -1,9 +1,7 @@
-import { Vec, i32, Str, u32 } from "../types";
-import { ValidationError } from "./error";
-import { Option } from "../core/option";
+import { Vec, i32, Str, u32 } from "../types.js";
+import { ValidationError } from "./error.js";
+import { Option } from "../core/option.js";
 export class Iter {
-    iterable;
-    static _type = "Iter";
     constructor(iterable) {
         this.iterable = iterable;
     }
@@ -274,3 +272,5 @@ export class Iter {
         return Str.fromRaw(Iter._type);
     }
 }
+Iter._type = "Iter";
+//# sourceMappingURL=iter.js.map

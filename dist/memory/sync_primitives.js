@@ -1,10 +1,7 @@
-import { Str } from "../types/string";
-import { u32 } from "../types/primitives";
-import { ValidationError } from "../core/error";
+import { Str } from "../types/string.js";
+import { u32 } from "../types/primitives.js";
+import { ValidationError } from "../core/error.js";
 export class Mutex {
-    state;
-    locked;
-    static _type = "Mutex";
     constructor(initialValue) {
         this.state = initialValue;
         this.locked = false;
@@ -36,11 +33,8 @@ export class Mutex {
         return Str.fromRaw(Mutex._type);
     }
 }
+Mutex._type = "Mutex";
 export class RwLock {
-    state;
-    readers;
-    locked;
-    static _type = "RwLock";
     constructor(initialValue) {
         this.state = initialValue;
         this.readers = u32(0);
@@ -82,10 +76,8 @@ export class RwLock {
         return Str.fromRaw(RwLock._type);
     }
 }
+RwLock._type = "RwLock";
 export class ArcMutex {
-    sharedState;
-    locked;
-    static _type = "ArcMutex";
     constructor(initialValue) {
         this.sharedState = { value: initialValue };
         this.locked = false;
@@ -136,6 +128,7 @@ export class ArcMutex {
         return Str.fromRaw(ArcMutex._type);
     }
 }
+ArcMutex._type = "ArcMutex";
 export function createMutex(initialValue) {
     return Mutex.new(initialValue);
 }
@@ -145,3 +138,4 @@ export function createRwLock(initialValue) {
 export function createArcMutex(initialValue) {
     return ArcMutex.new(initialValue);
 }
+//# sourceMappingURL=sync_primitives.js.map

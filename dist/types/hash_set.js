@@ -1,9 +1,7 @@
-import { Vec } from ".";
-import { u32 } from "./primitives";
-import { Str } from "./string";
+import { Vec } from "..js";
+import { u32 } from "./primitives.js";
+import { Str } from "./string.js";
 export class HashSet {
-    _set;
-    static _type = "HashSet";
     constructor(values) {
         this._set = new Set(values);
     }
@@ -89,3 +87,5 @@ export class HashSet {
         return Str.fromRaw(`[HashSet size=${this._set.size}]`);
     }
 }
+HashSet._type = "HashSet";
+//# sourceMappingURL=hash_set.js.map

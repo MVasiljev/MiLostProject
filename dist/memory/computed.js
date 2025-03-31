@@ -2,10 +2,6 @@ function shallowEqual(a, b) {
     return a.length === b.length && a.every((val, i) => val === b[i]);
 }
 export class Computed {
-    _value;
-    _watchValues;
-    _compute;
-    static _type = "Computed";
     constructor(compute, watchValues) {
         this._compute = compute;
         this._watchValues = [...watchValues];
@@ -33,10 +29,8 @@ export class Computed {
         return Computed._type;
     }
 }
+Computed._type = "Computed";
 export class Watcher {
-    watch;
-    callback;
-    lastValue;
     constructor(watch, callback) {
         this.watch = watch;
         this.callback = callback;
@@ -57,8 +51,8 @@ export class Watcher {
     }
 }
 export class AsyncEffect {
-    _active = true;
     constructor(effect) {
+        this._active = true;
         effect()
             .catch((err) => {
             if (this._active)
@@ -75,3 +69,4 @@ export class AsyncEffect {
         return "AsyncEffect";
     }
 }
+//# sourceMappingURL=computed.js.map

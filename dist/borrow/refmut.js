@@ -1,10 +1,8 @@
 import { Str } from '../types/string.js';
 import { OwnershipError } from './ownership.js';
 export class RefMut {
-    _value;
-    _active = true;
-    static _type = "RefMut";
     constructor(value) {
+        this._active = true;
         this._value = value;
     }
     static new(value) {
@@ -35,3 +33,5 @@ export class RefMut {
         return Str.fromRaw(RefMut._type);
     }
 }
+RefMut._type = "RefMut";
+//# sourceMappingURL=refmut.js.map

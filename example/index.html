@@ -3,154 +3,142 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MiLost TypeScript Test</title>
+    <title>MiLost WASM Application</title>
     <style>
       body {
-        font-family: sans-serif;
+        font-family: system-ui, sans-serif;
         max-width: 800px;
         margin: 0 auto;
         padding: 20px;
       }
-      pre {
-        background-color: #f5f5f5;
-        padding: 10px;
+      .container {
+        border: 1px solid #ccc;
         border-radius: 5px;
-        overflow: auto;
+        padding: 15px;
+        margin-top: 20px;
+      }
+      h1 {
+        color: #333;
+      }
+      #status {
+        color: #666;
+        font-style: italic;
+      }
+      #output {
+        background: #f5f5f5;
+        padding: 10px;
+        border-radius: 3px;
+        min-height: 200px;
       }
       .success {
         color: green;
-        font-weight: bold;
       }
       .error {
         color: red;
-        font-weight: bold;
+      }
+      pre {
+        background: #eee;
+        padding: 10px;
+        border-radius: 3px;
+        overflow: auto;
       }
     </style>
   </head>
   <body>
-    <h1>MiLost TypeScript Test</h1>
-    <div id="output">
-      <p>Starting tests...</p>
+    <h1>MiLost WASM Application</h1>
+
+    <div class="container">
+      <div id="status">Initializing application...</div>
+      <div id="output"></div>
     </div>
 
+    <!-- WASM Initialization -->
     <script type="module">
+      // Status and output elements
+      const status = document.getElementById("status");
       const output = document.getElementById("output");
 
-      function addOutput(message, isError = false) {
+      // Helper function to log output
+      function log(message, isError = false, isSuccess = false) {
+        console.log(message);
         const p = document.createElement("p");
-        p.className = isError ? "error" : "";
-        p.innerHTML = message;
+        p.textContent = message;
+        if (isError) p.className = "error";
+        if (isSuccess) p.className = "success";
         output.appendChild(p);
       }
 
-      function addSuccess(message) {
-        const p = document.createElement("p");
-        p.className = "success";
-        p.innerHTML = message;
-        output.appendChild(p);
-      }
-
-      // Test your TypeScript implementation
-      async function testTypeScriptImplementation() {
+      // Initialize WASM module
+      async function initializeWasm() {
         try {
-          addOutput("Testing TypeScript implementation...");
+          status.textContent = "Loading WASM module...";
+          log("Loading WASM module...");
 
-          // First, find the compiled TypeScript files
-          const distPaths = await findDistPaths();
+          // Import WASM from the correct path
+          const wasm = await import("/pkg/milost_wasm.js");
 
-          if (!distPaths.initPath) {
-            addOutput(
-              "Could not find init.js file. TypeScript compilation may be needed.",
-              true
-            );
-            return false;
+          // Initialize the WASM module
+          await wasm.default();
+
+          log("WASM module initialized successfully!", false, true);
+
+          // Make WASM module available globally
+          window.wasmModule = wasm;
+          window.wasmReady = true;
+
+          // Dispatch event to notify that WASM is ready
+          window.dispatchEvent(new CustomEvent("wasm-ready"));
+
+          // Test the WASM module
+          const testStr = new wasm.Str("Hello from WASM!");
+          log(`Test string: ${testStr.unwrap()}`);
+          log(`Length: ${testStr.len()}`);
+          log(`Uppercase: ${testStr.to_uppercase().unwrap()}`);
+
+          status.textContent =
+            "WASM module initialized, loading application...";
+
+          // Now import and initialize the application using the correct path
+          try {
+            // Modified path to match your actual file location
+            const app = await import("/example/dist/src/app.js");
+
+            if (typeof app.initializeExample === "function") {
+              log("Initializing application...");
+              await app.initializeExample();
+              status.textContent = "Application initialized successfully!";
+            } else {
+              log(
+                "Application module loaded, but initializeExample function not found",
+                true
+              );
+              status.textContent = "Application loaded with warnings";
+            }
+          } catch (appError) {
+            log(`Failed to initialize application: ${appError.message}`, true);
+            console.error("Application error:", appError);
+
+            // Show detailed error info
+            const errorDetails = document.createElement("pre");
+            errorDetails.textContent = `Error details:\nMessage: ${
+              appError.message
+            }\nStack: ${appError.stack || "No stack trace available"}`;
+            output.appendChild(errorDetails);
+
+            status.textContent = "Application initialization failed";
           }
-
-          // Import the init module
-          addOutput(`Importing init module from ${distPaths.initPath}...`);
-          const { initWasm } = await import(distPaths.initPath);
-          addSuccess("✅ Successfully imported initWasm");
-
-          // Initialize WASM
-          addOutput("Initializing WASM...");
-          await initWasm();
-          addSuccess("✅ Successfully initialized WASM");
-
-          // Import the Str module
-          if (distPaths.strPath) {
-            addOutput(`Importing Str module from ${distPaths.strPath}...`);
-            const { Str } = await import(distPaths.strPath);
-
-            // Create a Str instance
-            addOutput("Creating Str instance...");
-            const str = await Str.create("Hello from TypeScript!");
-            addSuccess(
-              `✅ Successfully created Str: "${str.toString()}" with length ${str.len()}`
-            );
-          } else {
-            addOutput(
-              "Could not find string.js file. TypeScript compilation may be needed.",
-              true
-            );
-          }
-
-          return true;
         } catch (error) {
-          addOutput(
-            `Error testing TypeScript implementation: ${error.message}`,
-            true
-          );
-          addOutput(`Stack: ${error.stack}`, true);
-          return false;
+          log(`Failed to initialize WASM module: ${error.message}`, true);
+          console.error("WASM initialization error:", error);
+          status.textContent = "WASM initialization failed";
+
+          // Set error flag
+          window.wasmError = error;
         }
       }
 
-      // Find the paths to your compiled TypeScript files
-      async function findDistPaths() {
-        const possibleInitPaths = [
-          "./dist/wasm/init.js",
-          "./dist/lib/wasm/init.js",
-          "./wasm/init.js",
-          "./lib/wasm/init.js",
-        ];
-
-        const possibleStrPaths = [
-          "./dist/types/string.js",
-          "./dist/lib/types/string.js",
-          "./types/string.js",
-          "./lib/types/string.js",
-        ];
-
-        let initPath = null;
-        let strPath = null;
-
-        for (const path of possibleInitPaths) {
-          try {
-            await import(path);
-            initPath = path;
-            addOutput(`Found init.js at ${path}`);
-            break;
-          } catch (error) {
-            addOutput(`Could not import from ${path}: ${error.message}`);
-          }
-        }
-
-        for (const path of possibleStrPaths) {
-          try {
-            await import(path);
-            strPath = path;
-            addOutput(`Found string.js at ${path}`);
-            break;
-          } catch (error) {
-            addOutput(`Could not import from ${path}: ${error.message}`);
-          }
-        }
-
-        return { initPath, strPath };
-      }
-
-      // Run the tests
-      testTypeScriptImplementation();
+      // Start initialization
+      initializeWasm();
     </script>
   </body>
 </html>

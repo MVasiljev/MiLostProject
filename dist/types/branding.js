@@ -1,8 +1,6 @@
-import { ValidationError, Err, Ok } from "../core";
-import { Str } from "./string";
+import { ValidationError, Err, Ok } from "../core.js";
+import { Str } from "./string.js";
 export class Branded {
-    _value;
-    _brand;
     constructor(value, brand) {
         this._value = value;
         this._brand = brand;
@@ -30,3 +28,4 @@ export class Branded {
         return Str.fromRaw(`[Branded ${this._brand.unwrap()}]`);
     }
 }
+//# sourceMappingURL=branding.js.map

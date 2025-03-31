@@ -1,10 +1,8 @@
 import { Str } from '../types/string.js';
 import { OwnershipError } from './ownership.js';
 export class Ref {
-    _value;
-    _active = true;
-    static _type = "Ref";
     constructor(value) {
+        this._active = true;
         this._value = value;
     }
     static new(value) {
@@ -29,3 +27,5 @@ export class Ref {
         return Str.fromRaw(Ref._type);
     }
 }
+Ref._type = "Ref";
+//# sourceMappingURL=ref.js.map

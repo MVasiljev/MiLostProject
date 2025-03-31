@@ -1,13 +1,10 @@
-import { Str } from "../types";
-import { AppError, UnauthorizedError, ForbiddenError, NotFoundError, ValidationError, ServerError, NetworkError, } from "./error";
-import { Option } from "../core/option";
+import { Str } from "../types.js";
+import { AppError, UnauthorizedError, ForbiddenError, NotFoundError, ValidationError, ServerError, NetworkError, } from "./error.js";
+import { Option } from "../core/option.js";
 export class Result {
-    static Result(error) {
+    static Result(/* error */ err) {
         throw new Error("Method not implemented.");
     }
-    _value;
-    _error;
-    _ok;
     constructor(ok, value, error) {
         this._ok = ok;
         this._value = value;
@@ -225,3 +222,4 @@ function apiErrorMapper(error) {
     }
     return new NetworkError(Str.fromRaw(error instanceof Error ? error.message : "Network error"));
 }
+//# sourceMappingURL=result.js.map

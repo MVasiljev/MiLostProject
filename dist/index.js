@@ -13,3 +13,4 @@ export * as types from "./types/index.js";
 export { Str } from "./types/string.js";
 // Initialize WASM when the module is imported
 initWasm().catch(console.error);
+//# sourceMappingURL=index.js.map

@@ -1,7 +1,7 @@
-import { Vec } from ".";
-import { identity } from "../core";
-import { limits } from "./primitives";
-import { Str } from "./string";
+import { Vec } from "..js";
+import { identity } from "../core.js";
+import { limits } from "./primitives.js";
+import { Str } from "./string.js";
 export const LoadingStates = {
     IDLE: Str.fromRaw("idle"),
     LOADING: Str.fromRaw("loading"),
@@ -63,3 +63,4 @@ export const Types = {
     identity,
     iterableToVec,
 };
+//# sourceMappingURL=common.js.map

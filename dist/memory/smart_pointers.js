@@ -1,7 +1,5 @@
-import { u32, Str } from "../types";
+import { u32, Str } from "../types.js";
 export class Rc {
-    state;
-    static _type = "Rc";
     constructor(initialValue) {
         this.state = { value: initialValue, refCount: u32(1) };
     }
@@ -34,10 +32,8 @@ export class Rc {
         return Str.fromRaw(Rc._type);
     }
 }
+Rc._type = "Rc";
 export class Weak {
-    strongRef;
-    weakRef;
-    static _type = "Weak";
     constructor(initialValue) {
         this.strongRef = { value: initialValue };
         this.weakRef = new WeakMap();
@@ -61,9 +57,8 @@ export class Weak {
         return Str.fromRaw(Weak._type);
     }
 }
+Weak._type = "Weak";
 export class RefCell {
-    state;
-    static _type = "RefCell";
     constructor(initialValue) {
         this.state = initialValue;
     }
@@ -83,9 +78,8 @@ export class RefCell {
         return Str.fromRaw(RefCell._type);
     }
 }
+RefCell._type = "RefCell";
 export class RcRefCell {
-    state;
-    static _type = "RcRefCell";
     constructor(initialValue) {
         this.state = { value: initialValue, refCount: u32(1) };
     }
@@ -118,9 +112,8 @@ export class RcRefCell {
         return Str.fromRaw(RcRefCell._type);
     }
 }
+RcRefCell._type = "RcRefCell";
 export class Arc {
-    sharedState;
-    static _type = "Arc";
     constructor(initialValue) {
         this.sharedState = { value: initialValue };
     }
@@ -143,6 +136,7 @@ export class Arc {
         return Str.fromRaw(Arc._type);
     }
 }
+Arc._type = "Arc";
 export function createRc(initialValue) {
     return Rc.new(initialValue);
 }
@@ -158,3 +152,4 @@ export function createRcRefCell(initialValue) {
 export function createArc(initialValue) {
     return Arc.new(initialValue);
 }
+//# sourceMappingURL=smart_pointers.js.map

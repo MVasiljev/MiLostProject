@@ -1,4 +1,4 @@
-import { Str } from "../types";
+import { Str } from "../types.js";
 export class AppError extends Error {
     constructor(message) {
         super(message.unwrap());
@@ -22,7 +22,6 @@ export class AuthenticationError extends AppError {
     }
 }
 export class NotFoundError extends AppError {
-    resourceType;
     constructor(message, resourceType) {
         super(message);
         this.resourceType = resourceType;
@@ -69,7 +68,6 @@ export var DomainErrors;
     }
     DomainErrors.ConfigurationError = ConfigurationError;
     class RateLimitError extends AppError {
-        retryAfterSeconds;
         constructor(message, retryAfterSeconds) {
             super(message);
             this.retryAfterSeconds = retryAfterSeconds;
@@ -82,3 +80,4 @@ export function createErrorFactory(ErrorClass, defaultMessage = Str.fromRaw("An 
         return new ErrorClass(customMessage || defaultMessage, ...args);
     };
 }
+//# sourceMappingURL=error.js.map

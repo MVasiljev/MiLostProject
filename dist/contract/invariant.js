@@ -1,14 +1,10 @@
 import { Str } from '../types/string.js';
 import { ContractError } from './contract.js';
 export class Invariant {
-    _value;
-    _invariant;
-    _errorMessage;
-    static _type = "Invariant";
     constructor(value, invariant, errorMessage = Str.fromRaw("Invariant violated")) {
         this._value = value;
-        this._invariant = invariant;
-        this._errorMessage = errorMessage;
+        this._invariantFn = invariant;
+        this._errorMsg = errorMessage;
         if (!invariant(value)) {
             throw new ContractError(errorMessage);
         }
@@ -30,3 +26,5 @@ export class Invariant {
         return Str.fromRaw(Invariant._type);
     }
 }
+Invariant._type = "Invariant";
+//# sourceMappingURL=invariant.js.map

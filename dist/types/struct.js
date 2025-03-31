@@ -1,7 +1,5 @@
-import { Vec } from "./vec";
+import { Vec } from "./vec.js";
 export class Struct {
-    _fields;
-    static _type = "Struct";
     constructor(fields) {
         this._fields = Object.freeze({ ...fields });
     }
@@ -34,3 +32,5 @@ export class Struct {
         return Struct._type;
     }
 }
+Struct._type = "Struct";
+//# sourceMappingURL=struct.js.map

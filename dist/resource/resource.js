@@ -1,17 +1,14 @@
-import { Str } from "../types/string";
-import { AppError } from "../core/error";
-import { Option } from "../core/option";
+import { Str } from "../types/string.js";
+import { AppError } from "../core/error.js";
+import { Option } from "../core/option.js";
 export class ResourceError extends AppError {
     constructor(message) {
         super(message);
     }
 }
 export class Resource {
-    _value;
-    _disposed = false;
-    _dispose;
-    static _type = "Resource";
     constructor(value, dispose) {
+        this._disposed = false;
         this._value = value;
         this._dispose = dispose;
     }
@@ -55,6 +52,7 @@ export class Resource {
         return Str.fromRaw(Resource._type);
     }
 }
+Resource._type = "Resource";
 export async function withResource(resource, fn) {
     try {
         const result = await Promise.resolve(resource.use(fn));
@@ -64,3 +62,4 @@ export async function withResource(resource, fn) {
         await resource.dispose();
     }
 }
+//# sourceMappingURL=resource.js.map

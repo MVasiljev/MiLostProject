@@ -1,7 +1,7 @@
 import { memory } from '../index.js';
 export function createAtomContext(atoms) {
     const atomsContainer = memory.createRcRefCell(atoms);
-    const arc = memory.createArc({ atoms });
+    /* const arc = */ memory.createArc({ atoms });
     function getAtoms() {
         return atomsContainer.borrow();
     }
@@ -21,3 +21,4 @@ export function createAtomContext(atoms) {
         ...atomGetters,
     };
 }
+//# sourceMappingURL=atomContext.js.map

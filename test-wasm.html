@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MiLost WASM Test</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+    .container { border: 1px solid #ccc; border-radius: 5px; padding: 15px; margin-top: 20px; }
+    h1 { color: #333; }
+    #output { background: #f5f5f5; padding: 10px; border-radius: 3px; min-height: 200px; }
+    .success { color: green; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+  <h1>MiLost WASM Test</h1>
+  
+  <div class="container">
+    <div id="output"></div>
+  </div>
+
+  <script type="module">
+    // Output element
+    const output = document.getElementById('output');
+    
+    // Helper function to log output
+    function log(message, isError = false, isSuccess = false) {
+      console.log(message);
+      const p = document.createElement('p');
+      p.textContent = message;
+      if (isError) p.className = 'error';
+      if (isSuccess) p.className = 'success';
+      output.appendChild(p);
+    }
+    
+    // Initialize WASM
+    async function init() {
+      try {
+        log('Loading WASM module...');
+        
+        // Import and initialize the WASM module
+        const wasm = await import('/pkg/milost_wasm.js');
+        await wasm.default();
+        
+        log('WASM module loaded successfully!', false, true);
+        
+        // Create a test string
+        const str = new wasm.Str("Hello from WASM!");
+        log(`Test string created: ${str.unwrap()}`);
+        
+        // Test various methods
+        log(`String length: ${str.len()}`);
+        log(`Is empty: ${str.is_empty()}`);
+        log(`Contains "WASM": ${str.contains("WASM")}`);
+        
+        // Test string transformations
+        const upper = str.to_uppercase();
+        log(`Uppercase: ${upper.unwrap()}`);
+        
+        const lower = str.to_lowercase();
+        log(`Lowercase: ${lower.unwrap()}`);
+        
+        // Test method chaining
+        const trimmedUpper = new wasm.Str("  hello, world!  ")
+          .to_uppercase()
+          .trim();
+        log(`Trimmed uppercase: "${trimmedUpper.unwrap()}"`);
+        
+        log('All tests completed successfully!', false, true);
+      } catch (error) {
+        log(`Error: ${error.message}`, true);
+        console.error('Error:', error);
+      }
+    }
+    
+    // Run the test
+    init();
+  </script>
+</body>
+</html>

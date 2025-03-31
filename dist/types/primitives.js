@@ -1,5 +1,5 @@
-import { ValidationError, Ok, Err } from "../core";
-import { Str } from "./string";
+import { ValidationError, Ok, Err } from "../core.js";
+import { Str } from "./string.js";
 export const limits = {
     u8: [0, 255],
     u16: [0, 65535],
@@ -28,7 +28,7 @@ function wrap(name, value) {
     }
     return value;
 }
-function safeWrap(name, value) {
+function _safeWrap(name, value) {
     return validate(name, value)
         ? Ok(value)
         : Err(new ValidationError(Str.fromRaw("Invalid value for type: " + name)));
@@ -413,3 +413,4 @@ export const UInt = u32;
 export const ULong = u64;
 export const Float = f32;
 export const Double = f64;
+//# sourceMappingURL=primitives.js.map

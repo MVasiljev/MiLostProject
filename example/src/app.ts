@@ -1,85 +1,103 @@
-// // example/src/app.ts
+// src/app.ts
+import { Option, Some, None } from "../../lib/core/option";
+import { Result, Ok, Err } from "../../lib/core/result";
+import { Vec } from "../../lib/types/vec";
+import { Str } from "../../lib/types/string";
 
-// import { initWasm } from "../../lib/wasm/init";
-// import { Option, Some, None } from "../../lib/core/option";
-// import { Result, Ok, Err } from "../../lib/core/result";
-// import { Vec } from "../../lib/types/vec";
-// import { Str } from "../../lib/types/string";
+// Output element for logging
+const output = document.getElementById("output");
 
-// /**
-//  * Initialize the example application
-//  */
-// export async function initializeExample() {
-//   console.log("Initializing MiLost example...");
+// Helper function to log output
+function log(message: string, isError = false, isSuccess = false): void {
+  console.log(message);
+  if (!output) return;
 
-//   // Initialize the WASM module
-//   const wasmModule = await initWasm();
-//   console.log("WASM module initialized:", wasmModule);
+  const p = document.createElement("p");
+  p.textContent = message;
+  if (isError) p.className = "error";
+  if (isSuccess) p.className = "success";
+  output.appendChild(p);
+}
 
-//   // Examples using our TypeScript library with WASM integration
-//   demonstrateOptionType();
-//   demonstrateResultType();
-//   demonstrateVecType();
-//   await demonstrateStrType(wasmModule);
+/**
+ * Initialize the example application
+ * This function is exported and called from the HTML file
+ */
+export async function initializeExample(): Promise<void> {
+  log("Initializing MiLost example...");
 
-//   console.log("MiLost example initialized successfully!");
-// }
+  // WASM is already initialized in the HTML file
+  if (!window.wasmReady || !window.wasmModule) {
+    log("WASM module not initialized properly", true);
+    return;
+  }
 
-// function demonstrateOptionType() {
-//   console.log("--- Option Type Demo ---");
+  log("WASM module initialized successfully", false, true);
 
-//   const someValue: Option<number> = Some(42);
-//   console.log("Some value:", someValue.unwrapOr(0));
+  // Examples using our TypeScript library with WASM integration
+  demonstrateOptionType();
+  demonstrateResultType();
+  demonstrateVecType();
+  await demonstrateStrType();
 
-//   const noneValue: Option<number> = None();
-//   console.log("None value with default:", noneValue.unwrapOr(0));
+  log("MiLost example initialized successfully!", false, true);
+}
 
-//   // Using map
-//   const mappedSome = someValue.map((x) => x * 2);
-//   console.log("Mapped Some:", mappedSome.unwrapOr(0));
-// }
+function demonstrateOptionType(): void {
+  log("--- Option Type Demo ---");
+  const someValue: Option<number> = Some(42);
+  log(`Some value: ${someValue.unwrapOr(0)}`);
 
-// function demonstrateResultType() {
-//   console.log("--- Result Type Demo ---");
+  const noneValue: Option<number> = None();
+  log(`None value with default: ${noneValue.unwrapOr(0)}`);
 
-//   const okResult: Result<number, string> = Ok(42);
-//   console.log("Ok result:", okResult.unwrapOr(0));
+  // Using map
+  const mappedSome = someValue.map((x) => x * 2);
+  log(`Mapped Some: ${mappedSome.unwrapOr(0)}`);
+}
 
-//   const errResult: Result<number, string> = Err("Something went wrong");
-//   console.log("Err result with default:", errResult.unwrapOr(0));
-//   console.log("Err message:", errResult.unwrapErr());
-// }
+function demonstrateResultType(): void {
+  log("--- Result Type Demo ---");
+  const okResult: Result<number, string> = Ok(42);
+  log(`Ok result: ${okResult.unwrapOr(0)}`);
 
-// function demonstrateVecType() {
-//   console.log("--- Vec Type Demo ---");
+  const errResult: Result<number, string> = Err("Something went wrong");
+  log(`Err result with default: ${errResult.unwrapOr(0)}`);
+  log(`Err message: ${errResult.unwrapErr()}`);
+}
 
-//   const numbers = new Vec<number>([1, 2, 3, 4, 5]);
-//   console.log("Vec length:", numbers.len());
-//   console.log("Vec values:", numbers.toArray());
+function demonstrateVecType(): void {
+  log("--- Vec Type Demo ---");
+  const numbers = new Vec<number>([1, 2, 3, 4, 5]);
+  log(`Vec length: ${numbers.len()}`);
+  log(`Vec values: ${numbers.toArray()}`);
 
-//   numbers.push(6);
-//   console.log("Vec after push:", numbers.toArray());
+  numbers.push(6);
+  log(`Vec after push: ${numbers.toArray()}`);
 
-//   const popped = numbers.pop();
-//   console.log("Popped value:", popped.unwrapOr(0));
-//   console.log("Vec after pop:", numbers.toArray());
-// }
+  const popped = numbers.pop();
+  log(`Popped value: ${popped.unwrapOr(0)}`);
+  log(`Vec after pop: ${numbers.toArray()}`);
+}
 
-// async function demonstrateStrType(wasmModule: any) {
-//   console.log("--- Str Type Demo ---");
+async function demonstrateStrType(): Promise<string> {
+  log("--- Str Type Demo ---");
 
-//   // Create a new Str from JavaScript string using WASM
-//   const wasmStr = new wasmModule.Str("Hello from WASM!");
-//   console.log("WASM Str created:", wasmStr.toString());
+  // Use the WASM module from the global window object
+  const wasmModule = window.wasmModule;
 
-//   // Use our TypeScript wrapper for Str
-//   const str = new Str("Hello, MiLost!");
-//   console.log("TS Str length:", str.len());
-//   console.log("TS Str as string:", str.toString());
+  // Create a new Str from JavaScript string using WASM
+  const wasmStr = new wasmModule.Str("Hello from WASM!");
+  log(`WASM Str created: ${wasmStr.unwrap()}`);
 
-//   // Demonstrate methods
-//   console.log('Str contains "MiLost":', str.contains("MiLost"));
-//   console.log("Str to uppercase:", str.toUpperCase().toString());
+  // Use our TypeScript wrapper for Str
+  const str = new Str("Hello, MiLost!");
+  log(`TS Str length: ${str.len()}`);
+  log(`TS Str as string: ${str.toString()}`);
 
-//   return "Str type demo completed";
-// }
+  // Demonstrate methods
+  log(`Str contains "MiLost": ${str.contains("MiLost")}`);
+  log(`Str to uppercase: ${str.toUpperCase().toString()}`);
+
+  return "Str type demo completed";
+}

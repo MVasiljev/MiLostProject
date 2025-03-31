@@ -1,7 +1,5 @@
-import { Str } from "./string";
+import { Str } from "./string.js";
 export class Tuple {
-    items;
-    static _type = "Tuple";
     constructor(items) {
         this.items = items;
     }
@@ -35,3 +33,5 @@ export class Tuple {
         return Str.fromRaw(Tuple._type);
     }
 }
+Tuple._type = "Tuple";
+//# sourceMappingURL=tuple.js.map

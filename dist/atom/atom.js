@@ -40,3 +40,4 @@ export function createAsyncAction(atom, asyncFn, handlers) {
         return result;
     };
 }
+//# sourceMappingURL=atom.js.map

@@ -1,5 +1,5 @@
-import { Str } from "../types/string";
-import { AppError } from "../core/error";
+import { Str } from "../types/string.js";
+import { AppError } from "../core/error.js";
 export class ContractError extends AppError {
     constructor(message) {
         super(message);
@@ -27,3 +27,4 @@ export function contract(fn, precondition, postcondition, preErrorMsg, postError
         return result;
     };
 }
+//# sourceMappingURL=contract.js.map

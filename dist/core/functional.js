@@ -1,4 +1,4 @@
-import { HashMap, HashSet, Vec, Str, u32 } from "../types";
+import { HashMap, HashSet, Vec, Str, u32 } from "../types.js";
 export function toHashMap(iterator, keyValueFn) {
     const pairs = iterator.map(keyValueFn).collect();
     return HashMap.from(pairs);
@@ -190,3 +190,4 @@ export function converge(after, fns) {
         return after(results);
     };
 }
+//# sourceMappingURL=functional.js.map

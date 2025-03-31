@@ -1,2 +1,3 @@
-export * from "./resource";
-export * from "./disposable";
+export * from "./resource.js";
+export * from "./disposable.js";
+//# sourceMappingURL=index.js.map

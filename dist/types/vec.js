@@ -1,8 +1,7 @@
-import { Option } from "../core/option";
-import { u32 } from "../types/primitives";
-import { Str } from "../types/string";
+import { Option } from "../core/option.js";
+import { u32 } from "../types/primitives.js";
+import { Str } from "../types/string.js";
 export class Vec {
-    _items;
     constructor(...items) {
         this._items = items;
     }
@@ -137,3 +136,4 @@ export class Vec {
         return Str.fromRaw("Vec");
     }
 }
+//# sourceMappingURL=vec.js.map

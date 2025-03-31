@@ -1,9 +1,7 @@
-import { Vec } from ".";
-import { u32 } from "./primitives";
-import { Str } from "./string";
+import { Vec } from "..js";
+import { u32 } from "./primitives.js";
+import { Str } from "./string.js";
 export class HashMap {
-    _map;
-    static _type = "HashMap";
     constructor(entries) {
         this._map = new Map(entries);
     }
@@ -90,3 +88,5 @@ export class HashMap {
         return Str.fromRaw(`[HashMap size=${this._map.size}]`);
     }
 }
+HashMap._type = "HashMap";
+//# sourceMappingURL=hash_map.js.map

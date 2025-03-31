@@ -1,50 +1,12 @@
-import { Result, ValidationError } from "../core";
-import { Str, Vec } from "../types";
-import { Option } from "../core/option";
+import { Result, ValidationError } from "../core.js";
+import { Str, Vec } from "../types.js";
+import { Option } from "../core/option.js";
 export const SomePattern = Symbol("Some");
 export const NonePattern = Symbol("None");
 export const OkPattern = Symbol("Ok");
 export const ErrPattern = Symbol("Err");
 export const _ = Symbol("_");
 export class PatternMatcher {
-    static _type = "PatternMatcher";
-    static is = {
-        nullish: (val) => val === null || val === undefined,
-        str: (val) => val instanceof Str,
-        rawString: (val) => typeof val === "string",
-        numeric: (val) => (typeof val === "number" && !isNaN(val)) ||
-            (val instanceof Number && !isNaN(val.valueOf())),
-        rawNumber: (val) => typeof val === "number" && !isNaN(val),
-        boolean: (val) => typeof val === "boolean",
-        vec: (val) => val instanceof Vec,
-        object: (val) => val !== null &&
-            typeof val === "object" &&
-            !(val instanceof Vec) &&
-            !(val instanceof Str) &&
-            !(val instanceof Array),
-        function: (val) => typeof val === "function",
-        some: (val) => val.isSome(),
-        none: (val) => val.isNone(),
-        ok: (val) => val.isOk(),
-        err: (val) => val.isErr(),
-        empty: (val) => {
-            if (val === null || val === undefined)
-                return true;
-            if (val instanceof Str)
-                return val.unwrap().length === 0;
-            if (val instanceof Vec)
-                return val.isEmpty();
-            if (typeof val === "string")
-                return val.length === 0;
-            if (typeof val === "object")
-                return Object.keys(val).length === 0;
-            return false;
-        },
-        equalTo: (target) => (val) => val === target,
-        inRange: (min, max) => (val) => val >= min &&
-            val <= max,
-        predicate: (fn) => fn,
-    };
     static matchesPattern(value, pattern) {
         if (pattern === _) {
             return true;
@@ -95,6 +57,44 @@ export class PatternMatcher {
         return value;
     }
 }
+PatternMatcher._type = "PatternMatcher";
+PatternMatcher.is = {
+    nullish: (val) => val === null || val === undefined,
+    str: (val) => val instanceof Str,
+    rawString: (val) => typeof val === "string",
+    numeric: (val) => (typeof val === "number" && !isNaN(val)) ||
+        (val instanceof Number && !isNaN(val.valueOf())),
+    rawNumber: (val) => typeof val === "number" && !isNaN(val),
+    boolean: (val) => typeof val === "boolean",
+    vec: (val) => val instanceof Vec,
+    object: (val) => val !== null &&
+        typeof val === "object" &&
+        !(val instanceof Vec) &&
+        !(val instanceof Str) &&
+        !(val instanceof Array),
+    function: (val) => typeof val === "function",
+    some: (val) => val.isSome(),
+    none: (val) => val.isNone(),
+    ok: (val) => val.isOk(),
+    err: (val) => val.isErr(),
+    empty: (val) => {
+        if (val === null || val === undefined)
+            return true;
+        if (val instanceof Str)
+            return val.unwrap().length === 0;
+        if (val instanceof Vec)
+            return val.isEmpty();
+        if (typeof val === "string")
+            return val.length === 0;
+        if (typeof val === "object")
+            return Object.keys(val).length === 0;
+        return false;
+    },
+    equalTo: (target) => (val) => val === target,
+    inRange: (min, max) => (val) => val >= min &&
+        val <= max,
+    predicate: (fn) => fn,
+};
 export function matchValue(value, patterns) {
     if (!Array.isArray(patterns)) {
         if (value instanceof Option) {
@@ -242,3 +242,4 @@ export var Patterns;
     Patterns.is = PatternMatcher.is;
 })(Patterns || (Patterns = {}));
 export { matchValue as match };
+//# sourceMappingURL=matching.js.map

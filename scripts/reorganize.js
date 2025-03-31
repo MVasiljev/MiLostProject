@@ -1,6 +1,11 @@
-// scripts/reorganize.js
-const fs = require("fs");
-const path = require("path");
+// scripts/reorganize-clean.js
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Get current file's directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Project root directory
 const rootDir = path.resolve(__dirname, "..");
@@ -17,9 +22,10 @@ function ensureDir(dir) {
   }
 }
 
-// Copy a directory recursively
-function copyDir(source, destination) {
+// Copy a directory recursively and track copied files and directories
+function copyDir(source, destination, copiedFiles = [], copiedDirs = []) {
   ensureDir(destination);
+  copiedDirs.push(source);
 
   const entries = fs.readdirSync(source, { withFileTypes: true });
 
@@ -28,25 +34,53 @@ function copyDir(source, destination) {
     const destPath = path.join(destination, entry.name);
 
     if (entry.isDirectory()) {
-      copyDir(sourcePath, destPath);
+      copyDir(sourcePath, destPath, copiedFiles, copiedDirs);
     } else {
       fs.copyFileSync(sourcePath, destPath);
       console.log(`Copied: ${sourcePath} -> ${destPath}`);
+      copiedFiles.push(sourcePath);
     }
+  }
+
+  return { copiedFiles, copiedDirs };
+}
+
+// Delete a directory and all its contents
+function deleteDirectory(dir) {
+  if (fs.existsSync(dir)) {
+    console.log(`Removing directory: ${dir}`);
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 }
 
-// Create the new structure
-function createStructure() {
+// Create the new structure and clean up old structure
+function createStructureAndCleanup() {
   console.log("Creating new project structure...");
 
   // Ensure src directory exists
   ensureDir(destDir);
 
+  // Track copied files and directories for cleanup
+  const copied = { copiedFiles: [], copiedDirs: [] };
+
   // Copy lib to src if lib exists
   if (fs.existsSync(sourceDir)) {
     console.log(`Copying files from ${sourceDir} to ${destDir}`);
-    copyDir(sourceDir, destDir);
+    copyDir(sourceDir, destDir, copied.copiedFiles, copied.copiedDirs);
+
+    // Now clean up the old files and directories
+    console.log("\nCleaning up old files and directories...");
+
+    // Sort directories by depth (deepest first) to avoid dependency issues during removal
+    const sortedDirs = [...copied.copiedDirs].sort((a, b) => {
+      const depthA = a.split(path.sep).length;
+      const depthB = b.split(path.sep).length;
+      return depthB - depthA; // Descending order
+    });
+
+    // Delete the lib directory entirely
+    deleteDirectory(sourceDir);
+    console.log("Cleanup completed successfully");
   } else {
     console.log(
       `Source directory ${sourceDir} does not exist, creating src structure from scratch`
@@ -150,7 +184,7 @@ export function getWasmModule(): any {
 
 // Main function
 function main() {
-  createStructure();
+  createStructureAndCleanup();
 }
 
 main();

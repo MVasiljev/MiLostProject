@@ -6,10 +6,8 @@ export class OwnershipError extends AppError {
     }
 }
 export class Owned {
-    _value;
-    _consumed = false;
-    static _type = "Owned";
     constructor(value) {
+        this._consumed = false;
         this._value = value;
     }
     static new(value) {
@@ -49,3 +47,5 @@ export class Owned {
         return Str.fromRaw(Owned._type);
     }
 }
+Owned._type = "Owned";
+//# sourceMappingURL=ownership.js.map

@@ -4,7 +4,6 @@ import { u32 } from '../types/primitives.js';
 import { AppError } from '../core/error.js';
 import { Result } from '../core/result.js';
 export class AsyncUtils {
-    static _type = "AsyncUtils";
     constructor() { }
     static async all(promises) {
         try {
@@ -136,6 +135,7 @@ export class AsyncUtils {
         return Str.fromRaw(AsyncUtils._type);
     }
 }
+AsyncUtils._type = "AsyncUtils";
 export var async;
 (function (async) {
     async.all = AsyncUtils.all;
@@ -146,3 +146,4 @@ export var async;
     async.withTimeout = AsyncUtils.withTimeout;
     async.cancellable = AsyncUtils.cancellable;
 })(async || (async = {}));
+//# sourceMappingURL=index.js.map

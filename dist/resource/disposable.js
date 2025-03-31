@@ -1,12 +1,13 @@
-import { Str } from "../types/string";
-import { Resource } from "./resource";
+import { Str } from "../types/string.js";
+import { Resource } from "./resource.js";
 export function asResource(disposable) {
     return Resource.new(disposable, (d) => d.dispose());
 }
 export class DisposableGroup {
-    _disposables = [];
-    _disposed = false;
-    static _type = "DisposableGroup";
+    constructor() {
+        this._disposables = [];
+        this._disposed = false;
+    }
     add(disposable) {
         if (this._disposed) {
             throw new Error("Cannot add to disposed group");
@@ -39,3 +40,5 @@ export class DisposableGroup {
         return DisposableGroup._type;
     }
 }
+DisposableGroup._type = "DisposableGroup";
+//# sourceMappingURL=disposable.js.map
