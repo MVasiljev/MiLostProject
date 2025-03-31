@@ -1,7 +1,6 @@
-import { Result, Ok, Err } from "../core/result";
-import { ValidationError } from "../core/error";
-import { Str } from "./string";
+import { ValidationError, Result, Ok, Err } from "../core";
 import { Brand } from "./branding";
+import { Str } from "./string";
 
 type RawNumber = number;
 

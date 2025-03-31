@@ -1,5 +1,5 @@
-import { u32 } from "../types/primitives";
-import { Vec } from "./vec";
+import { Vec } from ".";
+import { u32 } from "./primitives";
 import { Str } from "./string";
 
 export class HashSet<T> implements Iterable<T> {

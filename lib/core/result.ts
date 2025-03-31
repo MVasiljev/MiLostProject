@@ -1,14 +1,14 @@
 import { Str } from "../types";
 import {
   AppError,
-  ForbiddenError,
-  NetworkError,
-  NotFoundError,
-  ServerError,
   UnauthorizedError,
+  ForbiddenError,
+  NotFoundError,
   ValidationError,
+  ServerError,
+  NetworkError,
 } from "./error";
-import { Option } from "./option";
+import { Option } from "../core/option";
 
 export class Result<T, E extends AppError = AppError> {
   static Result(error: AppError): Result<never, AppError> {

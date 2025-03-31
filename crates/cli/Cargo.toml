@@ -14,11 +14,11 @@ walkdir.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tera.workspace = true
-which = "4.4"
+which = "7.0.2"
 tempfile = "3.3"
-
-# Remove the NAPI dependencies for direct cargo build
-# We'll handle NAPI separately with napi-rs
+log = "0.4"
+env_logger = "0.11.7"
+simple_logger = "5.0.0"
 
 [[bin]]
 name = "milost"

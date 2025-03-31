@@ -1,5 +1,5 @@
-import { Str } from "../types/string";
-import { OwnershipError } from "./ownership";
+import { Str } from '../types/string.js';
+import { OwnershipError } from './ownership.js';
 
 export class RefMut<T> {
   private _value: T;

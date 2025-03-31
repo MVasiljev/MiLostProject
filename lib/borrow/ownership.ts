@@ -1,5 +1,5 @@
-import { Str } from "../types/string";
-import { AppError } from "../core/error";
+import { Str } from '../types/string.js';
+import { AppError } from '../core/error.js';
 
 export class OwnershipError extends AppError {
   constructor(message: Str) {

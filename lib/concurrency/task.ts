@@ -1,6 +1,6 @@
-import { Str } from "../types/string";
-import { AppError } from "../core/error";
-import { Result, Ok, Err } from "../core/result";
+import { Str } from '../types/string.js';
+import { AppError } from '../core/error.js';
+import { Result, Ok, Err } from '../core/result.js';
 
 export class TaskError extends AppError {
   constructor(message: Str) {

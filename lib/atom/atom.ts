@@ -1,5 +1,5 @@
-import { AppError } from "../core/error";
-import { Result } from "../core/result";
+import { AppError } from '../core/error.js';
+import { Result } from '../core/result.js';
 
 export interface AtomManager<S> {
   getState(): S;

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MiLost TypeScript Test</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      pre {
+        background-color: #f5f5f5;
+        padding: 10px;
+        border-radius: 5px;
+        overflow: auto;
+      }
+      .success {
+        color: green;
+        font-weight: bold;
+      }
+      .error {
+        color: red;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>MiLost TypeScript Test</h1>
+    <div id="output">
+      <p>Starting tests...</p>
+    </div>
+
+    <script type="module">
+      const output = document.getElementById("output");
+
+      function addOutput(message, isError = false) {
+        const p = document.createElement("p");
+        p.className = isError ? "error" : "";
+        p.innerHTML = message;
+        output.appendChild(p);
+      }
+
+      function addSuccess(message) {
+        const p = document.createElement("p");
+        p.className = "success";
+        p.innerHTML = message;
+        output.appendChild(p);
+      }
+
+      // Test your TypeScript implementation
+      async function testTypeScriptImplementation() {
+        try {
+          addOutput("Testing TypeScript implementation...");
+
+          // First, find the compiled TypeScript files
+          const distPaths = await findDistPaths();
+
+          if (!distPaths.initPath) {
+            addOutput(
+              "Could not find init.js file. TypeScript compilation may be needed.",
+              true
+            );
+            return false;
+          }
+
+          // Import the init module
+          addOutput(`Importing init module from ${distPaths.initPath}...`);
+          const { initWasm } = await import(distPaths.initPath);
+          addSuccess("✅ Successfully imported initWasm");
+
+          // Initialize WASM
+          addOutput("Initializing WASM...");
+          await initWasm();
+          addSuccess("✅ Successfully initialized WASM");
+
+          // Import the Str module
+          if (distPaths.strPath) {
+            addOutput(`Importing Str module from ${distPaths.strPath}...`);
+            const { Str } = await import(distPaths.strPath);
+
+            // Create a Str instance
+            addOutput("Creating Str instance...");
+            const str = await Str.create("Hello from TypeScript!");
+            addSuccess(
+              `✅ Successfully created Str: "${str.toString()}" with length ${str.len()}`
+            );
+          } else {
+            addOutput(
+              "Could not find string.js file. TypeScript compilation may be needed.",
+              true
+            );
+          }
+
+          return true;
+        } catch (error) {
+          addOutput(
+            `Error testing TypeScript implementation: ${error.message}`,
+            true
+          );
+          addOutput(`Stack: ${error.stack}`, true);
+          return false;
+        }
+      }
+
+      // Find the paths to your compiled TypeScript files
+      async function findDistPaths() {
+        const possibleInitPaths = [
+          "./dist/wasm/init.js",
+          "./dist/lib/wasm/init.js",
+          "./wasm/init.js",
+          "./lib/wasm/init.js",
+        ];
+
+        const possibleStrPaths = [
+          "./dist/types/string.js",
+          "./dist/lib/types/string.js",
+          "./types/string.js",
+          "./lib/types/string.js",
+        ];
+
+        let initPath = null;
+        let strPath = null;
+
+        for (const path of possibleInitPaths) {
+          try {
+            await import(path);
+            initPath = path;
+            addOutput(`Found init.js at ${path}`);
+            break;
+          } catch (error) {
+            addOutput(`Could not import from ${path}: ${error.message}`);
+          }
+        }
+
+        for (const path of possibleStrPaths) {
+          try {
+            await import(path);
+            strPath = path;
+            addOutput(`Found string.js at ${path}`);
+            break;
+          } catch (error) {
+            addOutput(`Could not import from ${path}: ${error.message}`);
+          }
+        }
+
+        return { initPath, strPath };
+      }
+
+      // Run the tests
+      testTypeScriptImplementation();
+    </script>
+  </body>
+</html>

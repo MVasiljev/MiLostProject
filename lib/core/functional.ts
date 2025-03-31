@@ -1,9 +1,5 @@
-import { Vec } from "../types/vec";
-import { HashMap } from "../types/hash_map";
-import { HashSet } from "../types/hash_set";
+import { HashMap, HashSet, Vec, Str, u32 } from "../types";
 import { Iter } from "./iter";
-import { Str } from "../types/string";
-import { u32 } from "../types/primitives";
 
 export function toHashMap<T, K, V>(
   iterator: Iter<T>,

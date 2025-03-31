@@ -1,10 +1,15 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use std::process::Command;
-use std::path::Path;
+use log::{error, info, LevelFilter};
+use simple_logger::SimpleLogger;
 
 #[derive(Parser)]
-#[command(author, version, about, long_about = None)]
+#[command(
+    name = "milost",
+    version = "0.1.0",
+    about = "MiLost CLI: Rust-inspired TypeScript Development Tool",
+    long_about = "Create, build, run, and test TypeScript projects with MiLost"
+)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -17,13 +22,17 @@ enum Commands {
         /// Name of the project to create
         project_name: String,
         
-        /// Template to use (basic, react, vue)
+        /// Template to use (basic, react, vue, standalone)
         #[arg(short, long, default_value = "basic")]
         template: String,
         
         /// Output directory
         #[arg(short, long)]
         out_dir: Option<String>,
+        
+        /// Path to MiLost library (optional)
+        #[arg(long)]
+        milost_path: Option<String>,
     },
     
     /// Build a MiLost project
@@ -49,102 +58,62 @@ enum Commands {
 }
 
 fn main() -> Result<()> {
+    // Initialize logging
+    SimpleLogger::new()
+        .with_level(LevelFilter::Info)
+        .env()
+        .init()
+        .expect("Failed to initialize logger");
+
+    // Parse CLI arguments
     let cli = Cli::parse();
-    
+
+    // Execute the appropriate command
     match &cli.command {
-        Commands::Create { project_name, template, out_dir } => {
+        Commands::Create { 
+            project_name, 
+            template, 
+            out_dir, 
+            milost_path 
+        } => {
+            // Determine project path
             let project_path = match out_dir {
                 Some(dir) => format!("{}/{}", dir, project_name),
                 None => project_name.clone(),
             };
             
-            println!("Creating MiLost project: {} with template: {}", project_name, template);
-            println!("Project will be created at: {}", project_path);
+            info!("Creating MiLost project: {} with template: {}", project_name, template);
             
+            // Create project
             milost_cli::create_project(&project_path, template)
                 .context("Failed to create project")?;
             
-            println!("\nProject created successfully! Get started with:");
-            println!("  cd {}", project_name);
-            println!("  npm install");
-            println!("  npm start");
+            // Project creation success message
+            info!("✨ Project created successfully!");
+            println!("\nNext steps:");
+            println!("   cd {}", project_name);
+            println!("   npm install");
+            println!("   npm start");
         },
+        
         Commands::Build { path } => {
-            println!("Building project at: {}", path);
-            build_project(path)?;
+            info!("🔨 Building project at: {}", path);
+            milost_cli::build_project(path)
+                .context("Failed to build project")?;
         },
+        
         Commands::Run { path } => {
-            println!("Running project at: {}", path);
-            run_project(path)?;
+            info!("🏃 Running project at: {}", path);
+            milost_cli::run_project(path)
+                .context("Failed to run project")?;
         },
+        
         Commands::Test { path } => {
-            println!("Testing project at: {}", path);
-            test_project(path)?;
+            info!("🧪 Testing project at: {}", path);
+            milost_cli::test_project(path)
+                .context("Failed to run tests")?;
         },
     }
     
-    Ok(())
-}
-
-fn build_project(path: &str) -> Result<()> {
-    // Basic implementation: compile TypeScript to JavaScript
-    let project_dir = Path::new(path);
-    
-    // Run tsc to compile
-    let status = Command::new("npx")
-        .args(["tsc", "--project", path])
-        .current_dir(project_dir)
-        .status()
-        .context("Failed to run TypeScript compiler")?;
-    
-    if !status.success() {
-        anyhow::bail!("TypeScript compilation failed");
-    }
-    
-    println!("Build completed successfully");
-    Ok(())
-}
-
-fn run_project(path: &str) -> Result<()> {
-    // First build the project
-    build_project(path)?;
-    
-    // Then run the compiled JavaScript
-    let project_dir = Path::new(path);
-    let entry_point = project_dir.join("dist/index.js");
-    
-    println!("Starting application...");
-    
-    let status = Command::new("node")
-        .arg(entry_point)
-        .current_dir(project_dir)
-        .status()
-        .context("Failed to run the application")?;
-    
-    if !status.success() {
-        anyhow::bail!("Application exited with error");
-    }
-    
-    Ok(())
-}
-
-fn test_project(path: &str) -> Result<()> {
-    // Basic implementation: run tests using a test runner
-    let project_dir = Path::new(path);
-    
-    println!("Running tests...");
-    
-    // You can replace this with a more sophisticated test runner
-    let status = Command::new("npx")
-        .args(["jest"])
-        .current_dir(project_dir)
-        .status()
-        .context("Failed to run tests")?;
-    
-    if !status.success() {
-        anyhow::bail!("Tests failed");
-    }
-    
-    println!("All tests passed");
     Ok(())
 }

@@ -1,113 +1,70 @@
-import { u32 } from "./primitives";
-import { Branded } from "./branding";
-import { Result, Ok, Err } from "../core/result";
-import { ValidationError } from "../core/error";
-import { Str as StringBrand } from "./string";
+import { ValidationError } from "../core";
+import { WasmStr, ensureWasmInitialized, initWasm } from "../wasm/init";
 
 export class Str {
-  private readonly _inner: Branded<string, StringBrand>;
+  private readonly _inner: WasmStr;
 
-  private constructor(inner: Branded<string, StringBrand>) {
+  private constructor(inner: WasmStr) {
     this._inner = inner;
   }
 
-  static createStr(raw: string): Result<Str, ValidationError> {
-    return Branded.create(
-      raw,
-      Str.brand(),
-      (value) => typeof value === "string" && value.length >= 0,
-      Str.fromRaw("Invalid string value")
-    ).map((branded) => new Str(branded));
+  static fromRaw(value: string): Str {
+    ensureWasmInitialized();
+    try {
+      return new Str(WasmStr.fromRaw(value));
+    } catch (error) {
+      throw new ValidationError(this.fromRaw(`Failed to create Str: ${error}`));
+    }
   }
 
-  static fromRaw(raw: string): Str {
-    return new Str(
-      Branded.create(
-        raw,
-        Str.brand(),
-        (value) => typeof value === "string" && value.length >= 0
-      ).unwrap()
-    );
-  }
+  static async create(value: string): Promise<Str> {
+    await initWasm();
 
-  static brand(): StringBrand {
-    return "Str" as unknown as StringBrand;
-  }
-
-  static isStr(value: unknown): value is Str {
-    return value instanceof Str;
+    try {
+      const wasmStr = WasmStr.create(value);
+      return new Str(wasmStr);
+    } catch (error) {
+      throw new Error(`Failed to create Str: ${error}`);
+    }
   }
 
   unwrap(): string {
     return this._inner.unwrap();
   }
 
-  len(): u32 {
-    return u32(this.unwrap().length);
-  }
-
-  isEmpty(): boolean {
-    return this.len() === u32(0);
-  }
-
-  push(char: Str): Str {
-    const c = char.unwrap();
-    if (c.length !== 1) {
-      throw new ValidationError(
-        Str.fromRaw("push requires a single character")
-      );
-    }
-    return Str.fromRaw(this.unwrap() + c);
-  }
-
   toUpperCase(): Str {
-    return Str.fromRaw(this.unwrap().toUpperCase());
+    return new Str(this._inner.toUpperCase());
   }
 
   toLowerCase(): Str {
-    return Str.fromRaw(this.unwrap().toLowerCase());
+    return new Str(this._inner.toLowerCase());
+  }
+
+  len(): number {
+    return this._inner.len();
+  }
+
+  isEmpty(): boolean {
+    return this._inner.isEmpty();
   }
 
   trim(): Str {
-    return Str.fromRaw(this.unwrap().trim());
-  }
-
-  split(pattern: Str): Str[] {
-    return this.unwrap().split(pattern.unwrap()).map(Str.fromRaw);
-  }
-
-  substr(start: u32, length?: u32): Str {
-    const s = start as unknown as number;
-    const l = length !== undefined ? (length as unknown as number) : undefined;
-    const sliced = this.unwrap().substring(
-      s,
-      l !== undefined ? s + l : undefined
-    );
-    return Str.fromRaw(sliced);
-  }
-
-  replace(pattern: Str | RegExp, replacement: Str): Str {
-    const target = pattern instanceof Str ? pattern.unwrap() : pattern;
-    return Str.fromRaw(this.unwrap().replace(target, replacement.unwrap()));
-  }
-
-  toString(): Str {
-    return this;
-  }
-
-  toJSON(): string {
-    return this.unwrap();
-  }
-
-  get [Symbol.toStringTag](): string {
-    return this.unwrap();
+    return new Str(this._inner.trim());
   }
 
   equals(other: Str): boolean {
-    return this.unwrap() === other.unwrap();
+    return this._inner.equals(other._inner);
   }
 
   compare(other: Str): number {
-    return this.unwrap().localeCompare(other.unwrap());
+    return this._inner.compare(other._inner);
+  }
+
+  toString(): string {
+    return this._inner.unwrap();
+  }
+
+  toJSON(): string {
+    return this._inner.toJSON();
   }
 }

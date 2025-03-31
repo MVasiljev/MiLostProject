@@ -1,4 +1,4 @@
-import { memory } from "../index";
+import { memory } from '../index.js';
 
 export function createAtomContext<T extends Record<string, any>>(atoms: T) {
   const atomsContainer = memory.createRcRefCell(atoms);

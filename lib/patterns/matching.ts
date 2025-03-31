@@ -1,9 +1,6 @@
-import { AppError, ValidationError } from "../core/error";
+import { AppError, Result, ValidationError } from "../core";
+import { Str, i32, u32, f64, Vec } from "../types";
 import { Option } from "../core/option";
-import { Result, Ok as ResultOk, Err as ResultErr } from "../core/result";
-import { Vec } from "../types/vec";
-import { Str } from "../types/string";
-import { i32, u32, f64 } from "../types/primitives";
 
 export type MatchArm<T, R> = {
   pattern: MatchPattern<T>;

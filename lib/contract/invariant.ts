@@ -1,5 +1,5 @@
-import { Str } from "../types/string";
-import { ContractError } from "./contract";
+import { Str } from '../types/string.js';
+import { ContractError } from './contract.js';
 
 export class Invariant<T> {
   private readonly _value: T;

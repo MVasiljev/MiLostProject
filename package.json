@@ -1,27 +1,36 @@
 {
   "name": "milost",
   "version": "0.1.0",
-  "description": "MiLost programming language and toolchain",
-  "main": "index.js",
-  "bin": {
-    "milost": "bin/milost.js"
-  },
+  "description": "A Rust-like TypeScript library with WebAssembly optimizations",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist",
+    "pkg"
+  ],
   "scripts": {
-    "build": "napi build --platform && tsc",
-    "prepublish": "npm run build"
+    "clean": "node scripts/build.js --clean",
+    "build:wasm": "node scripts/build.js --wasm",
+    "build:ts": "node scripts/build.js --ts",
+    "build": "node scripts/build.js --all",
+    "dev": "npx http-server -p 8080 --mime-types='{\"js\":\"application/javascript\",\"wasm\":\"application/wasm\"}' -c-1",
+    "test": "echo \"No tests specified\"",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
-    "milost",
-    "language",
-    "cli"
+    "rust",
+    "typescript",
+    "wasm",
+    "webassembly"
   ],
-  "author": "Your Name",
+  "author": "",
   "license": "MIT",
-  "dependencies": {
-    "minimist": "^1.2.8"
-  },
   "devDependencies": {
-    "@napi-rs/cli": "^2.15.2",
+    "http-server": "^14.1.1",
     "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }
