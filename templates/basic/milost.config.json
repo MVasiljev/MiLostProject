@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true
+  },
+  "milostOptions": {
+    "enforceOptionForNullable": true,
+    "enforceResultForAsyncOperations": true,
+    "enforceErrorHierarchy": true,
+    "enforceBrandedTypes": true
+  }
+}

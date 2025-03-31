@@ -1,0 +1,17 @@
+{
+  "name": "milost",
+  "version": "0.1.0",
+  "description": "MiLost programming language library",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "**/*.js",
+    "**/*.d.ts"
+  ],
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

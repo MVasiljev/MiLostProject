@@ -1,0 +1,15 @@
+[package]
+name = "milost-wasm"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+milost-core = { path = "../core" }
+wasm-bindgen = "0.2"
+js-sys = "0.3"

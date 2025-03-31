@@ -1,0 +1,12 @@
+[package]
+name = "milost-language"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description.workspace = true
+license.workspace = true
+
+[dependencies]
+milost-core = { path = "../core" }
+anyhow.workspace = true
+serde.workspace = true
