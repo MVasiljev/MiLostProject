@@ -1,5 +1,5 @@
-import { Vec, i32, Str, u32 } from "lib/types";
 import { Option } from "../core/option";
+import { Vec, i32, Str, u32 } from "../types";
 import { ValidationError } from "./error";
 
 export class Iter<T> implements Iterable<T> {

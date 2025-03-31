@@ -1,4 +1,4 @@
-import { Str, Vec } from "lib/types";
+import { Str, Vec } from "../types";
 import { ValidationError } from "./error";
 
 export class Option<T> {

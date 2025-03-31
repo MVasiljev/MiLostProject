@@ -1,7 +1,6 @@
 import { u32 } from "./primitives";
 import { Branded, Brand } from "./branding";
-import { Result, Err } from "../core/result";
-import { AppError } from "lib/core";
+import { AppError } from "../core/error";
 
 export class Str {
   private readonly inner: Branded<string, Str>;

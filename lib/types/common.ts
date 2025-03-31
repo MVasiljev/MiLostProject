@@ -1,9 +1,9 @@
-import { Result, AppError, identity } from "lib/core";
 import { f64, i32, u32 } from ".";
 import { Brand } from "./branding";
 import { Str } from "./string";
 import { Option } from "../core/option";
 import { Vec } from "./vec";
+import { Result, AppError, identity } from "../core";
 
 export type Fallible<T> = Result<T, AppError>;
 export type AsyncFallible<T> = Promise<Result<T, AppError>>;

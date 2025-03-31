@@ -1,4 +1,4 @@
-import { Str, u32 } from "lib/types";
+import { Str, u32 } from "../types";
 
 export class AppError extends Error {
   constructor(message: Str) {

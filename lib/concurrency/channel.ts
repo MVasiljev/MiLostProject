@@ -1,7 +1,6 @@
 import { Str } from "../types/string";
 import { AppError } from "../core/error";
 import { Option } from "../core/option";
-import { Vec } from "../types/vec";
 import { u32 } from "../types/primitives";
 
 export class ChannelError extends AppError {

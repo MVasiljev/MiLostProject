@@ -1,4 +1,4 @@
-import { u32, Str } from "lib/types";
+import { u32, Str } from "../types";
 
 export class Rc<T> {
   private state: { value: T; refCount: u32 };

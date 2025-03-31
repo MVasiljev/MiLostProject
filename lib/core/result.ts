@@ -1,4 +1,4 @@
-import { Str } from "lib/types";
+import { Str } from "../types";
 import {
   AppError,
   ForbiddenError,

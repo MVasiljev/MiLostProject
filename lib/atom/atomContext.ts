@@ -22,7 +22,7 @@ export function createAtomContext<T extends Record<string, any>>(atoms: T) {
   return {
     getAtoms,
     setAtoms,
-    clone: () => createAtomContext(atoms), // Clone context
+    clone: () => createAtomContext(atoms),
     ...atomGetters,
   };
 }
