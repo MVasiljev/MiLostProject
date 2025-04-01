@@ -1,3 +1,5 @@
+use wasm_bindgen::prelude::*;
+
 mod str;
 mod vec;
 mod option;
@@ -12,6 +14,12 @@ mod r#ref;
 mod refmut;
 mod task;
 mod channel;
+mod invariant;
+mod contract;
+mod match_builder;
+mod matching;
+mod disposable;
+mod resource;
 
 pub use str::*;
 pub use vec::*;
@@ -27,16 +35,14 @@ pub use r#ref::*;
 pub use refmut::*;
 pub use task::*;
 pub use channel::*;
+pub use invariant::*;
+pub use contract::*;
+pub use match_builder::*;
+pub use matching::*;
+pub use disposable::*;
+pub use resource::{
+    ManagedResource,
+    create_managed_resource,
+    with_managed_resource
+};
 
-use wasm_bindgen::prelude::*;
-
-#[wasm_bindgen]
-pub fn init() {
-    #[cfg(feature = "console_error_panic_hook")]
-    console_error_panic_hook::set_once();
-}
-
-#[wasm_bindgen(js_name = getVersion)]
-pub fn get_version() -> String {
-    env!("CARGO_PKG_VERSION").to_string()
-}

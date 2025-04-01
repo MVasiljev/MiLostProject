@@ -1,13 +1,98 @@
-import { Result, ValidationError } from "../core";
-import { Str, Vec } from "../types";
-import { Option } from "../core/option";
+import { Result, ValidationError } from "../core/index.js";
+import { Str, Vec } from "../types/index.js";
+import { Option } from "../core/option.js";
+import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
 export const SomePattern = Symbol("Some");
 export const NonePattern = Symbol("None");
 export const OkPattern = Symbol("Ok");
 export const ErrPattern = Symbol("Err");
 export const _ = Symbol("_");
 export class PatternMatcher {
+    static async init() {
+        if (!isWasmInitialized()) {
+            try {
+                await initWasm();
+            }
+            catch (error) {
+                console.warn(`WASM module not available, using JS implementation: ${error}`);
+                PatternMatcher._useWasm = false;
+                return;
+            }
+        }
+        try {
+            PatternMatcher._useWasm = isWasmInitialized();
+            if (PatternMatcher._useWasm) {
+                const wasmModule = getWasmModule();
+                PatternMatcher._isObj = wasmModule.createPatternMatcherIs();
+                if (wasmModule.getSomePattern &&
+                    wasmModule.getNonePattern &&
+                    wasmModule.getOkPattern &&
+                    wasmModule.getErrPattern &&
+                    wasmModule.getWildcardPattern) {
+                }
+            }
+        }
+        catch (error) {
+            console.warn(`WASM pattern matcher initialization failed: ${error}`);
+            PatternMatcher._useWasm = false;
+        }
+    }
+    static get useWasm() {
+        return PatternMatcher._useWasm;
+    }
+    static get is() {
+        if (PatternMatcher._isObj) {
+            return PatternMatcher._isObj;
+        }
+        return {
+            nullish: (val) => val === null || val === undefined,
+            str: (val) => val instanceof Str,
+            rawString: (val) => typeof val === "string",
+            numeric: (val) => (typeof val === "number" && !isNaN(val)) ||
+                (val instanceof Number && !isNaN(val.valueOf())),
+            rawNumber: (val) => typeof val === "number" && !isNaN(val),
+            boolean: (val) => typeof val === "boolean",
+            vec: (val) => val instanceof Vec,
+            object: (val) => val !== null &&
+                typeof val === "object" &&
+                !(val instanceof Vec) &&
+                !(val instanceof Str) &&
+                !(val instanceof Array),
+            function: (val) => typeof val === "function",
+            some: (val) => val.isSome(),
+            none: (val) => val.isNone(),
+            ok: (val) => val.isOk(),
+            err: (val) => val.isErr(),
+            empty: (val) => {
+                if (val === null || val === undefined)
+                    return true;
+                if (val instanceof Str)
+                    return val.unwrap().length === 0;
+                if (val instanceof Vec)
+                    return val.isEmpty();
+                if (typeof val === "string")
+                    return val.length === 0;
+                if (typeof val === "object")
+                    return Object.keys(val).length === 0;
+                return false;
+            },
+            equalTo: (target) => (val) => val === target,
+            inRange: (min, max) => (val) => val >= min &&
+                val <= max,
+            predicate: (fn) => fn,
+        };
+    }
     static matchesPattern(value, pattern) {
+        if (PatternMatcher.useWasm) {
+            try {
+                const wasmModule = getWasmModule();
+                return wasmModule.matchesPattern(value, pattern);
+            }
+            catch (err) {
+                console.warn(`WASM matchesPattern failed, using JS fallback: ${err}`);
+                PatternMatcher._useWasm = false;
+            }
+        }
         if (pattern === _) {
             return true;
         }
@@ -48,6 +133,16 @@ export class PatternMatcher {
         return value === pattern;
     }
     static extractValue(value, pattern) {
+        if (PatternMatcher.useWasm) {
+            try {
+                const wasmModule = getWasmModule();
+                return wasmModule.extractValue(value, pattern);
+            }
+            catch (err) {
+                console.warn(`WASM extractValue failed, using JS fallback: ${err}`);
+                PatternMatcher._useWasm = false;
+            }
+        }
         if (pattern === SomePattern && value instanceof Option) {
             return value.unwrap();
         }
@@ -58,44 +153,26 @@ export class PatternMatcher {
     }
 }
 PatternMatcher._type = "PatternMatcher";
-PatternMatcher.is = {
-    nullish: (val) => val === null || val === undefined,
-    str: (val) => val instanceof Str,
-    rawString: (val) => typeof val === "string",
-    numeric: (val) => (typeof val === "number" && !isNaN(val)) ||
-        (val instanceof Number && !isNaN(val.valueOf())),
-    rawNumber: (val) => typeof val === "number" && !isNaN(val),
-    boolean: (val) => typeof val === "boolean",
-    vec: (val) => val instanceof Vec,
-    object: (val) => val !== null &&
-        typeof val === "object" &&
-        !(val instanceof Vec) &&
-        !(val instanceof Str) &&
-        !(val instanceof Array),
-    function: (val) => typeof val === "function",
-    some: (val) => val.isSome(),
-    none: (val) => val.isNone(),
-    ok: (val) => val.isOk(),
-    err: (val) => val.isErr(),
-    empty: (val) => {
-        if (val === null || val === undefined)
-            return true;
-        if (val instanceof Str)
-            return val.unwrap().length === 0;
-        if (val instanceof Vec)
-            return val.isEmpty();
-        if (typeof val === "string")
-            return val.length === 0;
-        if (typeof val === "object")
-            return Object.keys(val).length === 0;
-        return false;
-    },
-    equalTo: (target) => (val) => val === target,
-    inRange: (min, max) => (val) => val >= min &&
-        val <= max,
-    predicate: (fn) => fn,
-};
-export function matchValue(value, patterns) {
+PatternMatcher._isObj = null;
+PatternMatcher._useWasm = false;
+export async function matchValue(value, patterns) {
+    await PatternMatcher.init();
+    if (PatternMatcher.useWasm) {
+        try {
+            const wasmModule = getWasmModule();
+            return wasmModule.matchValue(value, patterns);
+        }
+        catch (err) {
+            if (err &&
+                typeof err === "object" &&
+                "name" in err &&
+                err.name === "ValidationError" &&
+                "message" in err) {
+                throw new ValidationError(Str.fromRaw(String(err.message)));
+            }
+            console.warn(`WASM matchValue failed, using JS fallback: ${err}`);
+        }
+    }
     if (!Array.isArray(patterns)) {
         if (value instanceof Option) {
             if (value.isSome() && "Some" in patterns) {
@@ -145,7 +222,8 @@ export function matchValue(value, patterns) {
     }
     throw new ValidationError(Str.fromRaw("No pattern matched and no default provided"));
 }
-export function matchPattern(value, patterns, defaultFn) {
+export async function matchPattern(value, patterns, defaultFn) {
+    await PatternMatcher.init();
     for (const [predicate, handler] of patterns) {
         if (predicate(value)) {
             return handler(value);
@@ -156,30 +234,28 @@ export function matchPattern(value, patterns, defaultFn) {
     }
     throw new ValidationError(Str.fromRaw("No pattern matched and no default provided"));
 }
-export function matchType(value, patterns) {
-    if (value instanceof Str && patterns.str) {
+export async function matchType(value, patterns) {
+    await PatternMatcher.init();
+    const { is } = PatternMatcher;
+    if (is.str(value) && patterns.str) {
         return patterns.str(value);
     }
-    if (typeof value === "string" && patterns.rawString) {
+    if (is.rawString(value) && patterns.rawString) {
         return patterns.rawString(value);
     }
-    if (PatternMatcher.is.numeric(value) && patterns.numeric) {
+    if (is.numeric(value) && patterns.numeric) {
         return patterns.numeric(value);
     }
-    if (typeof value === "number" && patterns.rawNumber) {
+    if (is.rawNumber(value) && patterns.rawNumber) {
         return patterns.rawNumber(value);
     }
-    if (typeof value === "boolean" && patterns.boolean) {
+    if (is.boolean(value) && patterns.boolean) {
         return patterns.boolean(value);
     }
-    if (value instanceof Vec && patterns.vec) {
+    if (is.vec(value) && patterns.vec) {
         return patterns.vec(value);
     }
-    if (value !== null &&
-        typeof value === "object" &&
-        !(value instanceof Vec) &&
-        !(value instanceof Str) &&
-        patterns.object) {
+    if (is.object(value) && patterns.object) {
         return patterns.object(value);
     }
     if (value === null && patterns.null) {
@@ -193,7 +269,8 @@ export function matchType(value, patterns) {
     }
     throw new ValidationError(Str.fromRaw("No pattern matched and no default provided"));
 }
-export function matchTag(value, patterns, defaultFn) {
+export async function matchTag(value, patterns, defaultFn) {
+    await PatternMatcher.init();
     let tag;
     if ("type" in value) {
         tag = value.type;
@@ -216,9 +293,9 @@ export function matchTag(value, patterns, defaultFn) {
     const tagDisplay = tag ? tag.unwrap() : "undefined";
     throw new ValidationError(Str.fromRaw(`No pattern matched for tag "${tagDisplay}" and no default provided`));
 }
-export function matchCases(value, cases, defaultCase) {
+export async function matchCases(value, cases, defaultCase) {
     try {
-        return matchValue(value, cases);
+        return await matchValue(value, cases);
     }
     catch (e) {
         if (defaultCase) {

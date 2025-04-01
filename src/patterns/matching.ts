@@ -1,6 +1,7 @@
-import { AppError, Result, ValidationError } from "../core";
-import { Str, i32, u32, f64, Vec } from "../types";
-import { Option } from "../core/option";
+import { AppError, Result, ValidationError } from "../core/index.js";
+import { Str, i32, u32, f64, Vec } from "../types/index.js";
+import { Option } from "../core/option.js";
+import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
 
 export type MatchArm<T, R> = {
   pattern: MatchPattern<T>;
@@ -25,68 +26,124 @@ export const _ = Symbol("_");
 
 export class PatternMatcher {
   static readonly _type = "PatternMatcher";
+  private static _isObj: any = null;
+  private static _useWasm: boolean = false;
 
-  static is = {
-    nullish: <T>(val: T | null | undefined): val is null | undefined =>
-      val === null || val === undefined,
+  static async init(): Promise<void> {
+    if (!isWasmInitialized()) {
+      try {
+        await initWasm();
+      } catch (error) {
+        console.warn(
+          `WASM module not available, using JS implementation: ${error}`
+        );
+        PatternMatcher._useWasm = false;
+        return;
+      }
+    }
 
-    str: (val: unknown): val is Str => val instanceof Str,
+    try {
+      PatternMatcher._useWasm = isWasmInitialized();
+      if (PatternMatcher._useWasm) {
+        const wasmModule = getWasmModule();
+        PatternMatcher._isObj = wasmModule.createPatternMatcherIs();
 
-    rawString: (val: unknown): val is string => typeof val === "string",
+        if (
+          wasmModule.getSomePattern &&
+          wasmModule.getNonePattern &&
+          wasmModule.getOkPattern &&
+          wasmModule.getErrPattern &&
+          wasmModule.getWildcardPattern
+        ) {
+        }
+      }
+    } catch (error) {
+      console.warn(`WASM pattern matcher initialization failed: ${error}`);
+      PatternMatcher._useWasm = false;
+    }
+  }
 
-    numeric: (val: unknown): val is i32 | u32 | f64 =>
-      (typeof val === "number" && !isNaN(val)) ||
-      (val instanceof Number && !isNaN(val.valueOf())),
+  static get useWasm(): boolean {
+    return PatternMatcher._useWasm;
+  }
 
-    rawNumber: (val: unknown): val is number =>
-      typeof val === "number" && !isNaN(val),
+  static get is() {
+    if (PatternMatcher._isObj) {
+      return PatternMatcher._isObj;
+    }
 
-    boolean: (val: unknown): val is boolean => typeof val === "boolean",
+    return {
+      nullish: <T>(val: T | null | undefined): val is null | undefined =>
+        val === null || val === undefined,
 
-    vec: <T>(val: unknown): val is Vec<T> => val instanceof Vec,
+      str: (val: unknown): val is Str => val instanceof Str,
 
-    object: <T extends object>(val: unknown): val is T =>
-      val !== null &&
-      typeof val === "object" &&
-      !(val instanceof Vec) &&
-      !(val instanceof Str) &&
-      !(val instanceof Array),
+      rawString: (val: unknown): val is string => typeof val === "string",
 
-    function: <T extends Function>(val: unknown): val is T =>
-      typeof val === "function",
+      numeric: (val: unknown): val is i32 | u32 | f64 =>
+        (typeof val === "number" && !isNaN(val)) ||
+        (val instanceof Number && !isNaN(val.valueOf())),
 
-    some: <T>(val: Option<T>): boolean => val.isSome(),
+      rawNumber: (val: unknown): val is number =>
+        typeof val === "number" && !isNaN(val),
 
-    none: <T>(val: Option<T>): boolean => val.isNone(),
+      boolean: (val: unknown): val is boolean => typeof val === "boolean",
 
-    ok: <T, E extends AppError>(val: Result<T, E>): boolean => val.isOk(),
+      vec: <T>(val: unknown): val is Vec<T> => val instanceof Vec,
 
-    err: <T, E extends AppError>(val: Result<T, E>): boolean => val.isErr(),
+      object: <T extends object>(val: unknown): val is T =>
+        val !== null &&
+        typeof val === "object" &&
+        !(val instanceof Vec) &&
+        !(val instanceof Str) &&
+        !(val instanceof Array),
 
-    empty: (val: any): boolean => {
-      if (val === null || val === undefined) return true;
-      if (val instanceof Str) return val.unwrap().length === 0;
-      if (val instanceof Vec) return val.isEmpty();
-      if (typeof val === "string") return val.length === 0;
-      if (typeof val === "object") return Object.keys(val).length === 0;
-      return false;
-    },
+      function: <T extends Function>(val: unknown): val is T =>
+        typeof val === "function",
 
-    equalTo:
-      <T>(target: T) =>
-      (val: unknown): boolean =>
-        val === target,
+      some: <T>(val: Option<T>): boolean => val.isSome(),
 
-    inRange:
-      (min: i32, max: i32) =>
-      (val: i32): boolean =>
-        (val as unknown as number) >= (min as unknown as number) &&
-        (val as unknown as number) <= (max as unknown as number),
+      none: <T>(val: Option<T>): boolean => val.isNone(),
 
-    predicate: <T>(fn: (val: T) => boolean) => fn,
-  };
+      ok: <T, E extends AppError>(val: Result<T, E>): boolean => val.isOk(),
+
+      err: <T, E extends AppError>(val: Result<T, E>): boolean => val.isErr(),
+
+      empty: (val: any): boolean => {
+        if (val === null || val === undefined) return true;
+        if (val instanceof Str) return val.unwrap().length === 0;
+        if (val instanceof Vec) return val.isEmpty();
+        if (typeof val === "string") return val.length === 0;
+        if (typeof val === "object") return Object.keys(val).length === 0;
+        return false;
+      },
+
+      equalTo:
+        <T>(target: T) =>
+        (val: unknown): boolean =>
+          val === target,
+
+      inRange:
+        (min: i32, max: i32) =>
+        (val: i32): boolean =>
+          (val as unknown as number) >= (min as unknown as number) &&
+          (val as unknown as number) <= (max as unknown as number),
+
+      predicate: <T>(fn: (val: T) => boolean) => fn,
+    };
+  }
 
   static matchesPattern<T>(value: T, pattern: MatchPattern<T>): boolean {
+    if (PatternMatcher.useWasm) {
+      try {
+        const wasmModule = getWasmModule();
+        return wasmModule.matchesPattern(value, pattern);
+      } catch (err) {
+        console.warn(`WASM matchesPattern failed, using JS fallback: ${err}`);
+        PatternMatcher._useWasm = false;
+      }
+    }
+
     if (pattern === _) {
       return true;
     }
@@ -144,6 +201,16 @@ export class PatternMatcher {
   }
 
   static extractValue<T>(value: T, pattern: MatchPattern<T>): any {
+    if (PatternMatcher.useWasm) {
+      try {
+        const wasmModule = getWasmModule();
+        return wasmModule.extractValue(value, pattern);
+      } catch (err) {
+        console.warn(`WASM extractValue failed, using JS fallback: ${err}`);
+        PatternMatcher._useWasm = false;
+      }
+    }
+
     if (pattern === SomePattern && value instanceof Option) {
       return value.unwrap();
     }
@@ -156,12 +223,32 @@ export class PatternMatcher {
   }
 }
 
-export function matchValue<T, R>(
+export async function matchValue<T, R>(
   value: T,
   patterns:
     | { [key: string]: (value: any) => R }
     | Array<[MatchPattern<T>, (value: any) => R]>
-): R {
+): Promise<R> {
+  await PatternMatcher.init();
+
+  if (PatternMatcher.useWasm) {
+    try {
+      const wasmModule = getWasmModule();
+      return wasmModule.matchValue(value, patterns);
+    } catch (err) {
+      if (
+        err &&
+        typeof err === "object" &&
+        "name" in err &&
+        err.name === "ValidationError" &&
+        "message" in err
+      ) {
+        throw new ValidationError(Str.fromRaw(String(err.message)));
+      }
+      console.warn(`WASM matchValue failed, using JS fallback: ${err}`);
+    }
+  }
+
   if (!Array.isArray(patterns)) {
     if (value instanceof Option) {
       if (value.isSome() && "Some" in patterns) {
@@ -226,11 +313,13 @@ export function matchValue<T, R>(
   );
 }
 
-export function matchPattern<T, R>(
+export async function matchPattern<T, R>(
   value: T,
   patterns: Array<[(val: T) => boolean, (val: T) => R]>,
   defaultFn?: (val: T) => R
-): R {
+): Promise<R> {
+  await PatternMatcher.init();
+
   for (const [predicate, handler] of patterns) {
     if (predicate(value)) {
       return handler(value);
@@ -244,7 +333,7 @@ export function matchPattern<T, R>(
   );
 }
 
-export function matchType</* T */ _T, R>(
+export async function matchType<_T, R>(
   value: unknown,
   patterns: {
     str?: (val: Str) => R;
@@ -258,33 +347,31 @@ export function matchType</* T */ _T, R>(
     undefined?: () => R;
     default?: (val: unknown) => R;
   }
-): R {
-  if (value instanceof Str && patterns.str) {
-    return patterns.str(value);
+): Promise<R> {
+  await PatternMatcher.init();
+
+  const { is } = PatternMatcher;
+
+  if (is.str(value as unknown) && patterns.str) {
+    return patterns.str(value as Str);
   }
-  if (typeof value === "string" && patterns.rawString) {
-    return patterns.rawString(value);
+  if (is.rawString(value as unknown) && patterns.rawString) {
+    return patterns.rawString(value as string);
   }
-  if (PatternMatcher.is.numeric(value) && patterns.numeric) {
+  if (is.numeric(value as unknown) && patterns.numeric) {
     return patterns.numeric(value as i32 | u32 | f64);
   }
-  if (typeof value === "number" && patterns.rawNumber) {
-    return patterns.rawNumber(value);
+  if (is.rawNumber(value as unknown) && patterns.rawNumber) {
+    return patterns.rawNumber(value as number);
   }
-  if (typeof value === "boolean" && patterns.boolean) {
-    return patterns.boolean(value);
+  if (is.boolean(value as unknown) && patterns.boolean) {
+    return patterns.boolean(value as boolean);
   }
-  if (value instanceof Vec && patterns.vec) {
-    return patterns.vec(value);
+  if (is.vec(value as unknown) && patterns.vec) {
+    return patterns.vec(value as Vec<any>);
   }
-  if (
-    value !== null &&
-    typeof value === "object" &&
-    !(value instanceof Vec) &&
-    !(value instanceof Str) &&
-    patterns.object
-  ) {
-    return patterns.object(value);
+  if (is.object(value as unknown) && patterns.object) {
+    return patterns.object(value as object);
   }
   if (value === null && patterns.null) {
     return patterns.null();
@@ -300,14 +387,16 @@ export function matchType</* T */ _T, R>(
   );
 }
 
-export function matchTag<
+export async function matchTag<
   T extends { type: Str } | { kind: Str } | { tag: Str },
   R
 >(
   value: T,
   patterns: Record<string, (val: any) => R>,
   defaultFn?: (val: T) => R
-): R {
+): Promise<R> {
+  await PatternMatcher.init();
+
   let tag: Str | undefined;
 
   if ("type" in value) {
@@ -337,13 +426,13 @@ export function matchTag<
   );
 }
 
-export function matchCases<T, R>(
+export async function matchCases<T, R>(
   value: T,
   cases: Array<[MatchPattern<T>, (value: any) => R]>,
   defaultCase?: () => R
-): R {
+): Promise<R> {
   try {
-    return matchValue(value, cases);
+    return await matchValue(value, cases);
   } catch (e) {
     if (defaultCase) {
       return defaultCase();
