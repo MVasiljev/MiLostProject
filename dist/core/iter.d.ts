@@ -1,0 +1,37 @@
+import { Vec, i32, Str, u32 } from "../types";
+import { Option } from "../core/option";
+export declare class Iter<T> implements Iterable<T> {
+    private readonly iterable;
+    static readonly _type = "Iter";
+    private constructor();
+    static from<T>(iterable: Iterable<T>): Iter<T>;
+    static fromVec<T>(vec: Vec<T>): Iter<T>;
+    static empty<T>(): Iter<T>;
+    static range(start: i32, end: i32, step?: i32): Iter<i32>;
+    [Symbol.iterator](): Iterator<T>;
+    next(): Option<T>;
+    map<U>(f: (item: T, index: u32) => U): Iter<U>;
+    filter(predicate: (item: T, index: u32) => boolean): Iter<T>;
+    take(n: u32): Iter<T>;
+    skip(n: u32): Iter<T>;
+    enumerate(): Iter<[u32, T]>;
+    zip<U>(other: Iterable<U>): Iter<[T, U]>;
+    chain(other: Iterable<T>): Iter<T>;
+    flatMap<U>(f: (item: T) => Iterable<U>): Iter<U>;
+    chunks(size: u32): Iter<Vec<T>>;
+    collect(): Vec<T>;
+    find(predicate: (item: T) => boolean): Option<T>;
+    first(): Option<T>;
+    last(): Option<T>;
+    nth(n: u32): Option<T>;
+    forEach(fn: (item: T, index: u32) => void): void;
+    all(predicate: (item: T) => boolean): boolean;
+    any(predicate: (item: T) => boolean): boolean;
+    count(): u32;
+    fold<R>(initial: R, f: (acc: R, item: T, index: u32) => R): R;
+    dedup(): Iter<T>;
+    dedupBy<K>(keyFn: (item: T) => K): Iter<T>;
+    intersperse(separator: T): Iter<T>;
+    toString(): Str;
+    get [Symbol.toStringTag](): Str;
+}
