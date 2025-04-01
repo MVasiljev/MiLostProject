@@ -1,5 +1,5 @@
-import { Str, Vec } from "../types.js";
-import { ValidationError } from "./error.js";
+import { Str, Vec } from "../types";
+import { ValidationError } from "./error";
 export class Option {
     constructor(some, value) {
         this._some = some;

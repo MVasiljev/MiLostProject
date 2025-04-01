@@ -1,4 +1,3 @@
-// For crates/wasm/src/str.rs
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]

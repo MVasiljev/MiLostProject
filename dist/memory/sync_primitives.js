@@ -1,6 +1,6 @@
-import { Str } from "../types/string.js";
-import { u32 } from "../types/primitives.js";
-import { ValidationError } from "../core/error.js";
+import { Str } from "../types/string";
+import { u32 } from "../types/primitives";
+import { ValidationError } from "../core/error";
 export class Mutex {
     constructor(initialValue) {
         this.state = initialValue;

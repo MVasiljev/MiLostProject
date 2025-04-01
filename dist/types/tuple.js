@@ -1,4 +1,4 @@
-import { Str } from "./string.js";
+import { Str } from "./string";
 export class Tuple {
     constructor(items) {
         this.items = items;

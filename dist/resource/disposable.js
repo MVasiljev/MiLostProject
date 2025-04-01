@@ -1,5 +1,5 @@
-import { Str } from "../types/string.js";
-import { Resource } from "./resource.js";
+import { Str } from "../types/string";
+import { Resource } from "./resource";
 export function asResource(disposable) {
     return Resource.new(disposable, (d) => d.dispose());
 }

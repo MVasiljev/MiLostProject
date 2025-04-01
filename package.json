@@ -10,13 +10,11 @@
     "pkg"
   ],
   "scripts": {
+    "build:standalone": "bash scripts/build-standalone.sh",
     "clean": "node scripts/build.js --clean",
     "build:wasm": "node scripts/build.js --wasm",
     "build:ts": "node scripts/build.js --ts",
-    "build": "node scripts/build.js --all",
-    "dev": "npx http-server ./example/dist -p 8080 --cors -c-1 --mime-types '{\"js\":\"application/javascript\",\"mjs\":\"application/javascript\",\"wasm\":\"application/wasm\",\"json\":\"application/json\"}'",
-    "test": "echo \"No tests specified\"",
-    "prepublishOnly": "npm run build"
+    "build": "node scripts/build.js --all"
   },
   "keywords": [
     "rust",

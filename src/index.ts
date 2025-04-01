@@ -12,6 +12,13 @@ export * as patterns from "./patterns/index.js";
 export * as resource from "./resource/index.js";
 export * as types from "./types/index.js";
 export { Str } from "./types/string.js";
+export {
+  UI,
+  HStackBuilder,
+  VStackBuilder,
+  TextBuilder,
+  ButtonBuilder,
+} from "./ui/ui.js";
 
 // Initialize WASM when the module is imported
 initWasm().catch(console.error);

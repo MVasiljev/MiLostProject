@@ -1,6 +1,6 @@
-import { Result, ValidationError } from "../core.js";
-import { Str, Vec } from "../types.js";
-import { Option } from "../core/option.js";
+import { Result, ValidationError } from "../core";
+import { Str, Vec } from "../types";
+import { Option } from "../core/option";
 export const SomePattern = Symbol("Some");
 export const NonePattern = Symbol("None");
 export const OkPattern = Symbol("Ok");

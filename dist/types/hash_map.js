@@ -1,6 +1,6 @@
-import { Vec } from "..js";
-import { u32 } from "./primitives.js";
-import { Str } from "./string.js";
+import { Vec } from ".";
+import { u32 } from "./primitives";
+import { Str } from "./string";
 export class HashMap {
     constructor(entries) {
         this._map = new Map(entries);

@@ -1,8 +1,0 @@
-[package]
-name = "milost-server"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-warp = "0.3"
-tokio = { version = "1", features = ["full"] }

@@ -1,0 +1,9 @@
+src/
+crates/
+scripts/
+*.ts
+!*.d.ts
+tsconfig.json
+Cargo.*
+test/
+.github/

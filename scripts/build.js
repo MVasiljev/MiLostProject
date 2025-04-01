@@ -83,16 +83,11 @@ function buildWasm() {
     process.chdir(WASM_CRATE_DIR);
     console.log(`Current directory: ${process.cwd()}`);
 
-    // Build with wasm-pack targeting web
+    // Build with wasm-pack targeting web, output directly to root pkg
     console.log("Running wasm-pack build...");
-    execSync("wasm-pack build --target web", { stdio: "inherit" });
-
-    // Copy the generated files to the root pkg directory
-    console.log(`Copying WASM files to ${WASM_PKG_TARGET_DIR}`);
-    ensureDir(WASM_PKG_TARGET_DIR);
-
-    // Copy all files from crates/wasm/pkg to root pkg directory
-    copyDir(WASM_PKG_SOURCE_DIR, WASM_PKG_TARGET_DIR);
+    execSync("wasm-pack build --target web --out-dir ../../pkg", {
+      stdio: "inherit",
+    });
 
     console.log("WASM module built successfully");
   } catch (error) {

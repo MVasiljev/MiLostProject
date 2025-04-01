@@ -1,3 +1,3 @@
-export * from "./matching.js";
-export * from "./match_builder.js";
+export * from "./matching";
+export * from "./match_builder";
 //# sourceMappingURL=index.js.map

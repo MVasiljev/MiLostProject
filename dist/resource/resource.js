@@ -1,6 +1,6 @@
-import { Str } from "../types/string.js";
-import { AppError } from "../core/error.js";
-import { Option } from "../core/option.js";
+import { Str } from "../types/string";
+import { AppError } from "../core/error";
+import { Option } from "../core/option";
 export class ResourceError extends AppError {
     constructor(message) {
         super(message);

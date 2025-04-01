@@ -1,6 +1,7 @@
-import { ValidationError, Result, Ok, Err } from "../core";
-import { Brand } from "./branding";
-import { Str } from "./string";
+import { ValidationError, Result, Ok, Err } from "../core/index.js";
+import { Brand } from "./branding.js";
+import { Str } from "./string.js";
+import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
 
 type RawNumber = number;
 
@@ -37,6 +38,36 @@ const isFiniteNum = (n: RawNumber): boolean =>
   typeof n === "number" && isFinite(n);
 
 function validate(name: keyof typeof limits, value: RawNumber): boolean {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = wasmModule.Primitives;
+
+      switch (name) {
+        case "u8":
+          return primitives.validateU8(value);
+        case "u16":
+          return primitives.validateU16(value);
+        case "u32":
+          return primitives.validateU32(value);
+        case "i8":
+          return primitives.validateI8(value);
+        case "i16":
+          return primitives.validateI16(value);
+        case "i32":
+          return primitives.validateI32(value);
+        case "f32":
+          return primitives.validateF32(value);
+        case "f64":
+          return primitives.validateF64(value);
+      }
+    } catch (error) {
+      console.warn(
+        `WASM validation failed, falling back to JS implementation: ${error}`
+      );
+    }
+  }
+
   const [min, max] = limits[name];
   return name.startsWith("f")
     ? isFiniteNum(value)
@@ -45,18 +76,18 @@ function validate(name: keyof typeof limits, value: RawNumber): boolean {
 
 function wrap<T>(name: keyof typeof limits, value: RawNumber): T {
   if (!validate(name, value)) {
-    throw new ValidationError(Str.fromRaw("Invalid value for type: " + name));
+    throw new ValidationError(Str.fromRaw(`Invalid value for type: ${name}`));
   }
   return value as T;
 }
 
-function /* safeWrap */ _safeWrap<T>(
+function safeWrap<T>(
   name: keyof typeof limits,
   value: RawNumber
 ): Result<T, ValidationError> {
   return validate(name, value)
     ? Ok(value as T)
-    : Err(new ValidationError(Str.fromRaw("Invalid value for type: " + name)));
+    : Err(new ValidationError(Str.fromRaw(`Invalid value for type: ${name}`)));
 }
 
 export const u8 = (v: RawNumber): u8 => wrap("u8", v);
@@ -81,36 +112,122 @@ export type ulong = u64;
 export type float = f32;
 export type double = f64;
 
-// Format helpers
+export async function initPrimitives(): Promise<void> {
+  if (!isWasmInitialized()) {
+    try {
+      await initWasm();
+    } catch (error) {
+      console.warn(
+        `WASM module not available, using JS implementation: ${error}`
+      );
+    }
+  }
+}
+
 export function format_bin(v: u32): Str {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = wasmModule.Primitives;
+      return Str.fromRaw(primitives.formatBin(v as unknown as RawNumber));
+    } catch (error) {
+      console.warn(`WASM formatBin failed, using JS fallback: ${error}`);
+    }
+  }
   return Str.fromRaw((v as unknown as RawNumber).toString(2));
 }
 
 export function format_hex(v: u32): Str {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = wasmModule.Primitives;
+      return Str.fromRaw(primitives.formatHex(v as unknown as RawNumber));
+    } catch (error) {
+      console.warn(`WASM formatHex failed, using JS fallback: ${error}`);
+    }
+  }
   return Str.fromRaw((v as unknown as RawNumber).toString(16));
 }
 
 export function format_oct(v: u32): Str {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = wasmModule.Primitives;
+      return Str.fromRaw(primitives.formatOct(v as unknown as RawNumber));
+    } catch (error) {
+      console.warn(`WASM formatOct failed, using JS fallback: ${error}`);
+    }
+  }
   return Str.fromRaw((v as unknown as RawNumber).toString(8));
 }
 
 export function format_int(v: u32, radix: u8, pad: u8): Str {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = wasmModule.Primitives;
+      return Str.fromRaw(
+        primitives.formatInt(
+          v as unknown as RawNumber,
+          radix as unknown as RawNumber,
+          pad as unknown as RawNumber
+        )
+      );
+    } catch (error) {
+      console.warn(`WASM formatInt failed, using JS fallback: ${error}`);
+    }
+  }
   const raw = (v as unknown as RawNumber).toString(radix as unknown as number);
   return Str.fromRaw(raw.padStart(pad as unknown as number, "0"));
 }
 
 export function format_float(v: f32, digits: u8 = u8(2)): Str {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = wasmModule.Primitives;
+      return Str.fromRaw(
+        primitives.formatFloat(
+          v as unknown as RawNumber,
+          digits as unknown as RawNumber
+        )
+      );
+    } catch (error) {
+      console.warn(`WASM formatFloat failed, using JS fallback: ${error}`);
+    }
+  }
   return Str.fromRaw(
     (v as unknown as RawNumber).toFixed(digits as unknown as number)
   );
 }
 
 export function is_power_of_two(v: u32): boolean {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = wasmModule.Primitives;
+      return primitives.isPowerOfTwo(v as unknown as RawNumber);
+    } catch (error) {
+      console.warn(`WASM isPowerOfTwo failed, using JS fallback: ${error}`);
+    }
+  }
   const raw = v as unknown as RawNumber;
   return raw > 0 && (raw & (raw - 1)) === 0;
 }
 
 export function next_power_of_two(v: u32): u32 {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = wasmModule.Primitives;
+      return u32(primitives.nextPowerOfTwo(v as unknown as RawNumber));
+    } catch (error) {
+      console.warn(`WASM nextPowerOfTwo failed, using JS fallback: ${error}`);
+    }
+  }
+
   let raw = v as unknown as RawNumber;
   if (raw <= 0) return u32(1);
   raw--;
@@ -123,6 +240,16 @@ export function next_power_of_two(v: u32): u32 {
 }
 
 export function leading_zeros(v: u32): u32 {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = wasmModule.Primitives;
+      return u32(primitives.leadingZeros(v as unknown as RawNumber));
+    } catch (error) {
+      console.warn(`WASM leadingZeros failed, using JS fallback: ${error}`);
+    }
+  }
+
   let raw = v as unknown as RawNumber;
   if (raw === 0) return u32(32);
   let count = 0;
@@ -134,6 +261,16 @@ export function leading_zeros(v: u32): u32 {
 }
 
 export function trailing_zeros(v: u32): u32 {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = wasmModule.Primitives;
+      return u32(primitives.trailingZeros(v as unknown as RawNumber));
+    } catch (error) {
+      console.warn(`WASM trailingZeros failed, using JS fallback: ${error}`);
+    }
+  }
+
   let raw = v as unknown as RawNumber;
   if (raw === 0) return u32(32);
   let count = 0;
@@ -145,6 +282,16 @@ export function trailing_zeros(v: u32): u32 {
 }
 
 export function count_ones(v: u32): u32 {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = wasmModule.Primitives;
+      return u32(primitives.countOnes(v as unknown as RawNumber));
+    } catch (error) {
+      console.warn(`WASM countOnes failed, using JS fallback: ${error}`);
+    }
+  }
+
   let raw = v as unknown as RawNumber;
   let count = 0;
   while (raw !== 0) {
@@ -152,6 +299,210 @@ export function count_ones(v: u32): u32 {
     raw >>>= 1;
   }
   return u32(count);
+}
+
+export function add_u8(a: u8, b: u8): Result<u8, ValidationError> {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = wasmModule.Primitives;
+      const result = primitives.addU8(
+        a as unknown as RawNumber,
+        b as unknown as RawNumber
+      );
+
+      if (result === null || result === undefined) {
+        return Err(
+          new ValidationError(
+            Str.fromRaw(`Addition would overflow u8: ${a} + ${b}`)
+          )
+        );
+      }
+
+      return Ok(u8(result));
+    } catch (error) {
+      console.warn(`WASM addU8 failed, using JS fallback: ${error}`);
+    }
+  }
+
+  const sum = (a as unknown as number) + (b as unknown as number);
+  if (sum > limits.u8[1]) {
+    return Err(
+      new ValidationError(
+        Str.fromRaw(`Addition would overflow u8: ${a} + ${b} = ${sum}`)
+      )
+    );
+  }
+  return Ok(u8(sum));
+}
+
+export function add_u16(a: u16, b: u16): Result<u16, ValidationError> {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = wasmModule.Primitives;
+      const result = primitives.addU16(
+        a as unknown as RawNumber,
+        b as unknown as RawNumber
+      );
+
+      if (result === null || result === undefined) {
+        return Err(
+          new ValidationError(
+            Str.fromRaw(`Addition would overflow u16: ${a} + ${b}`)
+          )
+        );
+      }
+
+      return Ok(u16(result));
+    } catch (error) {
+      console.warn(`WASM addU16 failed, using JS fallback: ${error}`);
+    }
+  }
+
+  const sum = (a as unknown as number) + (b as unknown as number);
+  if (sum > limits.u16[1]) {
+    return Err(
+      new ValidationError(
+        Str.fromRaw(`Addition would overflow u16: ${a} + ${b} = ${sum}`)
+      )
+    );
+  }
+  return Ok(u16(sum));
+}
+
+export function add_u32(a: u32, b: u32): Result<u32, ValidationError> {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = wasmModule.Primitives;
+      const result = primitives.addU32(
+        a as unknown as RawNumber,
+        b as unknown as RawNumber
+      );
+
+      if (result === null || result === undefined) {
+        return Err(
+          new ValidationError(
+            Str.fromRaw(`Addition would overflow u32: ${a} + ${b}`)
+          )
+        );
+      }
+
+      return Ok(u32(result));
+    } catch (error) {
+      console.warn(`WASM addU32 failed, using JS fallback: ${error}`);
+    }
+  }
+
+  const sum = (a as unknown as number) + (b as unknown as number);
+  if (sum > limits.u32[1]) {
+    return Err(
+      new ValidationError(
+        Str.fromRaw(`Addition would overflow u32: ${a} + ${b} = ${sum}`)
+      )
+    );
+  }
+  return Ok(u32(sum));
+}
+
+export function sub_u32(a: u32, b: u32): Result<u32, ValidationError> {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = wasmModule.Primitives;
+      const result = primitives.subU32(
+        a as unknown as RawNumber,
+        b as unknown as RawNumber
+      );
+
+      if (result === null || result === undefined) {
+        return Err(
+          new ValidationError(
+            Str.fromRaw(`Subtraction would underflow u32: ${a} - ${b}`)
+          )
+        );
+      }
+
+      return Ok(u32(result));
+    } catch (error) {
+      console.warn(`WASM subU32 failed, using JS fallback: ${error}`);
+    }
+  }
+
+  const diff = (a as unknown as number) - (b as unknown as number);
+  if (diff < limits.u32[0]) {
+    return Err(
+      new ValidationError(
+        Str.fromRaw(`Subtraction would underflow u32: ${a} - ${b} = ${diff}`)
+      )
+    );
+  }
+  return Ok(u32(diff));
+}
+
+export function mul_u32(a: u32, b: u32): Result<u32, ValidationError> {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = wasmModule.Primitives;
+      const result = primitives.mulU32(
+        a as unknown as RawNumber,
+        b as unknown as RawNumber
+      );
+
+      if (result === null || result === undefined) {
+        return Err(
+          new ValidationError(
+            Str.fromRaw(`Multiplication would overflow u32: ${a} * ${b}`)
+          )
+        );
+      }
+
+      return Ok(u32(result));
+    } catch (error) {
+      console.warn(`WASM mulU32 failed, using JS fallback: ${error}`);
+    }
+  }
+
+  const product = (a as unknown as number) * (b as unknown as number);
+  if (product > limits.u32[1]) {
+    return Err(
+      new ValidationError(
+        Str.fromRaw(
+          `Multiplication would overflow u32: ${a} * ${b} = ${product}`
+        )
+      )
+    );
+  }
+  return Ok(u32(product));
+}
+
+export function div_u32(a: u32, b: u32): Result<u32, ValidationError> {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = wasmModule.Primitives;
+      const result = primitives.divU32(
+        a as unknown as RawNumber,
+        b as unknown as RawNumber
+      );
+
+      if (result === null || result === undefined) {
+        return Err(new ValidationError(Str.fromRaw("Division by zero")));
+      }
+
+      return Ok(u32(result));
+    } catch (error) {
+      console.warn(`WASM divU32 failed, using JS fallback: ${error}`);
+    }
+  }
+
+  const bValue = b as unknown as number;
+  if (bValue === 0) {
+    return Err(new ValidationError(Str.fromRaw("Division by zero")));
+  }
+  return Ok(u32(Math.floor((a as unknown as number) / bValue)));
 }
 
 export function u8_to_u16(value: u8): u16 {
@@ -314,293 +665,14 @@ export function i64_to_f64(value: i64): f64 {
   return f64(value as unknown as number);
 }
 
-export function add_u8(a: u8, b: u8): Result<u8, ValidationError> {
-  const sum = (a as unknown as number) + (b as unknown as number);
-  if (sum > limits.u8[1]) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(`Addition would overflow u8: ${a} + ${b} = ${sum}`)
-      )
-    );
-  }
-  return Ok(u8(sum));
-}
-
-export function add_u16(a: u16, b: u16): Result<u16, ValidationError> {
-  const sum = (a as unknown as number) + (b as unknown as number);
-  if (sum > limits.u16[1]) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(`Addition would overflow u16: ${a} + ${b} = ${sum}`)
-      )
-    );
-  }
-  return Ok(u16(sum));
-}
-
-export function add_u32(a: u32, b: u32): Result<u32, ValidationError> {
-  const sum = (a as unknown as number) + (b as unknown as number);
-  if (sum > limits.u32[1]) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(`Addition would overflow u32: ${a} + ${b} = ${sum}`)
-      )
-    );
-  }
-  return Ok(u32(sum));
-}
-
-export function add_i8(a: i8, b: i8): Result<i8, ValidationError> {
-  const sum = (a as unknown as number) + (b as unknown as number);
-  if (sum < limits.i8[0] || sum > limits.i8[1]) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(`Addition would overflow i8: ${a} + ${b} = ${sum}`)
-      )
-    );
-  }
-  return Ok(i8(sum));
-}
-
-export function add_i16(a: i16, b: i16): Result<i16, ValidationError> {
-  const sum = (a as unknown as number) + (b as unknown as number);
-  if (sum < limits.i16[0] || sum > limits.i16[1]) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(`Addition would overflow i16: ${a} + ${b} = ${sum}`)
-      )
-    );
-  }
-  return Ok(i16(sum));
-}
-
-export function add_i32(a: i32, b: i32): Result<i32, ValidationError> {
-  const sum = (a as unknown as number) + (b as unknown as number);
-  if (sum < limits.i32[0] || sum > limits.i32[1]) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(`Addition would overflow i32: ${a} + ${b} = ${sum}`)
-      )
-    );
-  }
-  return Ok(i32(sum));
-}
-
-export function sub_u8(a: u8, b: u8): Result<u8, ValidationError> {
-  const diff = (a as unknown as number) - (b as unknown as number);
-  if (diff < limits.u8[0]) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(`Subtraction would underflow u8: ${a} - ${b} = ${diff}`)
-      )
-    );
-  }
-  return Ok(u8(diff));
-}
-
-export function sub_u16(a: u16, b: u16): Result<u16, ValidationError> {
-  const diff = (a as unknown as number) - (b as unknown as number);
-  if (diff < limits.u16[0]) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(`Subtraction would underflow u16: ${a} - ${b} = ${diff}`)
-      )
-    );
-  }
-  return Ok(u16(diff));
-}
-
-export function sub_u32(a: u32, b: u32): Result<u32, ValidationError> {
-  const diff = (a as unknown as number) - (b as unknown as number);
-  if (diff < limits.u32[0]) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(`Subtraction would underflow u32: ${a} - ${b} = ${diff}`)
-      )
-    );
-  }
-  return Ok(u32(diff));
-}
-
-export function sub_i8(a: i8, b: i8): Result<i8, ValidationError> {
-  const diff = (a as unknown as number) - (b as unknown as number);
-  if (diff < limits.i8[0] || diff > limits.i8[1]) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(`Subtraction would overflow i8: ${a} - ${b} = ${diff}`)
-      )
-    );
-  }
-  return Ok(i8(diff));
-}
-
-export function sub_i16(a: i16, b: i16): Result<i16, ValidationError> {
-  const diff = (a as unknown as number) - (b as unknown as number);
-  if (diff < limits.i16[0] || diff > limits.i16[1]) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(`Subtraction would overflow i16: ${a} - ${b} = ${diff}`)
-      )
-    );
-  }
-  return Ok(i16(diff));
-}
-
-export function sub_i32(a: i32, b: i32): Result<i32, ValidationError> {
-  const diff = (a as unknown as number) - (b as unknown as number);
-  if (diff < limits.i32[0] || diff > limits.i32[1]) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(`Subtraction would overflow i32: ${a} - ${b} = ${diff}`)
-      )
-    );
-  }
-  return Ok(i32(diff));
-}
-
-export function mul_u8(a: u8, b: u8): Result<u8, ValidationError> {
-  const product = (a as unknown as number) * (b as unknown as number);
-  if (product > limits.u8[1]) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(
-          `Multiplication would overflow u8: ${a} * ${b} = ${product}`
-        )
-      )
-    );
-  }
-  return Ok(u8(product));
-}
-
-export function mul_u16(a: u16, b: u16): Result<u16, ValidationError> {
-  const product = (a as unknown as number) * (b as unknown as number);
-  if (product > limits.u16[1]) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(
-          `Multiplication would overflow u16: ${a} * ${b} = ${product}`
-        )
-      )
-    );
-  }
-  return Ok(u16(product));
-}
-
-export function mul_u32(a: u32, b: u32): Result<u32, ValidationError> {
-  const product = (a as unknown as number) * (b as unknown as number);
-  if (product > limits.u32[1]) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(
-          `Multiplication would overflow u32: ${a} * ${b} = ${product}`
-        )
-      )
-    );
-  }
-  return Ok(u32(product));
-}
-
-export function mul_i8(a: i8, b: i8): Result<i8, ValidationError> {
-  const product = (a as unknown as number) * (b as unknown as number);
-  if (product < limits.i8[0] || product > limits.i8[1]) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(
-          `Multiplication would overflow i8: ${a} * ${b} = ${product}`
-        )
-      )
-    );
-  }
-  return Ok(i8(product));
-}
-
-export function mul_i16(a: i16, b: i16): Result<i16, ValidationError> {
-  const product = (a as unknown as number) * (b as unknown as number);
-  if (product < limits.i16[0] || product > limits.i16[1]) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(
-          `Multiplication would overflow i16: ${a} * ${b} = ${product}`
-        )
-      )
-    );
-  }
-  return Ok(i16(product));
-}
-
-export function mul_i32(a: i32, b: i32): Result<i32, ValidationError> {
-  const product = (a as unknown as number) * (b as unknown as number);
-  if (product < limits.i32[0] || product > limits.i32[1]) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(
-          `Multiplication would overflow i32: ${a} * ${b} = ${product}`
-        )
-      )
-    );
-  }
-  return Ok(i32(product));
-}
-
-export function div_u8(a: u8, b: u8): Result<u8, ValidationError> {
-  const bValue = b as unknown as number;
-  if (bValue === 0) {
-    return Err(new ValidationError(Str.fromRaw("Division by zero")));
-  }
-  return Ok(u8(Math.floor((a as unknown as number) / bValue)));
-}
-
-export function div_u16(a: u16, b: u16): Result<u16, ValidationError> {
-  const bValue = b as unknown as number;
-  if (bValue === 0) {
-    return Err(new ValidationError(Str.fromRaw("Division by zero")));
-  }
-  return Ok(u16(Math.floor((a as unknown as number) / bValue)));
-}
-
-export function div_u32(a: u32, b: u32): Result<u32, ValidationError> {
-  const bValue = b as unknown as number;
-  if (bValue === 0) {
-    return Err(new ValidationError(Str.fromRaw("Division by zero")));
-  }
-  return Ok(u32(Math.floor((a as unknown as number) / bValue)));
-}
-
-export function div_i8(a: i8, b: i8): Result<i8, ValidationError> {
-  const aValue = a as unknown as number;
-  const bValue = b as unknown as number;
-  if (bValue === 0) {
-    return Err(new ValidationError(Str.fromRaw("Division by zero")));
-  }
-  if (aValue === limits.i8[0] && bValue === -1) {
-    return Err(new ValidationError(Str.fromRaw("Division would overflow")));
-  }
-  return Ok(i8(Math.trunc(aValue / bValue)));
-}
-
-export function div_i16(a: i16, b: i16): Result<i16, ValidationError> {
-  const aValue = a as unknown as number;
-  const bValue = b as unknown as number;
-  if (bValue === 0) {
-    return Err(new ValidationError(Str.fromRaw("Division by zero")));
-  }
-  if (aValue === limits.i16[0] && bValue === -1) {
-    return Err(new ValidationError(Str.fromRaw("Division would overflow")));
-  }
-  return Ok(i16(Math.trunc(aValue / bValue)));
-}
-
-export function div_i32(a: i32, b: i32): Result<i32, ValidationError> {
-  const aValue = a as unknown as number;
-  const bValue = b as unknown as number;
-  if (bValue === 0) {
-    return Err(new ValidationError(Str.fromRaw("Division by zero")));
-  }
-  if (aValue === limits.i32[0] && bValue === -1) {
-    return Err(new ValidationError(Str.fromRaw("Division would overflow")));
-  }
-  return Ok(i32(Math.trunc(aValue / bValue)));
-}
+export const Byte = u8;
+export const Short = i16;
+export const Int = i32;
+export const Long = i64;
+export const UInt = u32;
+export const ULong = u64;
+export const Float = f32;
+export const Double = f64;
 
 export function to_binary(value: number): string {
   return value.toString(2);
@@ -613,12 +685,3 @@ export function to_hex(value: number): string {
 export function to_octal(value: number): string {
   return value.toString(8);
 }
-
-export const Byte = u8;
-export const Short = i16;
-export const Int = i32;
-export const Long = i64;
-export const UInt = u32;
-export const ULong = u64;
-export const Float = f32;
-export const Double = f64;

@@ -1,6 +1,6 @@
-import { Vec } from "..js";
-import { u32 } from "./primitives.js";
-import { Str } from "./string.js";
+import { Vec } from ".";
+import { u32 } from "./primitives";
+import { Str } from "./string";
 export class HashSet {
     constructor(values) {
         this._set = new Set(values);

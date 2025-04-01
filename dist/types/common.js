@@ -1,7 +1,7 @@
-import { Vec } from "..js";
-import { identity } from "../core.js";
-import { limits } from "./primitives.js";
-import { Str } from "./string.js";
+import { Vec } from ".";
+import { identity } from "../core";
+import { limits } from "./primitives";
+import { Str } from "./string";
 export const LoadingStates = {
     IDLE: Str.fromRaw("idle"),
     LOADING: Str.fromRaw("loading"),

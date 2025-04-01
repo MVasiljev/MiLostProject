@@ -1,5 +1,5 @@
-import { Str } from "../types/string.js";
-import { AppError } from "../core/error.js";
+import { Str } from "../types/string";
+import { AppError } from "../core/error";
 export class ContractError extends AppError {
     constructor(message) {
         super(message);

@@ -1,5 +1,5 @@
-import { ValidationError, Err, Ok } from "../core.js";
-import { Str } from "./string.js";
+import { ValidationError, Err, Ok } from "../core";
+import { Str } from "./string";
 export class Branded {
     constructor(value, brand) {
         this._value = value;

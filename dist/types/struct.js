@@ -1,4 +1,4 @@
-import { Vec } from "./vec.js";
+import { Vec } from "./vec";
 export class Struct {
     constructor(fields) {
         this._fields = Object.freeze({ ...fields });

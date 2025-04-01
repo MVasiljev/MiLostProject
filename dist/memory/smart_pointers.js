@@ -1,4 +1,4 @@
-import { u32, Str } from "../types.js";
+import { u32, Str } from "../types";
 export class Rc {
     constructor(initialValue) {
         this.state = { value: initialValue, refCount: u32(1) };

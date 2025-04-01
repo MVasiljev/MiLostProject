@@ -1,6 +1,6 @@
-import { Str } from "../types.js";
-import { AppError, UnauthorizedError, ForbiddenError, NotFoundError, ValidationError, ServerError, NetworkError, } from "./error.js";
-import { Option } from "../core/option.js";
+import { Str } from "../types";
+import { AppError, UnauthorizedError, ForbiddenError, NotFoundError, ValidationError, ServerError, NetworkError, } from "./error";
+import { Option } from "../core/option";
 export class Result {
     static Result(/* error */ err) {
         throw new Error("Method not implemented.");

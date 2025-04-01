@@ -9,3 +9,5 @@
 /dist
 /build
 /example
+./node_modules
+/test

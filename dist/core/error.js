@@ -1,4 +1,4 @@
-import { Str } from "../types.js";
+import { Str } from "../types";
 export class AppError extends Error {
     constructor(message) {
         super(message.unwrap());

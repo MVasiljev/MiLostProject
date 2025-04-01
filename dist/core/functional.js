@@ -1,4 +1,4 @@
-import { HashMap, HashSet, Vec, Str, u32 } from "../types.js";
+import { HashMap, HashSet, Vec, Str, u32 } from "../types";
 export function toHashMap(iterator, keyValueFn) {
     const pairs = iterator.map(keyValueFn).collect();
     return HashMap.from(pairs);

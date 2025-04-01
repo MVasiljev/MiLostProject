@@ -1,6 +1,6 @@
-import { Vec, i32, Str, u32 } from "../types.js";
-import { ValidationError } from "./error.js";
-import { Option } from "../core/option.js";
+import { Vec, i32, Str, u32 } from "../types";
+import { ValidationError } from "./error";
+import { Option } from "../core/option";
 export class Iter {
     constructor(iterable) {
         this.iterable = iterable;
