@@ -1,14 +1,28 @@
 import { Str } from "../types";
 import { AppError, UnauthorizedError, ForbiddenError, NotFoundError, ValidationError, ServerError, NetworkError, } from "./error";
 import { Option } from "../core/option";
+import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
 export class Result {
-    static Result(/* error */ err) {
-        throw new Error("Method not implemented.");
-    }
     constructor(ok, value, error) {
         this._ok = ok;
         this._value = value;
         this._error = error;
+        this._useWasm = isWasmInitialized();
+        if (this._useWasm) {
+            try {
+                const wasmModule = getWasmModule();
+                if (ok) {
+                    this._inner = wasmModule.create_ok_result(value);
+                }
+                else {
+                    this._inner = wasmModule.create_err_result(error);
+                }
+            }
+            catch (err) {
+                console.warn(`WASM Result creation failed, using JS implementation: ${err}`);
+                this._useWasm = false;
+            }
+        }
     }
     static Ok(value) {
         return new Result(true, value, undefined);
@@ -19,10 +33,29 @@ export class Result {
         }
         return new Result(false, undefined, error);
     }
+    static Result(err) {
+        throw new Error("Method not implemented.");
+    }
     isOk() {
+        if (this._useWasm) {
+            try {
+                return this._inner.isOk();
+            }
+            catch (err) {
+                console.warn(`WASM isOk failed, using JS fallback: ${err}`);
+            }
+        }
         return this._ok;
     }
     isErr() {
+        if (this._useWasm) {
+            try {
+                return this._inner.isErr();
+            }
+            catch (err) {
+                console.warn(`WASM isErr failed, using JS fallback: ${err}`);
+            }
+        }
         return !this._ok;
     }
     isError(errorType) {
@@ -35,12 +68,28 @@ export class Result {
         throw new Error(message);
     }
     unwrap() {
+        if (this._useWasm) {
+            try {
+                return this._inner.unwrap();
+            }
+            catch (err) {
+                throw this._error || new Error("Called unwrap on an Err result");
+            }
+        }
         if (this._ok && this._value !== undefined) {
             return this._value;
         }
         throw this._error || new Error("Called unwrap on an Err result");
     }
     unwrapOr(defaultValue) {
+        if (this._useWasm) {
+            try {
+                return this._inner.unwrapOr(defaultValue);
+            }
+            catch (err) {
+                console.warn(`WASM unwrapOr failed, using JS fallback: ${err}`);
+            }
+        }
         return this._ok && this._value !== undefined ? this._value : defaultValue;
     }
     unwrapOrElse(fn) {
@@ -72,11 +121,28 @@ export class Result {
         return this._ok ? this : res;
     }
     match(onOk, onErr) {
+        if (this._useWasm) {
+            try {
+                return this._inner.match((val) => onOk(val), (err) => onErr(err));
+            }
+            catch (err) {
+                console.warn(`WASM match failed, using JS fallback: ${err}`);
+            }
+        }
         return this._ok && this._value !== undefined
             ? onOk(this._value)
             : onErr(this._error);
     }
     getError() {
+        if (this._useWasm) {
+            try {
+                const error = this._inner.getError();
+                return error === undefined ? undefined : error;
+            }
+            catch (err) {
+                console.warn(`WASM getError failed, using JS fallback: ${err}`);
+            }
+        }
         return this._error;
     }
     ok() {
@@ -157,6 +223,16 @@ export class Result {
             values.push(result.unwrap());
         }
         return Result.Ok(values);
+    }
+    static async init() {
+        if (!isWasmInitialized()) {
+            try {
+                await initWasm();
+            }
+            catch (error) {
+                console.warn(`WASM module not available, using JS implementation: ${error}`);
+            }
+        }
     }
 }
 export function Ok(value) {

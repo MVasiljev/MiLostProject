@@ -1,24 +1,19 @@
-// scripts/build.js
 import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
 import { fileURLToPath } from "url";
 
-// Get current file's directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Project root directory
 const rootDir = path.resolve(__dirname, "..");
 
-// Directories
 const WASM_CRATE_DIR = path.join(rootDir, "crates/wasm");
 const WASM_PKG_SOURCE_DIR = path.join(WASM_CRATE_DIR, "pkg");
 const WASM_PKG_TARGET_DIR = path.join(rootDir, "pkg");
 const TS_SOURCE_DIR = path.join(rootDir, "src");
 const TS_TARGET_DIR = path.join(rootDir, "dist");
 
-// Make sure a directory exists
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) {
     console.log(`Creating directory: ${dir}`);
@@ -26,7 +21,6 @@ function ensureDir(dir) {
   }
 }
 
-// Copy files from one directory to another
 function copyDir(sourceDir, targetDir) {
   ensureDir(targetDir);
 
@@ -44,7 +38,6 @@ function copyDir(sourceDir, targetDir) {
   }
 }
 
-// Create global.d.ts file if it doesn't exist
 function createGlobalDtsFile() {
   console.log("\n--- Creating TypeScript global declarations ---");
 
@@ -74,16 +67,13 @@ declare global {
   }
 }
 
-// Build the WASM module
 function buildWasm() {
   console.log("\n--- Building WASM module ---");
 
   try {
-    // Navigate to the wasm crate directory
     process.chdir(WASM_CRATE_DIR);
     console.log(`Current directory: ${process.cwd()}`);
 
-    // Build with wasm-pack targeting web, output directly to root pkg
     console.log("Running wasm-pack build...");
     execSync("wasm-pack build --target web --out-dir ../../pkg", {
       stdio: "inherit",
@@ -94,12 +84,10 @@ function buildWasm() {
     console.error("Failed to build WASM module:", error);
     process.exit(1);
   } finally {
-    // Return to the root directory
     process.chdir(rootDir);
   }
 }
 
-// Build the TypeScript library
 function buildTs() {
   console.log("\n--- Building TypeScript library ---");
 
@@ -107,14 +95,11 @@ function buildTs() {
     process.chdir(rootDir);
     console.log(`Current directory: ${process.cwd()}`);
 
-    // Create global.d.ts file with window augmentations
     createGlobalDtsFile();
 
-    // Compile the TypeScript code
     console.log("Running TypeScript compiler...");
     execSync("tsc -p tsconfig.json", { stdio: "inherit" });
 
-    // Add JS extensions to imports if needed
     const extensionsScriptPath = path.join(
       rootDir,
       "scripts/add-js-extensions.js"
@@ -137,7 +122,6 @@ function buildTs() {
   }
 }
 
-// Create test HTML file
 function createTestHtml() {
   console.log("\n--- Creating test HTML file ---");
 
@@ -193,19 +177,16 @@ function createTestHtml() {
         const str = new wasm.Str("Hello from WASM!");
         log(\`Test string created: \${str.unwrap()}\`);
         
-        // Test various methods
         log(\`String length: \${str.len()}\`);
         log(\`Is empty: \${str.is_empty()}\`);
         log(\`Contains "WASM": \${str.contains("WASM")}\`);
         
-        // Test string transformations
         const upper = str.to_uppercase();
         log(\`Uppercase: \${upper.unwrap()}\`);
         
         const lower = str.to_lowercase();
         log(\`Lowercase: \${lower.unwrap()}\`);
         
-        // Test method chaining
         const trimmedUpper = new wasm.Str("  hello, world!  ")
           .to_uppercase()
           .trim();
@@ -218,7 +199,6 @@ function createTestHtml() {
       }
     }
     
-    // Run the test
     init();
   </script>
 </body>

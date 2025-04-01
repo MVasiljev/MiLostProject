@@ -9,19 +9,36 @@ import {
   NetworkError,
 } from "./error";
 import { Option } from "../core/option";
+import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
 
 export class Result<T, E extends AppError = AppError> {
-  static Result(/* error */ err: AppError): Result<never, AppError> {
-    throw new Error("Method not implemented.");
-  }
   private readonly _value?: T;
   private readonly _error?: E;
   private readonly _ok: boolean;
+  private readonly _inner: any;
+  private readonly _useWasm: boolean;
 
   private constructor(ok: boolean, value?: T, error?: E) {
     this._ok = ok;
     this._value = value;
     this._error = error;
+    this._useWasm = isWasmInitialized();
+
+    if (this._useWasm) {
+      try {
+        const wasmModule = getWasmModule();
+        if (ok) {
+          this._inner = wasmModule.create_ok_result(value as any);
+        } else {
+          this._inner = wasmModule.create_err_result(error as any);
+        }
+      } catch (err) {
+        console.warn(
+          `WASM Result creation failed, using JS implementation: ${err}`
+        );
+        this._useWasm = false;
+      }
+    }
   }
 
   static Ok<T, E extends AppError = AppError>(value: T): Result<T, E> {
@@ -35,11 +52,29 @@ export class Result<T, E extends AppError = AppError> {
     return new Result<T, E>(false, undefined, error);
   }
 
+  static Result(err: AppError): Result<never, AppError> {
+    throw new Error("Method not implemented.");
+  }
+
   isOk(): boolean {
+    if (this._useWasm) {
+      try {
+        return this._inner.isOk();
+      } catch (err) {
+        console.warn(`WASM isOk failed, using JS fallback: ${err}`);
+      }
+    }
     return this._ok;
   }
 
   isErr(): boolean {
+    if (this._useWasm) {
+      try {
+        return this._inner.isErr();
+      } catch (err) {
+        console.warn(`WASM isErr failed, using JS fallback: ${err}`);
+      }
+    }
     return !this._ok;
   }
 
@@ -57,6 +92,14 @@ export class Result<T, E extends AppError = AppError> {
   }
 
   unwrap(): T {
+    if (this._useWasm) {
+      try {
+        return this._inner.unwrap() as T;
+      } catch (err) {
+        throw this._error || new Error("Called unwrap on an Err result");
+      }
+    }
+
     if (this._ok && this._value !== undefined) {
       return this._value;
     }
@@ -64,6 +107,13 @@ export class Result<T, E extends AppError = AppError> {
   }
 
   unwrapOr(defaultValue: T): T {
+    if (this._useWasm) {
+      try {
+        return this._inner.unwrapOr(defaultValue) as T;
+      } catch (err) {
+        console.warn(`WASM unwrapOr failed, using JS fallback: ${err}`);
+      }
+    }
     return this._ok && this._value !== undefined ? this._value : defaultValue;
   }
 
@@ -104,12 +154,30 @@ export class Result<T, E extends AppError = AppError> {
   }
 
   match<U>(onOk: (value: T) => U, onErr: (error: E) => U): U {
+    if (this._useWasm) {
+      try {
+        return this._inner.match(
+          (val: T) => onOk(val),
+          (err: E) => onErr(err)
+        ) as U;
+      } catch (err) {
+        console.warn(`WASM match failed, using JS fallback: ${err}`);
+      }
+    }
     return this._ok && this._value !== undefined
       ? onOk(this._value)
       : onErr(this._error as E);
   }
 
   getError(): E | undefined {
+    if (this._useWasm) {
+      try {
+        const error = this._inner.getError();
+        return error === undefined ? undefined : (error as E);
+      } catch (err) {
+        console.warn(`WASM getError failed, using JS fallback: ${err}`);
+      }
+    }
     return this._error;
   }
 
@@ -233,6 +301,18 @@ export class Result<T, E extends AppError = AppError> {
     }
 
     return Result.Ok(values);
+  }
+
+  static async init(): Promise<void> {
+    if (!isWasmInitialized()) {
+      try {
+        await initWasm();
+      } catch (error) {
+        console.warn(
+          `WASM module not available, using JS implementation: ${error}`
+        );
+      }
+    }
   }
 }
 

@@ -2,11 +2,14 @@ import { Str, Vec } from "../types";
 export declare class Option<T> {
     private readonly _value?;
     private readonly _some;
+    private readonly _inner;
+    private readonly _useWasm;
     static readonly _type = "Option";
     private constructor();
     static Some<T>(value: T): Option<T>;
     static None<T>(): Option<T>;
     static from<T>(value: T | null | undefined): Option<T>;
+    static init(): Promise<void>;
     isSome(): boolean;
     isNone(): boolean;
     expect(message: Str): T;

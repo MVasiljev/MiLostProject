@@ -1,6 +1,5 @@
 import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
 
-// Type definitions for UI components
 export type FontStyleType = "Title" | "Body" | "Caption";
 export type ColorType = "White" | "Blue" | "Black";
 
@@ -13,8 +12,6 @@ export class UI {
     this._wasm = wasm;
   }
 
-  // Legacy method for backward compatibility
-  // Factory method to create UI instance from raw JSON
   static async fromJSON(json: string): Promise<UI> {
     if (!isWasmInitialized()) {
       await initWasm();
@@ -23,7 +20,6 @@ export class UI {
     return new UI(json, true);
   }
 
-  // Legacy method for backward compatibility
   static async createText(
     content: string,
     fontStyle: FontStyleType,
@@ -57,7 +53,6 @@ export class UI {
   }
 }
 
-// Builder classes for SwiftUI-like syntax
 export class VStackBuilder {
   private _builder: any;
 
@@ -95,7 +90,6 @@ export class VStackBuilder {
     if (component instanceof UI) {
       json = component.toJSON();
     } else if (component instanceof TextBuilder) {
-      // We don't need to call build() on TextBuilder, just convert it directly
       json = await this.convertBuilderToJson(component);
     } else if (
       component instanceof HStackBuilder ||
@@ -111,9 +105,7 @@ export class VStackBuilder {
     return this;
   }
 
-  // Helper method to convert a builder to JSON
   private async convertBuilderToJson(builder: any): Promise<string> {
-    // Access the internal builder and build it at the WASM level
     const wasmBuilder = builder._builder;
     if (!wasmBuilder || !wasmBuilder.build) {
       throw new Error("Invalid builder object");
@@ -138,7 +130,6 @@ export class VStackBuilder {
     }
   }
 
-  // Static factory for async initialization
   static async create(): Promise<VStackBuilder> {
     if (!isWasmInitialized()) {
       await initWasm();
@@ -185,7 +176,6 @@ export class HStackBuilder {
     if (component instanceof UI) {
       json = component.toJSON();
     } else if (component instanceof TextBuilder) {
-      // We don't need to call build() on TextBuilder, just convert it directly
       json = await this.convertBuilderToJson(component);
     } else if (
       component instanceof HStackBuilder ||
@@ -201,9 +191,7 @@ export class HStackBuilder {
     return this;
   }
 
-  // Helper method to convert a builder to JSON
   private async convertBuilderToJson(builder: any): Promise<string> {
-    // Access the internal builder and build it at the WASM level
     const wasmBuilder = builder._builder;
     if (!wasmBuilder || !wasmBuilder.build) {
       throw new Error("Invalid builder object");
@@ -228,7 +216,6 @@ export class HStackBuilder {
     }
   }
 
-  // Static factory for async initialization
   static async create(): Promise<HStackBuilder> {
     if (!isWasmInitialized()) {
       await initWasm();
@@ -272,7 +259,6 @@ export class TextBuilder {
     }
   }
 
-  // Static factory for async initialization
   static async create(content: string): Promise<TextBuilder> {
     if (!isWasmInitialized()) {
       await initWasm();
@@ -311,7 +297,6 @@ export class ButtonBuilder {
     }
   }
 
-  // Static factory for async initialization
   static async create(label: string): Promise<ButtonBuilder> {
     if (!isWasmInitialized()) {
       await initWasm();

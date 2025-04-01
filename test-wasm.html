@@ -49,19 +49,16 @@
         const str = new wasm.Str("Hello from WASM!");
         log(`Test string created: ${str.unwrap()}`);
         
-        // Test various methods
         log(`String length: ${str.len()}`);
         log(`Is empty: ${str.is_empty()}`);
         log(`Contains "WASM": ${str.contains("WASM")}`);
         
-        // Test string transformations
         const upper = str.to_uppercase();
         log(`Uppercase: ${upper.unwrap()}`);
         
         const lower = str.to_lowercase();
         log(`Lowercase: ${lower.unwrap()}`);
         
-        // Test method chaining
         const trimmedUpper = new wasm.Str("  hello, world!  ")
           .to_uppercase()
           .trim();
@@ -74,7 +71,6 @@
       }
     }
     
-    // Run the test
     init();
   </script>
 </body>

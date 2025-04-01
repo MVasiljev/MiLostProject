@@ -1,5 +1,19 @@
 import { HashMap, HashSet, Vec, Str, u32 } from "../types";
 import { Iter } from "./iter";
+import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import { ValidationError } from "../core/error";
+
+export async function initFunctional(): Promise<void> {
+  if (!isWasmInitialized()) {
+    try {
+      await initWasm();
+    } catch (error) {
+      console.warn(
+        `WASM module not available, using JS implementation: ${error}`
+      );
+    }
+  }
+}
 
 export function toHashMap<T, K, V>(
   iterator: Iter<T>,
@@ -52,11 +66,47 @@ export function filterObject<T, K extends Str>(
   return result;
 }
 
-export function mergeDeep<T>(target: T, ...sources: Partial<T>[]): T {
+export function mergeDeep<T extends object>(
+  target: T,
+  ...sources: Partial<T>[]
+): T {
   if (!sources.length) return target;
   const source = sources.shift();
 
   if (source === undefined) return target;
+
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      if (
+        wasmModule.isMergeableObjectRust(target) &&
+        wasmModule.isMergeableObjectRust(source)
+      ) {
+        Object.keys(source).forEach((key) => {
+          if (
+            wasmModule.isMergeableObjectRust(source[key as keyof typeof source])
+          ) {
+            if (!target[key as keyof typeof target]) {
+              Object.assign(target, { [key]: {} });
+            }
+            if (source[key as keyof typeof source] !== undefined) {
+              mergeDeep(
+                target[key as keyof typeof target] as object,
+                source[key as keyof typeof source]!
+              );
+            }
+          } else {
+            Object.assign(target, {
+              [key]: source[key as keyof typeof source],
+            });
+          }
+        });
+      }
+      return mergeDeep(target, ...sources);
+    } catch (err) {
+      console.warn(`WASM mergeDeep failed, using JS fallback: ${err}`);
+    }
+  }
 
   if (isMergeableObject(target) && isMergeableObject(source)) {
     Object.keys(source).forEach((key) => {
@@ -66,7 +116,7 @@ export function mergeDeep<T>(target: T, ...sources: Partial<T>[]): T {
         }
         if (source[key as keyof typeof source] !== undefined) {
           mergeDeep(
-            target[key as keyof typeof target],
+            target[key as keyof typeof target] as object,
             source[key as keyof typeof source]!
           );
         }
@@ -125,18 +175,41 @@ export function memoize<Args extends unknown[], Return>(
   fn: (...args: Args) => Return,
   keyFn?: (...args: Args) => Str
 ): (...args: Args) => Return {
-  const cache = HashMap.empty<Str, Return>();
+  const cache = new Map<string, Return>();
 
   return (...args: Args): Return => {
-    const key = keyFn ? keyFn(...args) : Str.fromRaw(JSON.stringify(args));
+    let cacheKey: string;
 
-    const cached = cache.get(key);
-    if (cached !== undefined) {
-      return cached;
+    if (isWasmInitialized()) {
+      try {
+        const wasmModule = getWasmModule();
+        if (keyFn) {
+          cacheKey = keyFn(...args).unwrap();
+        } else {
+          cacheKey = wasmModule.createCacheKeyRust(args);
+        }
+
+        if (wasmModule.mapHasRust(cache, cacheKey)) {
+          return wasmModule.mapGetRust(cache, cacheKey) as Return;
+        }
+
+        const result = fn(...args);
+
+        wasmModule.mapSetRust(cache, cacheKey, result as any);
+        return result;
+      } catch (err) {
+        console.warn(`WASM memoize helpers failed, using JS fallback: ${err}`);
+      }
+    }
+
+    cacheKey = keyFn ? keyFn(...args).unwrap() : JSON.stringify(args);
+
+    if (cache.has(cacheKey)) {
+      return cache.get(cacheKey)!;
     }
 
     const result = fn(...args);
-    cache.insert(key, result);
+    cache.set(cacheKey, result);
     return result;
   };
 }
@@ -152,7 +225,6 @@ export function once<Args extends unknown[], Return>(
       result = fn(...args);
       called = true;
     }
-
     return result;
   };
 }
@@ -164,10 +236,44 @@ export function throttle<Args extends unknown[]>(
   let lastCall = 0;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let lastArgs: Args | null = null;
+  const waitMs = wait as unknown as number;
+
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+
+      return (...args: Args): void => {
+        const now = Date.now();
+
+        if (wasmModule.shouldThrottleExecuteRust(lastCall, waitMs)) {
+          if (timeout !== null) {
+            clearTimeout(timeout);
+            timeout = null;
+          }
+
+          lastCall = now;
+          fn(...args);
+        } else {
+          lastArgs = args;
+
+          if (timeout === null) {
+            timeout = setTimeout(() => {
+              if (lastArgs !== null) {
+                lastCall = Date.now();
+                fn(...lastArgs);
+              }
+              timeout = null;
+            }, waitMs - (now - lastCall));
+          }
+        }
+      };
+    } catch (err) {
+      console.warn(`WASM throttle helpers failed, using JS fallback: ${err}`);
+    }
+  }
 
   return (...args: Args): void => {
     const now = Date.now();
-    const waitMs = wait as unknown as u32;
 
     if (now - lastCall >= waitMs) {
       if (timeout !== null) {
@@ -207,19 +313,50 @@ export function debounce<Args extends unknown[]>(
     timeout = setTimeout(() => {
       fn(...args);
       timeout = null;
-    }, wait as unknown as u32);
+    }, wait as unknown as number);
   };
 }
 
-export function noop(): void {}
+export function noop(): void {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      wasmModule.noopRust();
+      return;
+    } catch (err) {
+      console.warn(`WASM noop failed, using JS fallback: ${err}`);
+    }
+  }
+}
 
 export function identity<T>(value: T): T {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      return wasmModule.identityRust(value as any) as T;
+    } catch (err) {
+      console.warn(`WASM identity failed, using JS fallback: ${err}`);
+    }
+  }
   return value;
 }
 
 export function not<T>(
   predicate: (value: T) => boolean
 ): (value: T) => boolean {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+
+      return (value: T): boolean => {
+        const result = predicate(value);
+        return wasmModule.notRust(result);
+      };
+    } catch (err) {
+      console.warn(`WASM not helpers failed, using JS fallback: ${err}`);
+    }
+  }
+
   return (value: T) => !predicate(value);
 }
 
@@ -238,6 +375,25 @@ export function anyOf<T>(
 }
 
 export function prop<T, K extends keyof T>(key: K): (obj: T) => T[K] {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+
+      return (obj: T): T[K] => {
+        try {
+          const result = wasmModule.propAccessRust(obj, key);
+          return result as T[K];
+        } catch (err) {
+          throw new ValidationError(
+            Str.fromRaw(`Property access failed for key: ${String(key)}`)
+          );
+        }
+      };
+    } catch (err) {
+      console.warn(`WASM prop helpers failed, using JS fallback: ${err}`);
+    }
+  }
+
   return (obj: T) => obj[key];
 }
 
@@ -253,6 +409,26 @@ export function propEq<T, K extends keyof T, V extends T[K]>(
   key: K,
   value: V
 ): (obj: T) => boolean {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+
+      return (obj: T): boolean => {
+        try {
+          return wasmModule.propEqRust(obj, key, value as any);
+        } catch (err) {
+          throw new ValidationError(
+            Str.fromRaw(
+              `Property equality check failed for key: ${String(key)}`
+            )
+          );
+        }
+      };
+    } catch (err) {
+      console.warn(`WASM propEq helpers failed, using JS fallback: ${err}`);
+    }
+  }
+
   return (obj: T) => obj[key] === value;
 }
 
@@ -289,8 +465,8 @@ export function zipWith<T, U, R>(
 ): Vec<R> {
   const result: R[] = [];
   const minLen = Math.min(
-    as.len() as unknown as u32,
-    bs.len() as unknown as u32
+    as.len() as unknown as number,
+    bs.len() as unknown as number
   );
 
   for (let i = 0; i < minLen; i++) {

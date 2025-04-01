@@ -1,4 +1,16 @@
 import { HashMap, HashSet, Vec, Str, u32 } from "../types";
+import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import { ValidationError } from "../core/error";
+export async function initFunctional() {
+    if (!isWasmInitialized()) {
+        try {
+            await initWasm();
+        }
+        catch (error) {
+            console.warn(`WASM module not available, using JS implementation: ${error}`);
+        }
+    }
+}
 export function toHashMap(iterator, keyValueFn) {
     const pairs = iterator.map(keyValueFn).collect();
     return HashMap.from(pairs);
@@ -34,6 +46,33 @@ export function mergeDeep(target, ...sources) {
     const source = sources.shift();
     if (source === undefined)
         return target;
+    if (isWasmInitialized()) {
+        try {
+            const wasmModule = getWasmModule();
+            if (wasmModule.isMergeableObjectRust(target) &&
+                wasmModule.isMergeableObjectRust(source)) {
+                Object.keys(source).forEach((key) => {
+                    if (wasmModule.isMergeableObjectRust(source[key])) {
+                        if (!target[key]) {
+                            Object.assign(target, { [key]: {} });
+                        }
+                        if (source[key] !== undefined) {
+                            mergeDeep(target[key], source[key]);
+                        }
+                    }
+                    else {
+                        Object.assign(target, {
+                            [key]: source[key],
+                        });
+                    }
+                });
+            }
+            return mergeDeep(target, ...sources);
+        }
+        catch (err) {
+            console.warn(`WASM mergeDeep failed, using JS fallback: ${err}`);
+        }
+    }
     if (isMergeableObject(target) && isMergeableObject(source)) {
         Object.keys(source).forEach((key) => {
             if (isMergeableObject(source[key])) {
@@ -77,15 +116,35 @@ export function curry(fn) {
     };
 }
 export function memoize(fn, keyFn) {
-    const cache = HashMap.empty();
+    const cache = new Map();
     return (...args) => {
-        const key = keyFn ? keyFn(...args) : Str.fromRaw(JSON.stringify(args));
-        const cached = cache.get(key);
-        if (cached !== undefined) {
-            return cached;
+        let cacheKey;
+        if (isWasmInitialized()) {
+            try {
+                const wasmModule = getWasmModule();
+                if (keyFn) {
+                    cacheKey = keyFn(...args).unwrap();
+                }
+                else {
+                    cacheKey = wasmModule.createCacheKeyRust(args);
+                }
+                if (wasmModule.mapHasRust(cache, cacheKey)) {
+                    return wasmModule.mapGetRust(cache, cacheKey);
+                }
+                const result = fn(...args);
+                wasmModule.mapSetRust(cache, cacheKey, result);
+                return result;
+            }
+            catch (err) {
+                console.warn(`WASM memoize helpers failed, using JS fallback: ${err}`);
+            }
+        }
+        cacheKey = keyFn ? keyFn(...args).unwrap() : JSON.stringify(args);
+        if (cache.has(cacheKey)) {
+            return cache.get(cacheKey);
         }
         const result = fn(...args);
-        cache.insert(key, result);
+        cache.set(cacheKey, result);
         return result;
     };
 }
@@ -104,9 +163,40 @@ export function throttle(fn, wait) {
     let lastCall = 0;
     let timeout = null;
     let lastArgs = null;
+    const waitMs = wait;
+    if (isWasmInitialized()) {
+        try {
+            const wasmModule = getWasmModule();
+            return (...args) => {
+                const now = Date.now();
+                if (wasmModule.shouldThrottleExecuteRust(lastCall, waitMs)) {
+                    if (timeout !== null) {
+                        clearTimeout(timeout);
+                        timeout = null;
+                    }
+                    lastCall = now;
+                    fn(...args);
+                }
+                else {
+                    lastArgs = args;
+                    if (timeout === null) {
+                        timeout = setTimeout(() => {
+                            if (lastArgs !== null) {
+                                lastCall = Date.now();
+                                fn(...lastArgs);
+                            }
+                            timeout = null;
+                        }, waitMs - (now - lastCall));
+                    }
+                }
+            };
+        }
+        catch (err) {
+            console.warn(`WASM throttle helpers failed, using JS fallback: ${err}`);
+        }
+    }
     return (...args) => {
         const now = Date.now();
-        const waitMs = wait;
         if (now - lastCall >= waitMs) {
             if (timeout !== null) {
                 clearTimeout(timeout);
@@ -141,11 +231,43 @@ export function debounce(fn, wait) {
         }, wait);
     };
 }
-export function noop() { }
+export function noop() {
+    if (isWasmInitialized()) {
+        try {
+            const wasmModule = getWasmModule();
+            wasmModule.noopRust();
+            return;
+        }
+        catch (err) {
+            console.warn(`WASM noop failed, using JS fallback: ${err}`);
+        }
+    }
+}
 export function identity(value) {
+    if (isWasmInitialized()) {
+        try {
+            const wasmModule = getWasmModule();
+            return wasmModule.identityRust(value);
+        }
+        catch (err) {
+            console.warn(`WASM identity failed, using JS fallback: ${err}`);
+        }
+    }
     return value;
 }
 export function not(predicate) {
+    if (isWasmInitialized()) {
+        try {
+            const wasmModule = getWasmModule();
+            return (value) => {
+                const result = predicate(value);
+                return wasmModule.notRust(result);
+            };
+        }
+        catch (err) {
+            console.warn(`WASM not helpers failed, using JS fallback: ${err}`);
+        }
+    }
     return (value) => !predicate(value);
 }
 export function allOf(...predicates) {
@@ -155,6 +277,23 @@ export function anyOf(...predicates) {
     return (value) => Vec.from(predicates).any((predicate) => predicate(value));
 }
 export function prop(key) {
+    if (isWasmInitialized()) {
+        try {
+            const wasmModule = getWasmModule();
+            return (obj) => {
+                try {
+                    const result = wasmModule.propAccessRust(obj, key);
+                    return result;
+                }
+                catch (err) {
+                    throw new ValidationError(Str.fromRaw(`Property access failed for key: ${String(key)}`));
+                }
+            };
+        }
+        catch (err) {
+            console.warn(`WASM prop helpers failed, using JS fallback: ${err}`);
+        }
+    }
     return (obj) => obj[key];
 }
 export function hasProp(key) {
@@ -163,6 +302,22 @@ export function hasProp(key) {
     };
 }
 export function propEq(key, value) {
+    if (isWasmInitialized()) {
+        try {
+            const wasmModule = getWasmModule();
+            return (obj) => {
+                try {
+                    return wasmModule.propEqRust(obj, key, value);
+                }
+                catch (err) {
+                    throw new ValidationError(Str.fromRaw(`Property equality check failed for key: ${String(key)}`));
+                }
+            };
+        }
+        catch (err) {
+            console.warn(`WASM propEq helpers failed, using JS fallback: ${err}`);
+        }
+    }
     return (obj) => obj[key] === value;
 }
 export function partial(fn, ...partialArgs) {

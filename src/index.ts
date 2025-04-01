@@ -19,6 +19,17 @@ export {
   TextBuilder,
   ButtonBuilder,
 } from "./ui/ui.js";
+export {
+  AppError,
+  ValidationError,
+  NetworkError,
+  UnauthorizedError,
+  AuthenticationError,
+  NotFoundError,
+  ForbiddenError,
+  DatabaseError,
+} from "./core/error.js";
 
-// Initialize WASM when the module is imported
+export { RefMut, Ref } from "./borrow";
+
 initWasm().catch(console.error);

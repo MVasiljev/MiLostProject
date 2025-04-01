@@ -12,8 +12,8 @@ export declare class AuthenticationError extends AppError {
     constructor(message: Str);
 }
 export declare class NotFoundError extends AppError {
-    resourceType?: Str | undefined;
-    constructor(message: Str, resourceType?: Str | undefined);
+    resourceType?: Str;
+    constructor(message: Str, resourceType?: Str);
 }
 export declare class UnauthorizedError extends AppError {
     constructor(message: Str);
@@ -38,8 +38,9 @@ export declare namespace DomainErrors {
         constructor(message: Str);
     }
     class RateLimitError extends AppError {
-        retryAfterSeconds?: u32 | undefined;
-        constructor(message: Str, retryAfterSeconds?: u32 | undefined);
+        retryAfterSeconds?: u32;
+        constructor(message: Str, retryAfterSeconds?: u32);
     }
 }
 export declare function createErrorFactory<T extends AppError>(ErrorClass: new (message: Str, ...args: any[]) => T, defaultMessage?: Str): (customMessage?: Str, ...args: any[]) => T;
+export declare function initErrors(): Promise<void>;

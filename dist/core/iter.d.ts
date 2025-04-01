@@ -2,12 +2,15 @@ import { Vec, i32, Str, u32 } from "../types";
 import { Option } from "../core/option";
 export declare class Iter<T> implements Iterable<T> {
     private readonly iterable;
+    private readonly _inner;
+    private readonly _useWasm;
     static readonly _type = "Iter";
     private constructor();
     static from<T>(iterable: Iterable<T>): Iter<T>;
     static fromVec<T>(vec: Vec<T>): Iter<T>;
     static empty<T>(): Iter<T>;
     static range(start: i32, end: i32, step?: i32): Iter<i32>;
+    static init(): Promise<void>;
     [Symbol.iterator](): Iterator<T>;
     next(): Option<T>;
     map<U>(f: (item: T, index: u32) => U): Iter<U>;

@@ -1,14 +1,30 @@
 import { Vec, i32, Str, u32 } from "../types";
 import { ValidationError } from "./error";
 import { Option } from "../core/option";
+import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
 
 export class Iter<T> implements Iterable<T> {
   private readonly iterable: Iterable<T>;
+  private readonly _inner: any;
+  private readonly _useWasm: boolean;
 
   static readonly _type = "Iter";
 
   private constructor(iterable: Iterable<T>) {
     this.iterable = iterable;
+    this._useWasm = isWasmInitialized();
+
+    if (this._useWasm) {
+      try {
+        const wasmModule = getWasmModule();
+        this._inner = new wasmModule.Iter(iterable);
+      } catch (err) {
+        console.warn(
+          `WASM Iter creation failed, using JS implementation: ${err}`
+        );
+        this._useWasm = false;
+      }
+    }
   }
 
   static from<T>(iterable: Iterable<T>): Iter<T> {
@@ -28,7 +44,14 @@ export class Iter<T> implements Iterable<T> {
     const endNum = end as unknown as number;
     const stepNum = step as unknown as number;
 
-    if (stepNum === 0) {
+    if (isWasmInitialized()) {
+      try {
+        const wasmModule = getWasmModule();
+        wasmModule.checkIterableRange(startNum, endNum, stepNum);
+      } catch (err) {
+        throw new ValidationError(Str.fromRaw("Step cannot be zero"));
+      }
+    } else if (stepNum === 0) {
       throw new ValidationError(Str.fromRaw("Step cannot be zero"));
     }
 
@@ -45,11 +68,36 @@ export class Iter<T> implements Iterable<T> {
     });
   }
 
+  static async init(): Promise<void> {
+    if (!isWasmInitialized()) {
+      try {
+        await initWasm();
+      } catch (error) {
+        console.warn(
+          `WASM module not available, using JS implementation: ${error}`
+        );
+      }
+    }
+  }
+
   [Symbol.iterator](): Iterator<T> {
     return this.iterable[Symbol.iterator]();
   }
 
   next(): Option<T> {
+    if (this._useWasm) {
+      try {
+        const result = this._inner.next();
+        if (result.isSome()) {
+          return Option.Some(result.unwrap() as T);
+        } else {
+          return Option.None<T>();
+        }
+      } catch (err) {
+        console.warn(`WASM next failed, using JS fallback: ${err}`);
+      }
+    }
+
     const iter = this[Symbol.iterator]();
     const { done, value } = iter.next();
     return done ? Option.None() : Option.Some(value);
@@ -201,7 +249,7 @@ export class Iter<T> implements Iterable<T> {
 
   nth(n: u32): Option<T> {
     let i = 0;
-    const nValue = n as u32;
+    const nValue = n as unknown as number;
     for (const item of this) {
       if (i++ === nValue) return Option.Some(item);
     }
@@ -230,6 +278,14 @@ export class Iter<T> implements Iterable<T> {
   }
 
   count(): u32 {
+    if (this._useWasm) {
+      try {
+        return u32(this._inner.count());
+      } catch (err) {
+        console.warn(`WASM count failed, using JS fallback: ${err}`);
+      }
+    }
+
     let count = 0;
     for (const _ of this) {
       count++;

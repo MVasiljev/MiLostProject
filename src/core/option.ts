@@ -1,15 +1,35 @@
 import { Str, Vec } from "../types";
 import { ValidationError } from "./error";
+import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
 
 export class Option<T> {
   private readonly _value?: T;
   private readonly _some: boolean;
+  private readonly _inner: any;
+  private readonly _useWasm: boolean;
 
   static readonly _type = "Option";
 
   private constructor(some: boolean, value?: T) {
     this._some = some;
     this._value = value;
+    this._useWasm = isWasmInitialized();
+
+    if (this._useWasm) {
+      try {
+        const wasmModule = getWasmModule();
+        if (some) {
+          this._inner = wasmModule.createSome(value as any);
+        } else {
+          this._inner = wasmModule.createNone();
+        }
+      } catch (err) {
+        console.warn(
+          `WASM Option creation failed, using JS implementation: ${err}`
+        );
+        this._useWasm = false;
+      }
+    }
   }
 
   static Some<T>(value: T): Option<T> {
@@ -31,11 +51,37 @@ export class Option<T> {
       : Option.None<T>();
   }
 
+  static async init(): Promise<void> {
+    if (!isWasmInitialized()) {
+      try {
+        await initWasm();
+      } catch (error) {
+        console.warn(
+          `WASM module not available, using JS implementation: ${error}`
+        );
+      }
+    }
+  }
+
   isSome(): boolean {
+    if (this._useWasm) {
+      try {
+        return this._inner.isSome();
+      } catch (err) {
+        console.warn(`WASM isSome failed, using JS fallback: ${err}`);
+      }
+    }
     return this._some;
   }
 
   isNone(): boolean {
+    if (this._useWasm) {
+      try {
+        return this._inner.isNone();
+      } catch (err) {
+        console.warn(`WASM isNone failed, using JS fallback: ${err}`);
+      }
+    }
     return !this._some;
   }
 
@@ -47,6 +93,14 @@ export class Option<T> {
   }
 
   unwrap(): T {
+    if (this._useWasm) {
+      try {
+        return this._inner.unwrap() as T;
+      } catch (err) {
+        throw new ValidationError(Str.fromRaw("Called unwrap on a None value"));
+      }
+    }
+
     if (this._some && this._value !== undefined) {
       return this._value;
     }
@@ -54,6 +108,13 @@ export class Option<T> {
   }
 
   unwrapOr(defaultValue: T): T {
+    if (this._useWasm) {
+      try {
+        return this._inner.unwrapOr(defaultValue) as T;
+      } catch (err) {
+        console.warn(`WASM unwrapOr failed, using JS fallback: ${err}`);
+      }
+    }
     return this._some && this._value !== undefined ? this._value : defaultValue;
   }
 
@@ -80,12 +141,31 @@ export class Option<T> {
   }
 
   match<U>(onSome: (value: T) => U, onNone: () => U): U {
+    if (this._useWasm) {
+      try {
+        return this._inner.match(
+          (val: T) => onSome(val),
+          () => onNone()
+        ) as U;
+      } catch (err) {
+        console.warn(`WASM match failed, using JS fallback: ${err}`);
+      }
+    }
     return this._some && this._value !== undefined
       ? onSome(this._value)
       : onNone();
   }
 
   filter(predicate: (value: T) => boolean): Option<T> {
+    if (this._useWasm) {
+      try {
+        const result = this._inner.filter((val: T) => predicate(val));
+        return result.isSome() ? this : Option.None<T>();
+      } catch (err) {
+        console.warn(`WASM filter failed, using JS fallback: ${err}`);
+      }
+    }
+
     if (this._some && this._value !== undefined && predicate(this._value)) {
       return this;
     }
@@ -93,6 +173,13 @@ export class Option<T> {
   }
 
   exists(predicate: (value: T) => boolean): boolean {
+    if (this._useWasm) {
+      try {
+        return this._inner.exists((val: T) => predicate(val));
+      } catch (err) {
+        console.warn(`WASM exists failed, using JS fallback: ${err}`);
+      }
+    }
     return this._some && this._value !== undefined && predicate(this._value);
   }
 
@@ -116,6 +203,13 @@ export class Option<T> {
   }
 
   toString(): Str {
+    if (this._useWasm) {
+      try {
+        return Str.fromRaw(this._inner.toString());
+      } catch (err) {
+        console.warn(`WASM toString failed, using JS fallback: ${err}`);
+      }
+    }
     return this._some
       ? Str.fromRaw(`[Some ${this._value}]`)
       : Str.fromRaw("[None]");

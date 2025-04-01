@@ -1,9 +1,26 @@
 import { Str, Vec } from "../types";
 import { ValidationError } from "./error";
+import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
 export class Option {
     constructor(some, value) {
         this._some = some;
         this._value = value;
+        this._useWasm = isWasmInitialized();
+        if (this._useWasm) {
+            try {
+                const wasmModule = getWasmModule();
+                if (some) {
+                    this._inner = wasmModule.createSome(value);
+                }
+                else {
+                    this._inner = wasmModule.createNone();
+                }
+            }
+            catch (err) {
+                console.warn(`WASM Option creation failed, using JS implementation: ${err}`);
+                this._useWasm = false;
+            }
+        }
     }
     static Some(value) {
         if (value === null || value === undefined) {
@@ -19,10 +36,36 @@ export class Option {
             ? Option.Some(value)
             : Option.None();
     }
+    static async init() {
+        if (!isWasmInitialized()) {
+            try {
+                await initWasm();
+            }
+            catch (error) {
+                console.warn(`WASM module not available, using JS implementation: ${error}`);
+            }
+        }
+    }
     isSome() {
+        if (this._useWasm) {
+            try {
+                return this._inner.isSome();
+            }
+            catch (err) {
+                console.warn(`WASM isSome failed, using JS fallback: ${err}`);
+            }
+        }
         return this._some;
     }
     isNone() {
+        if (this._useWasm) {
+            try {
+                return this._inner.isNone();
+            }
+            catch (err) {
+                console.warn(`WASM isNone failed, using JS fallback: ${err}`);
+            }
+        }
         return !this._some;
     }
     expect(message) {
@@ -32,12 +75,28 @@ export class Option {
         throw new ValidationError(message);
     }
     unwrap() {
+        if (this._useWasm) {
+            try {
+                return this._inner.unwrap();
+            }
+            catch (err) {
+                throw new ValidationError(Str.fromRaw("Called unwrap on a None value"));
+            }
+        }
         if (this._some && this._value !== undefined) {
             return this._value;
         }
         throw new ValidationError(Str.fromRaw("Called unwrap on a None value"));
     }
     unwrapOr(defaultValue) {
+        if (this._useWasm) {
+            try {
+                return this._inner.unwrapOr(defaultValue);
+            }
+            catch (err) {
+                console.warn(`WASM unwrapOr failed, using JS fallback: ${err}`);
+            }
+        }
         return this._some && this._value !== undefined ? this._value : defaultValue;
     }
     unwrapOrElse(fn) {
@@ -59,17 +118,42 @@ export class Option {
         return this._some ? this : optb;
     }
     match(onSome, onNone) {
+        if (this._useWasm) {
+            try {
+                return this._inner.match((val) => onSome(val), () => onNone());
+            }
+            catch (err) {
+                console.warn(`WASM match failed, using JS fallback: ${err}`);
+            }
+        }
         return this._some && this._value !== undefined
             ? onSome(this._value)
             : onNone();
     }
     filter(predicate) {
+        if (this._useWasm) {
+            try {
+                const result = this._inner.filter((val) => predicate(val));
+                return result.isSome() ? this : Option.None();
+            }
+            catch (err) {
+                console.warn(`WASM filter failed, using JS fallback: ${err}`);
+            }
+        }
         if (this._some && this._value !== undefined && predicate(this._value)) {
             return this;
         }
         return Option.None();
     }
     exists(predicate) {
+        if (this._useWasm) {
+            try {
+                return this._inner.exists((val) => predicate(val));
+            }
+            catch (err) {
+                console.warn(`WASM exists failed, using JS fallback: ${err}`);
+            }
+        }
         return this._some && this._value !== undefined && predicate(this._value);
     }
     static firstSome(...options) {
@@ -88,6 +172,14 @@ export class Option {
         return Option.Some(Vec.from(values));
     }
     toString() {
+        if (this._useWasm) {
+            try {
+                return Str.fromRaw(this._inner.toString());
+            }
+            catch (err) {
+                console.warn(`WASM toString failed, using JS fallback: ${err}`);
+            }
+        }
         return this._some
             ? Str.fromRaw(`[Some ${this._value}]`)
             : Str.fromRaw("[None]");

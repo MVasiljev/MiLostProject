@@ -1,5 +1,6 @@
 import { HashMap, HashSet, Vec, Str, u32 } from "../types";
 import { Iter } from "./iter";
+export declare function initFunctional(): Promise<void>;
 export declare function toHashMap<T, K, V>(iterator: Iter<T>, keyValueFn: (item: T) => [K, V]): HashMap<K, V>;
 export declare function toHashSet<T>(iterator: Iter<T>): HashSet<T>;
 export declare function toVec<T>(iterator: Iter<T>): Vec<T>;
@@ -8,7 +9,7 @@ export type StrKeyedRecord<V> = {
 };
 export declare function mapObject<T, U, K extends Str>(obj: StrKeyedRecord<T>, fn: (value: T, key: K) => U): StrKeyedRecord<U>;
 export declare function filterObject<T, K extends Str>(obj: StrKeyedRecord<T>, predicate: (value: T, key: K) => boolean): StrKeyedRecord<T>;
-export declare function mergeDeep<T>(target: T, ...sources: Partial<T>[]): T;
+export declare function mergeDeep<T extends object>(target: T, ...sources: Partial<T>[]): T;
 export declare function pipe<T>(...fns: ((arg: T) => T)[]): (arg: T) => T;
 export declare function compose<T>(...fns: ((arg: T) => T)[]): (arg: T) => T;
 export declare function curry<Args extends unknown[], Return>(fn: (...args: Args) => Return): CurriedFunction<Args, Return>;

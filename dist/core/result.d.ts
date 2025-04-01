@@ -1,13 +1,15 @@
 import { AppError } from "./error";
 import { Option } from "../core/option";
 export declare class Result<T, E extends AppError = AppError> {
-    static Result(/* error */ err: AppError): Result<never, AppError>;
     private readonly _value?;
     private readonly _error?;
     private readonly _ok;
+    private readonly _inner;
+    private readonly _useWasm;
     private constructor();
     static Ok<T, E extends AppError = AppError>(value: T): Result<T, E>;
     static Err<T, E extends AppError>(error: E): Result<T, E>;
+    static Result(err: AppError): Result<never, AppError>;
     isOk(): boolean;
     isErr(): boolean;
     isError<F extends AppError>(errorType: {
@@ -39,6 +41,7 @@ export declare class Result<T, E extends AppError = AppError> {
     static fromValidation<T>(value: T, validator: (val: T) => boolean, errorMsg: string): Result<T, AppError>;
     static apiRequest<T>(requestFn: () => Promise<Response>, defaultErrorMsg?: string): Promise<Result<T, AppError>>;
     static all<T, E extends AppError>(results: Result<T, E>[]): Result<T[], E>;
+    static init(): Promise<void>;
 }
 export declare function Ok<T, E extends AppError = AppError>(value: T): Result<T, E>;
 export declare function Err<T, E extends AppError>(error: E): Result<T, E>;

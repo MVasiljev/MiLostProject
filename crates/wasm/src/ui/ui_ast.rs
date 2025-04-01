@@ -41,7 +41,6 @@ pub enum UIComponent {
     }
 }
 
-// VStack Builder
 #[wasm_bindgen]
 pub struct VStackBuilder {
     spacing: Option<f32>,
@@ -111,7 +110,6 @@ impl VStackBuilder {
     }
 }
 
-// HStack Builder
 #[wasm_bindgen]
 pub struct HStackBuilder {
     spacing: Option<f32>,
@@ -181,7 +179,6 @@ impl HStackBuilder {
     }
 }
 
-// Text Builder
 #[wasm_bindgen]
 pub struct TextBuilder {
     content: String,
@@ -237,7 +234,6 @@ impl TextBuilder {
     }
 }
 
-// Button Builder
 #[wasm_bindgen]
 pub struct ButtonBuilder {
     label: String,
@@ -274,7 +270,6 @@ impl ButtonBuilder {
     }
 }
 
-// Original UIParser for backward compatibility
 #[wasm_bindgen]
 pub struct UIParser;
 
