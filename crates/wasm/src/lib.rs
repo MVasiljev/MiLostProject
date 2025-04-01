@@ -10,6 +10,8 @@ mod functional;
 mod ownership;
 mod r#ref;
 mod refmut;
+mod task;
+mod channel;
 
 pub use str::*;
 pub use vec::*;
@@ -23,6 +25,8 @@ pub use functional::*;
 pub use ownership::*;
 pub use r#ref::*;
 pub use refmut::*;
+pub use task::*;
+pub use channel::*;
 
 use wasm_bindgen::prelude::*;
 

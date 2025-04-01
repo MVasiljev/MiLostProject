@@ -1,0 +1,28 @@
+# .htaccess for proper MIME types and CORS
+# Proper MIME types for JavaScript and WASM
+AddType application/javascript .js .mjs
+AddType application/wasm .wasm
+
+# CORS headers
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>
+
+# Performance settings
+<IfModule mod_expires.c>
+    ExpiresActive on
+    ExpiresDefault "access plus 1 month"
+    
+    # Set caching for WASM and JS files
+    ExpiresByType application/wasm "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 month"
+</IfModule>
+
+# Fix for module imports without extensions
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME}.js -f
+    RewriteRule ^(.*)$ $1.js [L]
+</IfModule>

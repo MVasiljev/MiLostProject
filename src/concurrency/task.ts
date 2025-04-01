@@ -1,6 +1,7 @@
-import { Str } from '../types/string.js';
-import { AppError } from '../core/error.js';
-import { Result, Ok, Err } from '../core/result.js';
+import { Str } from "../types/string.js";
+import { AppError } from "../core/error.js";
+import { Result, Ok, Err } from "../core/result.js";
+import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
 
 export class TaskError extends AppError {
   constructor(message: Str) {
@@ -12,11 +13,49 @@ export class Task<T, E extends AppError = AppError> {
   private readonly _promise: Promise<Result<T, E>>;
   private _isCancelled: boolean = false;
   private _controller: AbortController = new AbortController();
+  private _inner: any;
+  private _useWasm: boolean;
 
   static readonly _type = "Task";
 
-  private constructor(promise: Promise<Result<T, E>>) {
+  private constructor(
+    promise: Promise<Result<T, E>>,
+    controller?: AbortController
+  ) {
     this._promise = promise;
+    this._useWasm = isWasmInitialized();
+
+    if (controller) {
+      this._controller = controller;
+    }
+
+    if (this._useWasm) {
+      try {
+        const wasmModule = getWasmModule();
+        this._inner = wasmModule.createTask(promise as any);
+
+        if (controller) {
+          this._inner.setController(controller);
+        }
+      } catch (err) {
+        console.warn(
+          `WASM Task creation failed, using JS implementation: ${err}`
+        );
+        this._useWasm = false;
+      }
+    }
+  }
+
+  static async init(): Promise<void> {
+    if (!isWasmInitialized()) {
+      try {
+        await initWasm();
+      } catch (error) {
+        console.warn(
+          `WASM module not available, using JS implementation: ${error}`
+        );
+      }
+    }
   }
 
   static new<T, E extends AppError = AppError>(
@@ -34,10 +73,9 @@ export class Task<T, E extends AppError = AppError> {
       return Err(new TaskError(Str.fromRaw(String(error))) as unknown as E);
     });
 
-    const task = new Task<T, E>(promise);
-    task._controller = controller;
-    return task;
+    return new Task<T, E>(promise, controller);
   }
+
   static resolve<T, E extends AppError = AppError>(value: T): Task<T, E> {
     return new Task<T, E>(Promise.resolve(Ok(value)));
   }
@@ -64,6 +102,23 @@ export class Task<T, E extends AppError = AppError> {
   }
 
   map<U>(fn: (value: T) => U): Task<U, E> {
+    if (this._useWasm) {
+      try {
+        const wasmModule = getWasmModule();
+
+        const mappedTask = wasmModule.mapTask(this._inner, (result: any) => {
+          if (result.isOk()) {
+            return Ok(fn(result.unwrap()));
+          }
+          return result;
+        });
+
+        return new Task<U, E>(mappedTask.run() as Promise<Result<U, E>>);
+      } catch (err) {
+        console.warn(`WASM map failed, using JS fallback: ${err}`);
+      }
+    }
+
     return new Task<U, E>(
       this._promise.then((result) =>
         result.isOk()
@@ -74,6 +129,26 @@ export class Task<T, E extends AppError = AppError> {
   }
 
   flatMap<U>(fn: (value: T) => Task<U, E>): Task<U, E> {
+    if (this._useWasm) {
+      try {
+        const wasmModule = getWasmModule();
+
+        const flatMappedTask = wasmModule.flatMapTask(
+          this._inner,
+          (result: any) => {
+            if (result.isErr()) {
+              return Promise.resolve(result);
+            }
+            return fn(result.unwrap())._promise;
+          }
+        );
+
+        return new Task<U, E>(flatMappedTask.run() as Promise<Result<U, E>>);
+      } catch (err) {
+        console.warn(`WASM flatMap failed, using JS fallback: ${err}`);
+      }
+    }
+
     return new Task<U, E>(
       this._promise.then((result) => {
         if (result.isErr()) {
@@ -85,6 +160,23 @@ export class Task<T, E extends AppError = AppError> {
   }
 
   catch<F extends AppError>(fn: (error: E) => Result<T, F>): Task<T, F> {
+    if (this._useWasm) {
+      try {
+        const wasmModule = getWasmModule();
+
+        const catchTask = wasmModule.catchTask(this._inner, (result: any) => {
+          if (result.isErr()) {
+            return fn(result.getError());
+          }
+          return result;
+        });
+
+        return new Task<T, F>(catchTask.run() as Promise<Result<T, F>>);
+      } catch (err) {
+        console.warn(`WASM catch failed, using JS fallback: ${err}`);
+      }
+    }
+
     return new Task<T, F>(
       this._promise.then((result) => {
         if (result.isErr()) {
@@ -96,10 +188,27 @@ export class Task<T, E extends AppError = AppError> {
   }
 
   async run(): Promise<Result<T, E>> {
+    if (this._useWasm) {
+      try {
+        return (await this._inner.run()) as Promise<Result<T, E>>;
+      } catch (err) {
+        console.warn(`WASM run failed, using JS fallback: ${err}`);
+      }
+    }
     return this._promise;
   }
 
   cancel(): void {
+    if (this._useWasm) {
+      try {
+        this._inner.cancel();
+        this._isCancelled = true;
+        return;
+      } catch (err) {
+        console.warn(`WASM cancel failed, using JS fallback: ${err}`);
+      }
+    }
+
     if (!this._isCancelled) {
       this._isCancelled = true;
       this._controller.abort();
@@ -107,10 +216,24 @@ export class Task<T, E extends AppError = AppError> {
   }
 
   get isCancelled(): boolean {
+    if (this._useWasm) {
+      try {
+        return this._inner.isCancelled();
+      } catch (err) {
+        console.warn(`WASM isCancelled failed, using JS fallback: ${err}`);
+      }
+    }
     return this._isCancelled;
   }
 
   toString(): Str {
+    if (this._useWasm) {
+      try {
+        return Str.fromRaw(this._inner.toString());
+      } catch (err) {
+        console.warn(`WASM toString failed, using JS fallback: ${err}`);
+      }
+    }
     return Str.fromRaw(`[Task ${this._isCancelled ? "cancelled" : "active"}]`);
   }
 
