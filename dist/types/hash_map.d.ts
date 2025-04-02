@@ -3,11 +3,14 @@ import { u32 } from "./primitives";
 import { Str } from "./string";
 export declare class HashMap<K, V> implements Iterable<[K, V]> {
     private readonly _map;
+    private readonly _inner;
+    private readonly _useWasm;
     static readonly _type = "HashMap";
     private constructor();
     static from<K, V>(entries?: Iterable<[K, V]>): HashMap<K, V>;
     static empty<K = never, V = never>(): HashMap<K, V>;
-    get [Symbol.toStringTag](): string;
+    static create<K, V>(entries?: Iterable<[K, V]>): Promise<HashMap<K, V>>;
+    get [Symbol.toStringTag](): Str;
     size(): u32;
     isEmpty(): boolean;
     get(key: K): V | undefined;
@@ -25,5 +28,6 @@ export declare class HashMap<K, V> implements Iterable<[K, V]> {
     find(fn: (value: V, key: K) => boolean): [K, V] | undefined;
     [Symbol.iterator](): Iterator<[K, V]>;
     toJSON(): [K, V][];
+    toArray(): [K, V][];
     toString(): Str;
 }

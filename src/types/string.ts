@@ -1,4 +1,3 @@
-import { ValidationError } from "../core/error.js";
 import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
 
 export class Str {

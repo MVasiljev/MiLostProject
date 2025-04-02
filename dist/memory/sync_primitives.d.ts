@@ -2,9 +2,9 @@ import { Str } from "../types/string";
 import { u32 } from "../types/primitives";
 import { AppError } from "../core/error";
 export declare class Mutex<T> {
-    private state;
-    private locked;
-    static readonly _type = "Mutex";
+    private readonly _inner;
+    private readonly _useWasm;
+    private _state;
     private constructor();
     static new<T>(initialValue: T): Mutex<T>;
     lock(updater: (prev: T) => T | Promise<T>): Promise<void>;
@@ -14,10 +14,9 @@ export declare class Mutex<T> {
     get [Symbol.toStringTag](): Str;
 }
 export declare class RwLock<T> {
-    private state;
-    private readers;
-    private locked;
-    static readonly _type = "RwLock";
+    private readonly _inner;
+    private readonly _useWasm;
+    private _state;
     private constructor();
     static new<T>(initialValue: T): RwLock<T>;
     read(): T;
@@ -29,9 +28,9 @@ export declare class RwLock<T> {
     get [Symbol.toStringTag](): Str;
 }
 export declare class ArcMutex<T> {
-    private sharedState;
-    private locked;
-    static readonly _type = "ArcMutex";
+    private readonly _inner;
+    private readonly _useWasm;
+    private _state;
     private constructor();
     static new<T>(initialValue: T): ArcMutex<T>;
     get(): T;
@@ -45,6 +44,6 @@ export declare class ArcMutex<T> {
     toString(): Str;
     get [Symbol.toStringTag](): Str;
 }
-export declare function createMutex<T>(initialValue: T): Mutex<T>;
-export declare function createRwLock<T>(initialValue: T): RwLock<T>;
-export declare function createArcMutex<T>(initialValue: T): ArcMutex<T>;
+export declare function createMutex<T>(initialValue: T): Promise<Mutex<T>>;
+export declare function createRwLock<T>(initialValue: T): Promise<RwLock<T>>;
+export declare function createArcMutex<T>(initialValue: T): Promise<ArcMutex<T>>;

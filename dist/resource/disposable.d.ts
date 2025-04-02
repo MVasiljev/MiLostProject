@@ -8,12 +8,15 @@ export declare function asResource<T extends IDisposable, E extends AppError = A
 export declare class DisposableGroup implements IDisposable {
     private _disposables;
     private _disposed;
-    private _inner;
-    private _useWasm;
+    private readonly _inner;
+    private readonly _useWasm;
     static readonly _type = "DisposableGroup";
-    constructor();
-    static init(): Promise<void>;
-    add(disposable: IDisposable): this;
+    private constructor();
+    static new(): DisposableGroup;
+    static empty(): DisposableGroup;
+    static create(): Promise<DisposableGroup>;
+    static fromWasmGroup(wasmGroup: any): DisposableGroup;
+    add(disposable: IDisposable): DisposableGroup;
     dispose(): Promise<void>;
     get isDisposed(): boolean;
     get size(): number;

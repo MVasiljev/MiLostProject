@@ -18,7 +18,10 @@ export {
   VStackBuilder,
   TextBuilder,
   ButtonBuilder,
-} from "./ui/ui.js";
+  ZStackBuilder,
+  renderComponent,
+  mountMiLostRenderer,
+} from "./ui/index.js";
 export {
   AppError,
   ValidationError,
@@ -29,6 +32,8 @@ export {
   ForbiddenError,
   DatabaseError,
 } from "./core/error.js";
+export { Result, Ok, Err } from "./core/result.js";
+export { initWasm } from "./wasm/init.js";
 
 export { RefMut, Ref } from "./borrow";
 

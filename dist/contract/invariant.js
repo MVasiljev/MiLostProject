@@ -7,7 +7,6 @@ export class Invariant {
         this._invariantFn = invariant;
         this._errorMsg = errorMessage;
         this._useWasm = isWasmInitialized();
-        // First check with JS implementation to catch errors early
         if (!invariant(value)) {
             throw new ContractError(errorMessage);
         }
@@ -57,7 +56,6 @@ export class Invariant {
         if (this._useWasm) {
             try {
                 const mappedInvariant = this._inner.map(fn, newInvariant, errorMessage?.toString());
-                // We need to wrap the WASM invariant in our TypeScript class
                 return new Invariant(mappedInvariant.get(), newInvariant, errorMessage);
             }
             catch (err) {
@@ -71,7 +69,6 @@ export class Invariant {
                 console.warn(`WASM map failed, using JS fallback: ${err}`);
             }
         }
-        // JS fallback
         const newValue = fn(this._value);
         return Invariant.new(newValue, newInvariant, errorMessage);
     }

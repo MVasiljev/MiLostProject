@@ -8,21 +8,30 @@ export class ResourceError extends AppError {
     }
 }
 export class Resource {
-    constructor(value, dispose) {
+    constructor(value, dispose, useWasm = true, existingWasmResource) {
         this._disposed = false;
         this._value = value;
         this._dispose = dispose;
-        this._useWasm = isWasmInitialized();
-        if (this._useWasm) {
+        this._useWasm = useWasm && isWasmInitialized();
+        if (existingWasmResource) {
+            this._inner = existingWasmResource;
+        }
+        else if (this._useWasm) {
             try {
                 const wasmModule = getWasmModule();
-                this._inner = wasmModule.createResource(value, dispose);
+                this._inner = wasmModule.createManagedResource(value, this._createDisposeFn(dispose));
             }
             catch (err) {
-                console.warn(`WASM Resource creation failed, using JS implementation: ${err}`);
+                console.warn(`WASM Resource creation failed, falling back to JS implementation: ${err}`);
                 this._useWasm = false;
             }
         }
+    }
+    _createDisposeFn(disposeFn) {
+        return function (value) {
+            const result = disposeFn(value);
+            return result instanceof Promise ? result : Promise.resolve();
+        };
     }
     static async init() {
         if (!isWasmInitialized()) {
@@ -36,6 +45,9 @@ export class Resource {
     }
     static new(value, dispose) {
         return new Resource(value, dispose);
+    }
+    static fromWasmResource(value, dispose, wasmResource) {
+        return new Resource(value, dispose, true, wasmResource);
     }
     use(fn) {
         if (this._useWasm) {
@@ -51,7 +63,6 @@ export class Resource {
                     throw new ResourceError(Str.fromRaw(String(err.message)));
                 }
                 console.warn(`WASM use failed, using JS fallback: ${err}`);
-                this._useWasm = false;
             }
         }
         if (this._disposed || this._value === null) {
@@ -62,7 +73,8 @@ export class Resource {
     async useAsync(fn) {
         if (this._useWasm) {
             try {
-                return (await this._inner.useAsync(fn));
+                const result = this._inner.use(fn);
+                return await Promise.resolve(result);
             }
             catch (err) {
                 if (err &&
@@ -73,7 +85,6 @@ export class Resource {
                     throw new ResourceError(Str.fromRaw(String(err.message)));
                 }
                 console.warn(`WASM useAsync failed, using JS fallback: ${err}`);
-                this._useWasm = false;
             }
         }
         if (this._disposed || this._value === null) {
@@ -91,7 +102,6 @@ export class Resource {
             }
             catch (err) {
                 console.warn(`WASM dispose failed, using JS fallback: ${err}`);
-                this._useWasm = false;
             }
         }
         if (!this._disposed && this._value !== null) {
@@ -106,13 +116,10 @@ export class Resource {
     get isDisposed() {
         if (this._useWasm) {
             try {
-                const disposed = this._inner.isDisposed;
-                this._disposed = disposed;
-                return disposed;
+                return this._inner.isDisposed;
             }
             catch (err) {
                 console.warn(`WASM isDisposed failed, using JS fallback: ${err}`);
-                this._useWasm = false;
             }
         }
         return this._disposed;
@@ -124,17 +131,13 @@ export class Resource {
                 if (optionObj &&
                     typeof optionObj === "object" &&
                     "isSome" in optionObj) {
-                    if (optionObj.isSome) {
-                        return Option.Some(optionObj.value);
-                    }
-                    else {
-                        return Option.None();
-                    }
+                    return optionObj.isSome
+                        ? Option.Some(optionObj.value)
+                        : Option.None();
                 }
             }
             catch (err) {
                 console.warn(`WASM valueOrNone failed, using JS fallback: ${err}`);
-                this._useWasm = false;
             }
         }
         return this._disposed || this._value === null
@@ -148,7 +151,6 @@ export class Resource {
             }
             catch (err) {
                 console.warn(`WASM toString failed, using JS fallback: ${err}`);
-                this._useWasm = false;
             }
         }
         return Str.fromRaw(`[Resource ${this._disposed ? "disposed" : "active"}]`);
@@ -159,10 +161,13 @@ export class Resource {
 }
 Resource._type = "Resource";
 export async function withResource(resource, fn) {
-    if (isWasmInitialized() && resource._useWasm) {
+    if (isWasmInitialized()) {
         try {
             const wasmModule = getWasmModule();
-            return await wasmModule.withResource(resource._inner, fn);
+            const innerResource = resource._inner;
+            if (innerResource) {
+                return await wasmModule.withManagedResource(innerResource, fn);
+            }
         }
         catch (err) {
             console.warn(`WASM withResource failed, using JS fallback: ${err}`);

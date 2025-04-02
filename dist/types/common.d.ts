@@ -1,5 +1,5 @@
 import { Vec } from ".";
-import { Result, AppError, identity } from "../core";
+import { Result, AppError } from "../core";
 import { Brand } from "./branding";
 import { u32, i32, f64 } from "./primitives";
 import { Str } from "./string";
@@ -18,10 +18,10 @@ export type DeepReadonly<T> = T extends Vec<infer R> ? Vec<DeepReadonly<R>> : T 
 export type Thunk<T> = () => T;
 export type LoadingState = Str | Str | Str | Str;
 export declare const LoadingStates: {
-    IDLE: Str;
-    LOADING: Str;
-    SUCCEEDED: Str;
-    FAILED: Str;
+    IDLE: any;
+    LOADING: any;
+    SUCCEEDED: any;
+    FAILED: any;
 };
 export type ExtractOption<T> = T extends Option<infer U> ? U : never;
 export type ExtractResult<T> = T extends Result<infer U, any> ? U : never;
@@ -48,21 +48,12 @@ export type Negative = Brand<number, Str>;
 export type NonNegative = Brand<number, Str>;
 export type Percentage = Brand<number, Str>;
 export declare const BrandTypes: {
-    JSON: Str;
-    POSITIVE: Str;
-    NEGATIVE: Str;
-    NON_NEGATIVE: Str;
-    PERCENTAGE: Str;
+    JSON: any;
+    POSITIVE: any;
+    NEGATIVE: any;
+    NON_NEGATIVE: any;
+    PERCENTAGE: any;
 };
 export declare function iterableToVec<T>(iterable: Iterable<T>): Vec<T>;
-export declare const Types: {
-    isDefined: typeof isDefined;
-    isObject: typeof isObject;
-    isVec: typeof isVec;
-    isStr: typeof isStr;
-    isNumeric: typeof isNumeric;
-    isBoolean: typeof isBoolean;
-    isFunction: typeof isFunction;
-    identity: typeof identity;
-    iterableToVec: typeof iterableToVec;
-};
+export declare const Types: any;
+export declare function initCommon(): Promise<void>;

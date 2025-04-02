@@ -1,64 +1,68 @@
 import { u32, Str } from "../types";
 export declare class Rc<T> {
-    private state;
-    static readonly _type = "Rc";
+    private readonly _inner;
+    private readonly _useWasm;
+    private readonly _value;
     private constructor();
     static new<T>(initialValue: T): Rc<T>;
     borrow(): T;
-    borrow_mut(updater: (value: T) => void): void;
+    borrow_mut(updater: (value: T) => T): Rc<T>;
     clone(): Rc<T>;
-    drop(): void;
+    drop(): Rc<T>;
     refCount(): u32;
     toString(): Str;
     get [Symbol.toStringTag](): Str;
 }
 export declare class Weak<T> {
-    private strongRef;
-    private weakRef;
-    static readonly _type = "Weak";
+    private readonly _inner;
+    private readonly _useWasm;
+    private readonly _value;
     private constructor();
     static new<T>(initialValue: T): Weak<T>;
     getOrDefault(defaultValue: T): T;
-    drop(): void;
+    drop(): Weak<T>;
     toString(): Str;
     get [Symbol.toStringTag](): Str;
 }
 export declare class RefCell<T> {
-    private state;
-    static readonly _type = "RefCell";
+    private readonly _inner;
+    private readonly _useWasm;
+    private readonly _value;
     private constructor();
     static new<T>(initialValue: T): RefCell<T>;
     borrow(): T;
-    borrow_mut(updater: (value: T) => void): void;
+    borrow_mut(updater: (value: T) => T): RefCell<T>;
     toString(): Str;
     get [Symbol.toStringTag](): Str;
 }
 export declare class RcRefCell<T> {
-    private state;
-    static readonly _type = "RcRefCell";
+    private readonly _inner;
+    private readonly _useWasm;
+    private readonly _value;
     private constructor();
     static new<T>(initialValue: T): RcRefCell<T>;
     borrow(): T;
-    borrow_mut(updater: (value: T) => void): void;
+    borrow_mut(updater: (value: T) => T): RcRefCell<T>;
     clone(): RcRefCell<T>;
-    drop(): void;
+    drop(): RcRefCell<T>;
     refCount(): u32;
     toString(): Str;
     get [Symbol.toStringTag](): Str;
 }
 export declare class Arc<T> {
-    private sharedState;
-    static readonly _type = "Arc";
+    private readonly _inner;
+    private readonly _useWasm;
+    private readonly _value;
     private constructor();
     static new<T>(initialValue: T): Arc<T>;
     get(): T;
-    set(updater: (prev: T) => T): void;
+    set(updater: (prev: T) => T): Arc<T>;
     clone(): Arc<T>;
     toString(): Str;
     get [Symbol.toStringTag](): Str;
 }
-export declare function createRc<T>(initialValue: T): Rc<T>;
-export declare function createWeak<T>(initialValue: T): Weak<T>;
-export declare function createRefCell<T>(initialValue: T): RefCell<T>;
-export declare function createRcRefCell<T>(initialValue: T): RcRefCell<T>;
-export declare function createArc<T>(initialValue: T): Arc<T>;
+export declare function createRc<T>(initialValue: T): Promise<Rc<T>>;
+export declare function createWeak<T>(initialValue: T): Promise<Weak<T>>;
+export declare function createRefCell<T>(initialValue: T): Promise<RefCell<T>>;
+export declare function createRcRefCell<T>(initialValue: T): Promise<RcRefCell<T>>;
+export declare function createArc<T>(initialValue: T): Promise<Arc<T>>;

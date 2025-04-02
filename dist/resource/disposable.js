@@ -2,39 +2,52 @@ import { Str } from "../types/string.js";
 import { Resource } from "./resource.js";
 import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
 export async function asResource(disposable) {
-    // Ensure WASM is initialized if possible
-    await Resource.init();
+    if (!isWasmInitialized()) {
+        try {
+            await initWasm();
+        }
+        catch (error) {
+            console.warn(`WASM module not available, using JS implementation: ${error}`);
+        }
+    }
     if (isWasmInitialized()) {
         try {
             const wasmModule = getWasmModule();
             const wasmResource = wasmModule.asResource(disposable);
-            // We need to wrap the WASM resource in our TypeScript Resource class
-            return Resource.new(disposable, (d) => d.dispose());
+            return Resource.fromWasmResource(disposable, (d) => d.dispose(), wasmResource);
         }
         catch (err) {
             console.warn(`WASM asResource failed, using JS fallback: ${err}`);
         }
     }
-    // JS fallback
     return Resource.new(disposable, (d) => d.dispose());
 }
 export class DisposableGroup {
-    constructor() {
+    constructor(useWasm = true, existingWasmGroup) {
         this._disposables = [];
         this._disposed = false;
-        this._useWasm = isWasmInitialized();
-        if (this._useWasm) {
+        this._useWasm = useWasm && isWasmInitialized();
+        if (existingWasmGroup) {
+            this._inner = existingWasmGroup;
+        }
+        else if (this._useWasm) {
             try {
                 const wasmModule = getWasmModule();
                 this._inner = wasmModule.createDisposableGroup();
             }
             catch (err) {
-                console.warn(`WASM DisposableGroup creation failed, using JS implementation: ${err}`);
+                console.warn(`WASM DisposableGroup creation failed, falling back to JS implementation: ${err}`);
                 this._useWasm = false;
             }
         }
     }
-    static async init() {
+    static new() {
+        return new DisposableGroup();
+    }
+    static empty() {
+        return DisposableGroup.new();
+    }
+    static async create() {
         if (!isWasmInitialized()) {
             try {
                 await initWasm();
@@ -43,13 +56,19 @@ export class DisposableGroup {
                 console.warn(`WASM module not available, using JS implementation: ${error}`);
             }
         }
+        return new DisposableGroup();
+    }
+    static fromWasmGroup(wasmGroup) {
+        return new DisposableGroup(true, wasmGroup);
     }
     add(disposable) {
         if (this._useWasm) {
             try {
-                this._inner.add(disposable);
-                this._disposables.push(disposable); // Keep JS state in sync
-                return this;
+                const newWasmGroup = this._inner.add(disposable);
+                const newGroup = DisposableGroup.fromWasmGroup(newWasmGroup);
+                newGroup._disposables = [...this._disposables, disposable];
+                newGroup._disposed = this._disposed;
+                return newGroup;
             }
             catch (err) {
                 if (err &&
@@ -59,14 +78,15 @@ export class DisposableGroup {
                     throw new Error("Cannot add to disposed group");
                 }
                 console.warn(`WASM add failed, using JS fallback: ${err}`);
-                this._useWasm = false;
             }
         }
         if (this._disposed) {
             throw new Error("Cannot add to disposed group");
         }
-        this._disposables.push(disposable);
-        return this;
+        const newGroup = new DisposableGroup(false);
+        newGroup._disposables = [...this._disposables, disposable];
+        newGroup._disposed = this._disposed;
+        return newGroup;
     }
     async dispose() {
         if (this._useWasm) {
@@ -78,15 +98,19 @@ export class DisposableGroup {
             }
             catch (err) {
                 console.warn(`WASM dispose failed, using JS fallback: ${err}`);
-                this._useWasm = false;
             }
         }
         if (!this._disposed) {
             this._disposed = true;
             for (let i = this._disposables.length - 1; i >= 0; i--) {
-                const result = this._disposables[i].dispose();
-                if (result instanceof Promise) {
-                    await result;
+                try {
+                    const result = this._disposables[i].dispose();
+                    if (result instanceof Promise) {
+                        await result;
+                    }
+                }
+                catch (err) {
+                    console.error("Error disposing resource:", err);
                 }
             }
             this._disposables = [];
@@ -95,13 +119,10 @@ export class DisposableGroup {
     get isDisposed() {
         if (this._useWasm) {
             try {
-                const disposed = this._inner.isDisposed;
-                this._disposed = disposed; // Keep JS state in sync
-                return disposed;
+                return this._inner.isDisposed;
             }
             catch (err) {
                 console.warn(`WASM isDisposed failed, using JS fallback: ${err}`);
-                this._useWasm = false;
             }
         }
         return this._disposed;
@@ -113,7 +134,6 @@ export class DisposableGroup {
             }
             catch (err) {
                 console.warn(`WASM size failed, using JS fallback: ${err}`);
-                this._useWasm = false;
             }
         }
         return this._disposables.length;
@@ -125,7 +145,6 @@ export class DisposableGroup {
             }
             catch (err) {
                 console.warn(`WASM toString failed, using JS fallback: ${err}`);
-                this._useWasm = false;
             }
         }
         return Str.fromRaw(`[DisposableGroup size=${this._disposables.length} disposed=${this._disposed}]`);

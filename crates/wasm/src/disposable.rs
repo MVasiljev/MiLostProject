@@ -1,6 +1,7 @@
 use wasm_bindgen::prelude::*;
 use js_sys::{Array, Function, Object, Promise, Reflect};
 use std::cell::RefCell;
+use crate::resource::ManagedResource;
 
 #[wasm_bindgen]
 extern "C" {
@@ -12,7 +13,7 @@ extern "C" {
 }
 
 #[wasm_bindgen(js_name = "asResource")]
-pub fn as_resource(disposable: &JsValue) -> Result<JsResource, JsValue> {
+pub fn as_resource(disposable: &JsValue) -> Result<ManagedResource, JsValue> {
     if !Reflect::has(disposable, &"dispose".into())? {
         let error = Object::new();
         Reflect::set(&error, &"message".into(), &"Object must implement IDisposable".into())?;
@@ -21,10 +22,13 @@ pub fn as_resource(disposable: &JsValue) -> Result<JsResource, JsValue> {
 
     let dispose_fn = Function::new_with_args(
         "disposable",
-        "return disposable.dispose();"
+        r#"
+        const result = disposable.dispose();
+        return (result instanceof Promise) ? result : Promise.resolve();
+        "#
     );
 
-    Ok(JsResource::new(disposable.clone(), dispose_fn))
+    Ok(ManagedResource::new(disposable.clone(), dispose_fn))
 }
 
 #[wasm_bindgen]
@@ -57,42 +61,57 @@ impl DisposableGroup {
             return Err(error.into());
         }
 
-        self.disposables.borrow_mut().push(disposable);
+        let mut new_disposables = Vec::new();
+        for item in self.disposables.borrow().iter() {
+            new_disposables.push(item.clone());
+        }
+        new_disposables.push(disposable);
         
-        Ok(DisposableGroup {
-            disposables: self.disposables.clone(),
-            disposed: self.disposed.clone(),
-        })
+        let new_group = DisposableGroup {
+            disposables: RefCell::new(new_disposables),
+            disposed: RefCell::new(*self.disposed.borrow()),
+        };
+        
+        Ok(new_group)
     }
 
     #[wasm_bindgen(js_name = "dispose")]
     pub fn dispose(&self) -> Promise {
         let this = self;
         
-        Promise::new(&mut |resolve, _reject| {
+        Promise::new(&mut |resolve, reject| {
             if !*this.disposed.borrow() {
                 *this.disposed.borrow_mut() = true;
                 
+                let context = Object::new();
+                Reflect::set(&context, &"onComplete".into(), &resolve).unwrap();
+                Reflect::set(&context, &"onError".into(), &reject).unwrap();
+                
                 let process_disposable = Function::new_with_args(
-                    "index, disposables, onComplete",
+                    "index, disposables, context",
                     r#"
                     if (index < 0) {
-                        onComplete();
+                        context.onComplete();
                         return;
                     }
                     
                     const disposable = disposables[index];
-                    const result = disposable.dispose();
-                    
-                    if (result instanceof Promise) {
-                        result.then(() => {
-                            process_disposable(index - 1, disposables, onComplete);
-                        }).catch((err) => {
-                            console.error('Error disposing:', err);
-                            process_disposable(index - 1, disposables, onComplete);
-                        });
-                    } else {
-                        process_disposable(index - 1, disposables, onComplete);
+                    try {
+                        const result = disposable.dispose();
+                        
+                        if (result instanceof Promise) {
+                            result.then(() => {
+                                process_disposable(index - 1, disposables, context);
+                            }).catch((err) => {
+                                console.error('Error disposing:', err);
+                                process_disposable(index - 1, disposables, context);
+                            });
+                        } else {
+                            process_disposable(index - 1, disposables, context);
+                        }
+                    } catch (err) {
+                        console.error('Error during dispose:', err);
+                        process_disposable(index - 1, disposables, context);
                     }
                     "#
                 );
@@ -109,7 +128,7 @@ impl DisposableGroup {
                     &JsValue::null(),
                     &JsValue::from(last_index),
                     &disposables_array,
-                    &resolve
+                    &context
                 ).unwrap();
             } else {
                 resolve.call0(&JsValue::null()).unwrap();

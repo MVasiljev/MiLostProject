@@ -57,14 +57,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "milost-ui"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "milost-wasm"
 version = "0.1.0"
 dependencies = [
  "js-sys",
  "milost-core",
+ "milost-ui",
  "serde",
  "serde_json",
  "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
@@ -210,4 +219,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a05d73b933a847d6cccdda8f838a22ff101ad9bf93e33684f39c1f5f0eece3d"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "web-sys"
+version = "0.3.77"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33b6dd2ef9186f1f2072e409e99cd22a975331a6b3591b12c764e0e55c60d5d2"
+dependencies = [
+ "js-sys",
+ "wasm-bindgen",
 ]

@@ -1,5 +1,6 @@
 use wasm_bindgen::prelude::*;
 
+// mod branding;
 mod str;
 mod vec;
 mod option;
@@ -20,6 +21,14 @@ mod match_builder;
 mod matching;
 mod disposable;
 mod resource;
+mod tuple;
+mod r#struct;
+mod hash_map;
+mod hash_set;
+mod common;
+mod smart_pointers;
+mod sync_primitives;
+mod computed;
 
 pub use str::*;
 pub use vec::*;
@@ -40,9 +49,13 @@ pub use contract::*;
 pub use match_builder::*;
 pub use matching::*;
 pub use disposable::*;
-pub use resource::{
-    ManagedResource,
-    create_managed_resource,
-    with_managed_resource
-};
+pub use resource::*;
+pub use tuple::*;
+pub use r#struct::*;
+pub use hash_map::*;
+pub use hash_set::*;
+pub use common::*;
+pub use smart_pointers::*;
+pub use sync_primitives::*;
+// pub use branding::*;
 

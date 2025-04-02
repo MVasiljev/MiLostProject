@@ -3,11 +3,14 @@ import { u32 } from "./primitives";
 import { Str } from "./string";
 export declare class HashSet<T> implements Iterable<T> {
     private readonly _set;
+    private readonly _inner;
+    private readonly _useWasm;
     static readonly _type = "HashSet";
     private constructor();
     static from<T>(values?: Iterable<T>): HashSet<T>;
     static empty<T = never>(): HashSet<T>;
-    get [Symbol.toStringTag](): string;
+    static create<T>(values?: Iterable<T>): Promise<HashSet<T>>;
+    get [Symbol.toStringTag](): Str;
     size(): u32;
     isEmpty(): boolean;
     contains(value: T): boolean;
@@ -27,5 +30,6 @@ export declare class HashSet<T> implements Iterable<T> {
     find(fn: (value: T) => boolean): T | undefined;
     [Symbol.iterator](): Iterator<T>;
     toJSON(): T[];
+    toArray(): T[];
     toString(): Str;
 }

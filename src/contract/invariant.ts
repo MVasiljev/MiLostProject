@@ -21,7 +21,6 @@ export class Invariant<T> {
     this._errorMsg = errorMessage;
     this._useWasm = isWasmInitialized();
 
-    // First check with JS implementation to catch errors early
     if (!invariant(value)) {
       throw new ContractError(errorMessage);
     }
@@ -96,7 +95,6 @@ export class Invariant<T> {
           errorMessage?.toString()
         );
 
-        // We need to wrap the WASM invariant in our TypeScript class
         return new Invariant<U>(
           mappedInvariant.get() as U,
           newInvariant,
@@ -116,7 +114,6 @@ export class Invariant<T> {
       }
     }
 
-    // JS fallback
     const newValue = fn(this._value);
     return Invariant.new(newValue, newInvariant, errorMessage);
   }

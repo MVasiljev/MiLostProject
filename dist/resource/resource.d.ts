@@ -8,12 +8,14 @@ export declare class Resource<T, E extends AppError = AppError> {
     private _value;
     private _disposed;
     private readonly _dispose;
-    private _inner;
-    private _useWasm;
+    private readonly _inner;
+    private readonly _useWasm;
     static readonly _type = "Resource";
     private constructor();
+    private _createDisposeFn;
     static init(): Promise<void>;
     static new<T, E extends AppError = AppError>(value: T, dispose: (value: T) => Promise<void> | void): Resource<T, E>;
+    static fromWasmResource<T, E extends AppError = AppError>(value: T, dispose: (value: T) => Promise<void> | void, wasmResource: any): Resource<T, E>;
     use<R>(fn: (value: T) => R): R;
     useAsync<R>(fn: (value: T) => Promise<R>): Promise<R>;
     dispose(): Promise<void>;
