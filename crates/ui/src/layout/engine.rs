@@ -1,6 +1,6 @@
 
 use crate::render::node::RenderNode;
-use super::types::{Rect, Size, Alignment};
+use super::{types::{Alignment, Rect, Size}, EdgeInsets};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
@@ -142,6 +142,7 @@ pub struct LayoutEngine {
 }
 
 impl LayoutEngine {
+
     pub fn new() -> Self {
         Self {
             layout_cache: HashMap::new(),
@@ -298,6 +299,25 @@ impl LayoutEngine {
                 x_offset += child_width + spacing;
             }
         }
+    }
+
+    fn get_edge_insets(&self, node: &RenderNode) -> EdgeInsets {
+        if let Some(edge_insets_str) = node.get_prop("edge_insets") {
+            let parts: Vec<&str> = edge_insets_str.split(',').collect();
+            if parts.len() == 4 {
+                let top = parts[0].parse::<f32>().unwrap_or(0.0);
+                let right = parts[1].parse::<f32>().unwrap_or(0.0);
+                let bottom = parts[2].parse::<f32>().unwrap_or(0.0);
+                let left = parts[3].parse::<f32>().unwrap_or(0.0);
+                return EdgeInsets::new(top, right, bottom, left);
+            }
+        }
+        
+        if let Some(padding) = node.get_prop_f32("padding") {
+            return EdgeInsets::all(padding);
+        }
+        
+        EdgeInsets::zero()
     }
     
     fn enhanced_measure_node(&mut self, node: &RenderNode, available_size: Size) -> Size {
@@ -473,62 +493,139 @@ impl LayoutEngine {
     
     
     fn measure_vstack(&mut self, node: &RenderNode, available_size: Size) -> Size {
-        let spacing = node.resolved_props.get("spacing")
-            .and_then(|val| val.parse::<f32>().ok())
-            .unwrap_or(0.0);
+        let spacing = node.get_prop_f32("spacing").unwrap_or(0.0);
+        let equal_spacing = node.get_prop("equal_spacing")
+            .and_then(|val| val.parse::<bool>().ok())
+            .unwrap_or(false);
+            
+        let insets = self.get_edge_insets(node);
         
-        let mut total_height = 0.0;
+        let content_width : f32= available_size.width - insets.left - insets.right;
+        let content_height: f32 = available_size.height - insets.top - insets.bottom;
+        let content_size:Size = Size::new(content_width, content_height);
+        
+        let mut total_height: f32 = 0.0;
         let mut max_width: f32 = 0.0;
+        let mut flex_items: Vec<(usize, f32)> = Vec::new();
+        let mut non_flex_count = 0;
         
         for (i, child) in node.children.iter().enumerate() {
-            let child_size = self.measure_node(child, available_size);
+            let flex_grow = child.get_prop_f32("flex_grow").unwrap_or(0.0);
             
-            total_height += child_size.height;
-            
-            if i < node.children.len() - 1 {
-                total_height += spacing;
+            if flex_grow > 0.0 {
+                flex_items.push((i, flex_grow));
+            } else {
+                let child_size = self.measure_node(child, content_size);
+                total_height += child_size.height;
+                max_width = max_width.max(child_size.width);
+                non_flex_count += 1;
             }
-            
-            max_width = max_width.max(child_size.width);
         }
         
-        Size::new(max_width, total_height)
+        let spacing_count = if equal_spacing {
+            node.children.len().saturating_sub(1) as f32
+        } else {
+            (non_flex_count + flex_items.len()).saturating_sub(1) as f32
+        };
+        
+        let total_spacing = spacing * spacing_count;
+        total_height += total_spacing;
+        
+        let min_width = node.get_prop_f32("min_width").unwrap_or(0.0);
+        let max_width_constraint = node.get_prop_f32("max_width").unwrap_or(f32::MAX);
+        max_width = max_width.max(min_width).min(max_width_constraint);
+        
+        let min_height = node.get_prop_f32("min_height").unwrap_or(0.0);
+        let max_height = node.get_prop_f32("max_height").unwrap_or(f32::MAX);
+        total_height = total_height.max(min_height).min(max_height);
+        
+        Size::new(
+            max_width + insets.left + insets.right,
+            total_height + insets.top + insets.bottom
+        )
     }
     
     fn measure_hstack(&mut self, node: &RenderNode, available_size: Size) -> Size {
-        let spacing = node.resolved_props.get("spacing")
-            .and_then(|val| val.parse::<f32>().ok())
-            .unwrap_or(0.0);
+        let spacing = node.get_prop_f32("spacing").unwrap_or(0.0);
+        let equal_spacing = node.get_prop("equal_spacing")
+            .and_then(|val| val.parse::<bool>().ok())
+            .unwrap_or(false);
+            
+        let insets = self.get_edge_insets(node);
+        
+        let content_width: f32 = available_size.width - insets.left - insets.right;
+        let content_height: f32 = available_size.height - insets.top - insets.bottom;
+        let content_size = Size::new(content_width, content_height);
         
         let mut total_width: f32 = 0.0;
         let mut max_height: f32 = 0.0;
+        let mut flex_items: Vec<(usize, f32)> = Vec::new();
+        let mut non_flex_count = 0;
         
         for (i, child) in node.children.iter().enumerate() {
-            let child_size = self.measure_node(child, available_size);
+            let flex_grow = child.get_prop_f32("flex_grow").unwrap_or(0.0);
             
-            total_width += child_size.width;
-            
-            if i < node.children.len() - 1 {
-                total_width += spacing;
+            if flex_grow > 0.0 {
+                flex_items.push((i, flex_grow));
+            } else {
+                let child_size = self.measure_node(child, content_size);
+                total_width += child_size.width;
+                max_height = max_height.max(child_size.height);
+                non_flex_count += 1;
             }
-            
-            max_height = max_height.max(child_size.height);
         }
         
-        Size::new(total_width, max_height)
+        let spacing_count = if equal_spacing {
+            node.children.len().saturating_sub(1) as f32
+        } else {
+            (non_flex_count + flex_items.len()).saturating_sub(1) as f32
+        };
+        
+        let total_spacing = spacing * spacing_count;
+        total_width += total_spacing;
+        
+        let min_width = node.get_prop_f32("min_width").unwrap_or(0.0);
+        let max_width_constraint = node.get_prop_f32("max_width").unwrap_or(f32::MAX);
+        total_width = total_width.max(min_width).min(max_width_constraint);
+        
+        let min_height = node.get_prop_f32("min_height").unwrap_or(0.0);
+        let max_height_constraint = node.get_prop_f32("max_height").unwrap_or(f32::MAX);
+        max_height = max_height.max(min_height).min(max_height_constraint);
+        
+        Size::new(
+            total_width + insets.left + insets.right,
+            max_height + insets.top + insets.bottom
+        )
     }
     
     fn measure_zstack(&mut self, node: &RenderNode, available_size: Size) -> Size {
+        let insets = self.get_edge_insets(node);
+        
+        let content_width = available_size.width - insets.left - insets.right;
+        let content_height = available_size.height - insets.top - insets.bottom;
+        let content_size = Size::new(content_width, content_height);
+        
         let mut max_width: f32 = 0.0;
         let mut max_height: f32 = 0.0;
         
         for child in &node.children {
-            let child_size = self.measure_node(child, available_size);
+            let child_size = self.measure_node(child, content_size);
             max_width = max_width.max(child_size.width);
             max_height = max_height.max(child_size.height);
         }
         
-        Size::new(max_width, max_height)
+        let min_width = node.get_prop_f32("min_width").unwrap_or(0.0);
+        let max_width_constraint = node.get_prop_f32("max_width").unwrap_or(f32::MAX);
+        max_width = max_width.max(min_width).min(max_width_constraint);
+        
+        let min_height = node.get_prop_f32("min_height").unwrap_or(0.0);
+        let max_height_constraint = node.get_prop_f32("max_height").unwrap_or(f32::MAX);
+        max_height = max_height.max(min_height).min(max_height_constraint);
+        
+        Size::new(
+            max_width + insets.left + insets.right,
+            max_height + insets.top + insets.bottom
+        )
     }
     
     fn measure_text(&mut self, node: &RenderNode, available_size: Size) -> Size {
@@ -596,9 +693,6 @@ impl LayoutEngine {
             .and_then(|val| val.parse::<f32>().ok())
             .unwrap_or(f32::MAX);
         
-        // If in a VStack, the spacer takes width from container but custom height
-        // If in a HStack, the spacer takes height from container but custom width
-        // We need to determine the container type to apply spacing correctly
         let parent_type = node.resolved_props.get("_parent_type")
             .cloned()
             .unwrap_or_else(|| "Unknown".to_string());
@@ -621,7 +715,6 @@ impl LayoutEngine {
                 Size::new(width, available_size.height)
             },
             _ => {
-                // If parent type is unknown or not a stack, use square dimensions
                 let dimension = size.unwrap_or(0.0).max(min_size).min(max_size);
                 Size::new(dimension, dimension)
             }
@@ -637,7 +730,6 @@ impl LayoutEngine {
             .and_then(|val| val.parse::<f32>().ok())
             .unwrap_or(0.0);
         
-        // Add padding to the divider's height
         let total_height = thickness + (padding * 2.0);
         
         Size::new(available_size.width, total_height)
@@ -645,127 +737,277 @@ impl LayoutEngine {
     
     
     fn position_vstack_children(&mut self, node: &RenderNode, frame: Rect) -> () {
-        let spacing = node.resolved_props.get("spacing")
-            .and_then(|val| val.parse::<f32>().ok())
-            .unwrap_or(0.0);
+        let spacing = node.get_prop_f32("spacing").unwrap_or(0.0);
+        let equal_spacing = node.get_prop("equal_spacing")
+            .and_then(|val| val.parse::<bool>().ok())
+            .unwrap_or(false);
+        let insets = self.get_edge_insets(node);
         
-        // First pass: Calculate total fixed height and count flex items
+        let content_frame = Rect::new(
+            frame.x + insets.left,
+            frame.y + insets.top,
+            frame.width - insets.left - insets.right,
+            frame.height - insets.top - insets.bottom
+        );
+        
+        let alignment_str = node.get_prop("alignment").map_or("Leading", |v| v.as_str());
+
+        
         let mut total_fixed_height = 0.0;
         let mut total_flex_grow = 0.0;
         let mut flex_items = Vec::new();
+        let mut fixed_heights = Vec::new();
         
         for (i, child) in node.children.iter().enumerate() {
-            // Mark each child with its parent type for proper sizing
-            if let Some(mut child_layout) = self.layout_cache.get_mut(&child.id) {
-                child_layout.resolved_props.insert("_parent_type".to_string(), "VStack".to_string());
-            }
-            
-            let is_spacer = child.type_name == "Spacer";
-            let flex_grow = if is_spacer {
-                child.resolved_props.get("flex_grow")
-                    .and_then(|val| val.parse::<f32>().ok())
-                    .unwrap_or(if child.resolved_props.get("size").is_none() { 1.0 } else { 0.0 })
-            } else {
-                0.0
-            };
+            let flex_grow = child.get_prop_f32("flex_grow").unwrap_or(0.0);
             
             if flex_grow > 0.0 {
                 total_flex_grow += flex_grow;
                 flex_items.push((i, flex_grow));
             } else if let Some(child_layout) = self.layout_cache.get(&child.id) {
                 total_fixed_height += child_layout.content_size.height;
+                fixed_heights.push((i, child_layout.content_size.height));
             }
         }
         
-        // Add spacing between items
-        if node.children.len() > 1 {
-            total_fixed_height += spacing * (node.children.len() - 1) as f32;
+        let mut total_spacing = 0.0;
+        
+        if equal_spacing && node.children.len() > 1 {
+            let items_count = node.children.len() - 1;
+            let available_space = content_frame.height - total_fixed_height;
+            
+            let flex_space = if total_flex_grow > 0.0 {
+                available_space * 0.5
+            } else {
+                0.0
+            };
+            
+            total_spacing = (available_space - flex_space).max(0.0);
+        } else if node.children.len() > 1 {
+            total_spacing = spacing * (node.children.len() - 1) as f32;
         }
         
-        // Calculate remaining space for flex items
-        let available_flex_height = (frame.height - total_fixed_height).max(0.0);
+        let available_flex_height = (content_frame.height - total_fixed_height - total_spacing).max(0.0);
         
-        // Second pass: Position all children with flex distribution
-        let mut y_offset = frame.y;
+        let mut y_offset = content_frame.y;
+        let equal_space = if equal_spacing && node.children.len() > 1 {
+            total_spacing / (node.children.len() - 1) as f32
+        } else {
+            spacing
+        };
         
         for (i, child) in node.children.iter().enumerate() {
             if let Some(child_layout) = self.layout_cache.get(&child.id) {
                 let mut child_height = child_layout.content_size.height;
+                let child_width = child_layout.content_size.width;
                 
-                // Apply flex growth if this is a flex item
                 if let Some((_, flex_grow)) = flex_items.iter().find(|(idx, _)| *idx == i) {
                     if total_flex_grow > 0.0 {
                         child_height = (available_flex_height * flex_grow / total_flex_grow).max(0.0);
                     }
                 }
                 
+                let x_pos = match alignment_str {
+                    s if s.eq_ignore_ascii_case("leading") => content_frame.x,
+                    s if s.eq_ignore_ascii_case("trailing") => content_frame.x + content_frame.width - child_width,
+                    s if s.eq_ignore_ascii_case("center") => content_frame.x + (content_frame.width - child_width) / 2.0,
+                    _ => content_frame.x
+                };
+                
                 let child_frame = Rect::new(
-                    frame.x,
+                    x_pos,
                     y_offset,
-                    frame.width,
+                    child_width,
                     child_height
                 );
                 
                 self.position_node(child, child_frame);
                 
-                y_offset += child_height + spacing;
+                y_offset += child_height + equal_space;
             }
         }
     }
     
     fn position_hstack_children(&mut self, node: &RenderNode, frame: Rect) -> () {
-        let spacing = node.resolved_props.get("spacing")
-            .and_then(|val| val.parse::<f32>().ok())
-            .unwrap_or(0.0);
+        let spacing = node.get_prop_f32("spacing").unwrap_or(0.0);
+        let equal_spacing = node.get_prop("equal_spacing")
+            .and_then(|val| val.parse::<bool>().ok())
+            .unwrap_or(false);
+        let insets = self.get_edge_insets(node);
         
-        let mut x_offset = frame.x;
+        let content_frame = Rect::new(
+            frame.x + insets.left,
+            frame.y + insets.top,
+            frame.width - insets.left - insets.right,
+            frame.height - insets.top - insets.bottom
+        );
         
-        for child in &node.children {
+        let alignment_str = node.get_prop("alignment").map_or("Center", |v| v.as_str());
+        
+        let mut total_fixed_width = 0.0;
+        let mut total_flex_grow = 0.0;
+        let mut flex_items = Vec::new();
+        let mut fixed_widths = Vec::new();
+        
+        for (i, child) in node.children.iter().enumerate() {
+            let flex_grow = child.get_prop_f32("flex_grow").unwrap_or(0.0);
+            
+            if flex_grow > 0.0 {
+                total_flex_grow += flex_grow;
+                flex_items.push((i, flex_grow));
+            } else if let Some(child_layout) = self.layout_cache.get(&child.id) {
+                total_fixed_width += child_layout.content_size.width;
+                fixed_widths.push((i, child_layout.content_size.width));
+            }
+        }
+        
+        let mut total_spacing = 0.0;
+        
+        if equal_spacing && node.children.len() > 1 {
+            let items_count = node.children.len() - 1;
+            let available_space = content_frame.width - total_fixed_width;
+            
+            let flex_space = if total_flex_grow > 0.0 {
+                available_space * 0.5
+            } else {
+                0.0
+            };
+            
+            total_spacing = (available_space - flex_space).max(0.0);
+        } else if node.children.len() > 1 {
+            total_spacing = spacing * (node.children.len() - 1) as f32;
+        }
+        
+        let available_flex_width = (content_frame.width - total_fixed_width - total_spacing).max(0.0);
+        
+        let mut x_offset = content_frame.x;
+        let equal_space = if equal_spacing && node.children.len() > 1 {
+            total_spacing / (node.children.len() - 1) as f32
+        } else {
+            spacing
+        };
+        
+        for (i, child) in node.children.iter().enumerate() {
             if let Some(child_layout) = self.layout_cache.get(&child.id) {
-                let child_size = child_layout.content_size;
+                let mut child_width = child_layout.content_size.width;
+                let child_height = child_layout.content_size.height;
+                
+                if let Some((_, flex_grow)) = flex_items.iter().find(|(idx, _)| *idx == i) {
+                    if total_flex_grow > 0.0 {
+                        child_width = (available_flex_width * flex_grow / total_flex_grow).max(0.0);
+                    }
+                }
+                
+                let y_pos = match alignment_str {
+                    "Top" => content_frame.y,
+                    "Bottom" => content_frame.y + content_frame.height - child_height,
+                    "Center" => content_frame.y + (content_frame.height - child_height) / 2.0,
+                    _ => content_frame.y + (content_frame.height - child_height) / 2.0
+                };
                 
                 let child_frame = Rect::new(
                     x_offset,
-                    frame.y,
-                    child_size.width,
-                    frame.height
+                    y_pos,
+                    child_width,
+                    child_height
                 );
                 
                 self.position_node(child, child_frame);
                 
-                x_offset += child_size.width + spacing;
+                x_offset += child_width + equal_space;
             }
         }
     }
+
+    fn apply_layout_with_clipping(&self, node: &mut RenderNode) {
+        if let Some(layout) = self.layout_cache.get(&node.id) {
+            node.resolved_props.insert("x".to_string(), layout.frame.x.to_string());
+            node.resolved_props.insert("y".to_string(), layout.frame.y.to_string());
+            node.resolved_props.insert("width".to_string(), layout.frame.width.to_string());
+            node.resolved_props.insert("height".to_string(), layout.frame.height.to_string());
+            
+            if let Some(clip_to_bounds) = node.get_prop("clip_to_bounds") {
+                if clip_to_bounds == "true" {
+                    node.resolved_props.insert("clip_to_bounds".to_string(), "true".to_string());
+                }
+            }
+            
+            for child in &mut node.children {
+                self.apply_layout_with_clipping(child);
+            }
+        }
+    }
+
+    fn parse_edge_insets(insets_str: &str) -> Option<EdgeInsets> {
+        let parts: Vec<&str> = insets_str.split(',').collect();
+        if parts.len() == 4 {
+            let top = parts[0].parse::<f32>().ok()?;
+            let right = parts[1].parse::<f32>().ok()?;
+            let bottom = parts[2].parse::<f32>().ok()?;
+            let left = parts[3].parse::<f32>().ok()?;
+            Some(EdgeInsets::new(top, right, bottom, left))
+        } else {
+            None
+        }
+    }
+
+    pub fn compute_enhanced_layout<'a>(&mut self, node: &'a mut RenderNode, container_size: Size) -> &'a mut RenderNode {
+        self.layout_cache.clear();
+        
+        self.measure_node(node, container_size);
+        
+        self.position_node(node, Rect::from_size(container_size.width, container_size.height));
+        
+        self.apply_layout_with_clipping(node);
+        
+        node
+    }
     
     fn position_zstack_children(&mut self, node: &RenderNode, frame: Rect) -> () {
+        let insets = self.get_edge_insets(node);
+        
+        let content_frame = Rect::new(
+            frame.x + insets.left,
+            frame.y + insets.top,
+            frame.width - insets.left - insets.right,
+            frame.height - insets.top - insets.bottom
+        );
+        
+        let alignment_str = node.get_prop("alignment").map_or("Center", |v| v.as_str());
+
+        
+        let alignment = match alignment_str {
+            "TopLeading" => Alignment::TopLeading,
+            "Top" => Alignment::Top,
+            "TopTrailing" => Alignment::TopTrailing,
+            "Leading" => Alignment::Leading,
+            "Trailing" => Alignment::Trailing,
+            "BottomLeading" => Alignment::BottomLeading,
+            "Bottom" => Alignment::Bottom,
+            "BottomTrailing" => Alignment::BottomTrailing,
+            _ => Alignment::Center,
+        };
+        
         for child in &node.children {
             if let Some(child_layout) = self.layout_cache.get(&child.id) {
                 let child_size = child_layout.content_size;
                 
-                let alignment = if let Some(info) = self.layout_cache.get(&node.id) {
-                    info.alignment.unwrap_or(Alignment::Center)
-                } else {
-                    Alignment::Center
-                };
-                
                 let (x, y) = match alignment {
-                    Alignment::TopLeading => (frame.x, frame.y),
-                    Alignment::Top => (frame.x + (frame.width - child_size.width) / 2.0, frame.y),
-                    Alignment::TopTrailing => (frame.right() - child_size.width, frame.y),
-                    Alignment::Leading => (frame.x, frame.y + (frame.height - child_size.height) / 2.0),
+                    Alignment::TopLeading => (content_frame.x, content_frame.y),
+                    Alignment::Top => (content_frame.x + (content_frame.width - child_size.width) / 2.0, content_frame.y),
+                    Alignment::TopTrailing => (content_frame.x + content_frame.width - child_size.width, content_frame.y),
+                    Alignment::Leading => (content_frame.x, content_frame.y + (content_frame.height - child_size.height) / 2.0),
                     Alignment::Center => (
-                        frame.x + (frame.width - child_size.width) / 2.0,
-                        frame.y + (frame.height - child_size.height) / 2.0
+                        content_frame.x + (content_frame.width - child_size.width) / 2.0,
+                        content_frame.y + (content_frame.height - child_size.height) / 2.0
                     ),
-                    Alignment::Trailing => (frame.right() - child_size.width, frame.y + (frame.height - child_size.height) / 2.0),
-                    Alignment::BottomLeading => (frame.x, frame.bottom() - child_size.height),
-                    Alignment::Bottom => (frame.x + (frame.width - child_size.width) / 2.0, frame.bottom() - child_size.height),
-                    Alignment::BottomTrailing => (frame.right() - child_size.width, frame.bottom() - child_size.height),
+                    Alignment::Trailing => (content_frame.x + content_frame.width - child_size.width, content_frame.y + (content_frame.height - child_size.height) / 2.0),
+                    Alignment::BottomLeading => (content_frame.x, content_frame.y + content_frame.height - child_size.height),
+                    Alignment::Bottom => (content_frame.x + (content_frame.width - child_size.width) / 2.0, content_frame.y + content_frame.height - child_size.height),
+                    Alignment::BottomTrailing => (content_frame.x + content_frame.width - child_size.width, content_frame.y + content_frame.height - child_size.height),
                 };
                 
                 let child_frame = Rect::new(x, y, child_size.width, child_size.height);
-                
                 self.position_node(child, child_frame);
             }
         }

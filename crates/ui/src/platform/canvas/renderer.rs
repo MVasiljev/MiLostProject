@@ -1,7 +1,7 @@
 
 use crate::render::node::RenderNode;
 use crate::layout::Rect;
-use crate::UIComponent;
+use crate::{EdgeInsets, UIComponent};
 
 pub trait DrawingContext {
     fn set_fill_color(&self, color: &str) -> Result<(), String>;
@@ -86,7 +86,278 @@ impl<T: DrawingContext> CanvasRenderer<T> {
         
         Ok(())
     }
+
+    fn draw_node_with_clipping(&self, node: &RenderNode) -> Result<(), String> {
+        let x = node.get_prop_f32("x").unwrap_or(0.0);
+        let y = node.get_prop_f32("y").unwrap_or(0.0);
+        let width = node.get_prop_f32("width").unwrap_or(0.0);
+        let height = node.get_prop_f32("height").unwrap_or(0.0);
+        
+        let frame = Rect::new(x, y, width, height);
+        
+        // Check if this node should clip its contents
+        let should_clip = node.get_prop("clip_to_bounds")
+            .map(|v| v == "true")
+            .unwrap_or(false);
+        
+        if should_clip {
+            self.context.save_drawing_state()?;
+            
+            // Create clipping region
+            self.context.begin_path()?;
+            self.context.rect(frame.x, frame.y, frame.width, frame.height)?;
+            self.context.clip()?;
+        }
+        
+        // Draw the current node
+        match node.type_name.as_str() {
+            "VStack" => self.draw_vstack_enhanced(node, frame)?,
+            "HStack" => self.draw_hstack_enhanced(node, frame)?,
+            "ZStack" => self.draw_zstack_enhanced(node, frame)?,
+            "Text" => self.draw_text(node, frame)?,
+            "Button" => self.draw_button(node, frame)?,
+            "Image" => self.draw_image(node, frame)?,
+            "Divider" => self.draw_divider(node, frame)?,
+            "Spacer" => {},
+            _ => {},
+        }
+        
+        // Draw all children
+        for child in &node.children {
+            self.draw_node_with_clipping(child)?;
+        }
+        
+        // Restore context if we clipped
+        if should_clip {
+            self.context.restore_drawing_state()?;
+        }
+        
+        Ok(())
+    }
+
+    fn draw_vstack_enhanced(&self, node: &RenderNode, frame: Rect) -> Result<(), String> {
+        // Get edge insets
+        let insets = self.parse_edge_insets_from_node(node);
+        
+        // Draw background if provided
+        if let Some(bg_str) = node.get_prop("background") {
+            let color = self.parse_color(bg_str);
+            self.context.set_fill_color(&color)?;
+            
+            // If we have corner radius, draw rounded rectangle
+            if let Some(corner_radius) = node.get_prop_f32("corner_radius") {
+                if corner_radius > 0.0 {
+                    self.draw_rounded_rect(frame.x, frame.y, frame.width, frame.height, corner_radius)?;
+                    self.context.fill()?;
+                } else {
+                    self.context.fill_rect(frame.x, frame.y, frame.width, frame.height)?;
+                }
+            } else {
+                self.context.fill_rect(frame.x, frame.y, frame.width, frame.height)?;
+            }
+        }
+        
+        // Draw border if specified
+        if let Some(border_width) = node.get_prop_f32("border_width") {
+            if border_width > 0.0 {
+                let border_color = node.get_prop("border_color")
+                    .map(|c| self.parse_color(c))
+                    .unwrap_or_else(|| "#000000".to_string());
+                
+                self.context.set_stroke_color(&border_color)?;
+                self.context.set_line_width(border_width)?;
+                
+                // If we have corner radius, draw rounded rectangle
+                if let Some(corner_radius) = node.get_prop_f32("corner_radius") {
+                    if corner_radius > 0.0 {
+                        self.draw_rounded_rect(
+                            frame.x + border_width / 2.0,
+                            frame.y + border_width / 2.0,
+                            frame.width - border_width,
+                            frame.height - border_width,
+                            corner_radius
+                        )?;
+                        self.context.stroke()?;
+                    } else {
+                        self.context.stroke_rect(frame.x, frame.y, frame.width, frame.height)?;
+                    }
+                } else {
+                    self.context.stroke_rect(frame.x, frame.y, frame.width, frame.height)?;
+                }
+            }
+        }
+        
+        Ok(())
+    }
     
+    fn draw_hstack_enhanced(&self, node: &RenderNode, frame: Rect) -> Result<(), String> {
+        // Implementation similar to draw_vstack_enhanced
+        // Get edge insets
+        let insets = self.parse_edge_insets_from_node(node);
+        
+        // Draw background if provided
+        if let Some(bg_str) = node.get_prop("background") {
+            let color = self.parse_color(bg_str);
+            self.context.set_fill_color(&color)?;
+            
+            // If we have corner radius, draw rounded rectangle
+            if let Some(corner_radius) = node.get_prop_f32("corner_radius") {
+                if corner_radius > 0.0 {
+                    self.draw_rounded_rect(frame.x, frame.y, frame.width, frame.height, corner_radius)?;
+                    self.context.fill()?;
+                } else {
+                    self.context.fill_rect(frame.x, frame.y, frame.width, frame.height)?;
+                }
+            } else {
+                self.context.fill_rect(frame.x, frame.y, frame.width, frame.height)?;
+            }
+        }
+        
+        // Draw border if specified
+        if let Some(border_width) = node.get_prop_f32("border_width") {
+            if border_width > 0.0 {
+                let border_color = node.get_prop("border_color")
+                    .map(|c| self.parse_color(c))
+                    .unwrap_or_else(|| "#000000".to_string());
+                
+                self.context.set_stroke_color(&border_color)?;
+                self.context.set_line_width(border_width)?;
+                
+                // If we have corner radius, draw rounded rectangle
+                if let Some(corner_radius) = node.get_prop_f32("corner_radius") {
+                    if corner_radius > 0.0 {
+                        self.draw_rounded_rect(
+                            frame.x + border_width / 2.0,
+                            frame.y + border_width / 2.0,
+                            frame.width - border_width,
+                            frame.height - border_width,
+                            corner_radius
+                        )?;
+                        self.context.stroke()?;
+                    } else {
+                        self.context.stroke_rect(frame.x, frame.y, frame.width, frame.height)?;
+                    }
+                } else {
+                    self.context.stroke_rect(frame.x, frame.y, frame.width, frame.height)?;
+                }
+            }
+        }
+        
+        Ok(())
+    }
+
+    fn draw_zstack_enhanced(&self, node: &RenderNode, frame: Rect) -> Result<(), String> {
+        // Similar implementation as the other stacks
+        // Get edge insets
+        let insets = self.parse_edge_insets_from_node(node);
+        
+        // Draw background if provided
+        if let Some(bg_str) = node.get_prop("background") {
+            let color = self.parse_color(bg_str);
+            self.context.set_fill_color(&color)?;
+            
+            // If we have corner radius, draw rounded rectangle
+            if let Some(corner_radius) = node.get_prop_f32("corner_radius") {
+                if corner_radius > 0.0 {
+                    self.draw_rounded_rect(frame.x, frame.y, frame.width, frame.height, corner_radius)?;
+                    self.context.fill()?;
+                } else {
+                    self.context.fill_rect(frame.x, frame.y, frame.width, frame.height)?;
+                }
+            } else {
+                self.context.fill_rect(frame.x, frame.y, frame.width, frame.height)?;
+            }
+        }
+        
+        // Draw border if specified
+        if let Some(border_width) = node.get_prop_f32("border_width") {
+            if border_width > 0.0 {
+                let border_color = node.get_prop("border_color")
+                    .map(|c| self.parse_color(c))
+                    .unwrap_or_else(|| "#000000".to_string());
+                
+                self.context.set_stroke_color(&border_color)?;
+                self.context.set_line_width(border_width)?;
+                
+                // If we have corner radius, draw rounded rectangle
+                if let Some(corner_radius) = node.get_prop_f32("corner_radius") {
+                    if corner_radius > 0.0 {
+                        self.draw_rounded_rect(
+                            frame.x + border_width / 2.0,
+                            frame.y + border_width / 2.0,
+                            frame.width - border_width,
+                            frame.height - border_width,
+                            corner_radius
+                        )?;
+                        self.context.stroke()?;
+                    } else {
+                        self.context.stroke_rect(frame.x, frame.y, frame.width, frame.height)?;
+                    }
+                } else {
+                    self.context.stroke_rect(frame.x, frame.y, frame.width, frame.height)?;
+                }
+            }
+        }
+        
+        Ok(())
+    }
+
+    fn draw_rounded_rect(&self, x: f32, y: f32, width: f32, height: f32, radius: f32) -> Result<(), String> {
+        self.context.begin_path()?;
+        
+        let r = radius;
+        
+        // Top-left arc
+        self.context.move_to(x + r, y)?;
+        
+        // Top border and top-right arc
+        self.context.line_to(x + width - r, y)?;
+        self.context.arc(x + width - r, y + r, r, -0.5 * std::f32::consts::PI, 0.0, false)?;
+        
+        // Right border and bottom-right arc
+        self.context.line_to(x + width, y + height - r)?;
+        self.context.arc(x + width - r, y + height - r, r, 0.0, 0.5 * std::f32::consts::PI, false)?;
+        
+        // Bottom border and bottom-left arc
+        self.context.line_to(x + r, y + height)?;
+        self.context.arc(x + r, y + height - r, r, 0.5 * std::f32::consts::PI, std::f32::consts::PI, false)?;
+        
+        // Left border and top-left arc
+        self.context.line_to(x, y + r)?;
+        self.context.arc(x + r, y + r, r, std::f32::consts::PI, 1.5 * std::f32::consts::PI, false)?;
+        
+        self.context.close_path()?;
+        
+        Ok(())
+    }
+
+    fn parse_edge_insets_from_node(&self, node: &RenderNode) -> EdgeInsets {
+        if let Some(insets_str) = node.get_prop("edge_insets") {
+            if let Some(parts) = insets_str.split(',').collect::<Vec<&str>>().get(0..4) {
+                if parts.len() == 4 {
+                    if let (Ok(top), Ok(right), Ok(bottom), Ok(left)) = (
+                        parts[0].parse::<f32>(),
+                        parts[1].parse::<f32>(),
+                        parts[2].parse::<f32>(),
+                        parts[3].parse::<f32>()
+                    ) {
+                        return EdgeInsets::new(top, right, bottom, left);
+                    }
+                }
+            }
+        }
+        
+        // Fallback to using padding as a uniform inset
+        if let Some(padding) = node.get_prop_f32("padding") {
+            EdgeInsets::all(padding)
+        } else {
+            EdgeInsets::zero()
+        }
+    }
+
+    pub fn render_with_clipping(&self, node: &RenderNode) -> Result<(), String> {
+        self.draw_node_with_clipping(node)
+    }
     
     fn draw_vstack(&self, node: &RenderNode, frame: Rect) -> Result<(), String> {
         if let Some(bg_str) = node.get_prop("background") {

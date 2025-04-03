@@ -1,4 +1,4 @@
-use crate::UIComponent;
+use crate::{stack::LayoutPriority, zstack::ZStackAlignment, HStackAlignment, UIComponent, VStackAlignment};
 use super::node::RenderNode;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -91,6 +91,63 @@ pub fn render(component: &UIComponent) -> RenderNode {
                 node.set_prop("background", format!("{:?}", bg));
             }
             
+            if let Some(alignment) = &props.alignment {
+                let alignment_str = match alignment {
+                    VStackAlignment::Leading => "leading",
+                    VStackAlignment::Center => "center",
+                    VStackAlignment::Trailing => "trailing",
+                };
+                
+                node.set_prop("alignment", alignment_str.to_string());
+            }
+            
+            if let Some(edge_insets) = &props.edge_insets {
+                node.set_prop("edge_insets", format!("{},{},{},{}", 
+                    edge_insets.top, edge_insets.right, edge_insets.bottom, edge_insets.left));
+            }
+            
+            if let Some(value) = props.min_width {
+                node.set_prop("min_width", value.to_string());
+            }
+            
+            if let Some(value) = props.ideal_width {
+                node.set_prop("ideal_width", value.to_string());
+            }
+            
+            if let Some(value) = props.max_width {
+                node.set_prop("max_width", value.to_string());
+            }
+            
+            if let Some(value) = props.min_height {
+                node.set_prop("min_height", value.to_string());
+            }
+            
+            if let Some(value) = props.ideal_height {
+                node.set_prop("ideal_height", value.to_string());
+            }
+            
+            if let Some(value) = props.max_height {
+                node.set_prop("max_height", value.to_string());
+            }
+            
+            if let Some(value) = props.clip_to_bounds {
+                node.set_prop("clip_to_bounds", value.to_string());
+            }
+            
+            if let Some(priority) = &props.layout_priority {
+                let priority_str = match priority {
+                    LayoutPriority::Low => "low",
+                    LayoutPriority::Medium => "medium",
+                    LayoutPriority::High => "high",
+                    LayoutPriority::Custom(value) => return node,
+                };
+                node.set_prop("layout_priority", priority_str.to_string());
+            }
+            
+            if let Some(value) = props.equal_spacing {
+                node.set_prop("equal_spacing", value.to_string());
+            }
+            
             for child in &props.children {
                 let child_node = render(child);
                 node.add_child(child_node);
@@ -98,6 +155,7 @@ pub fn render(component: &UIComponent) -> RenderNode {
             
             node
         },
+        
 
         UIComponent::HStack(props) => {
             let mut node = RenderNode::new(&generate_unique_id("hstack"), "HStack");
@@ -114,6 +172,65 @@ pub fn render(component: &UIComponent) -> RenderNode {
                 node.set_prop("background", format!("{:?}", bg));
             }
             
+            if let Some(alignment) = &props.alignment {
+                let alignment_str = match alignment {
+                    HStackAlignment::Top => "top",
+                    HStackAlignment::Center => "center",
+                    HStackAlignment::Bottom => "bottom",
+                    HStackAlignment::FirstTextBaseline => "firsttextbaseline",
+                    HStackAlignment::LastTextBaseline => "lasttextbaseline",
+                };
+                
+                node.set_prop("alignment", alignment_str.to_string());
+            }
+            
+            if let Some(edge_insets) = &props.edge_insets {
+                node.set_prop("edge_insets", format!("{},{},{},{}", 
+                    edge_insets.top, edge_insets.right, edge_insets.bottom, edge_insets.left));
+            }
+            
+            if let Some(value) = props.min_width {
+                node.set_prop("min_width", value.to_string());
+            }
+            
+            if let Some(value) = props.ideal_width {
+                node.set_prop("ideal_width", value.to_string());
+            }
+            
+            if let Some(value) = props.max_width {
+                node.set_prop("max_width", value.to_string());
+            }
+            
+            if let Some(value) = props.min_height {
+                node.set_prop("min_height", value.to_string());
+            }
+            
+            if let Some(value) = props.ideal_height {
+                node.set_prop("ideal_height", value.to_string());
+            }
+            
+            if let Some(value) = props.max_height {
+                node.set_prop("max_height", value.to_string());
+            }
+            
+            if let Some(value) = props.clip_to_bounds {
+                node.set_prop("clip_to_bounds", value.to_string());
+            }
+            
+            if let Some(priority) = &props.layout_priority {
+                let priority_str = match priority {
+                    LayoutPriority::Low => "low",
+                    LayoutPriority::Medium => "medium",
+                    LayoutPriority::High => "high",
+                    LayoutPriority::Custom(value) => return node,
+                };
+                node.set_prop("layout_priority", priority_str.to_string());
+            }
+            
+            if let Some(value) = props.equal_spacing {
+                node.set_prop("equal_spacing", value.to_string());
+            }
+            
             for child in &props.children {
                 let child_node = render(child);
                 node.add_child(child_node);
@@ -126,7 +243,19 @@ pub fn render(component: &UIComponent) -> RenderNode {
             let mut node = RenderNode::new(&generate_unique_id("zstack"), "ZStack");
             
             if let Some(alignment) = &props.alignment {
-                node.set_prop("alignment", alignment.clone());
+                let alignment_str = match alignment {
+                    ZStackAlignment::Center => "center",
+                    ZStackAlignment::TopLeading => "topleading",
+                    ZStackAlignment::Top => "top",
+                    ZStackAlignment::TopTrailing => "toptrailing",
+                    ZStackAlignment::Leading => "leading",
+                    ZStackAlignment::Trailing => "trailing",
+                    ZStackAlignment::BottomLeading => "bottomleading",
+                    ZStackAlignment::Bottom => "bottom",
+                    ZStackAlignment::BottomTrailing => "bottomtrailing",
+                };
+                
+                node.set_prop("alignment", alignment_str.to_string());
             }
             
             for child in &props.children {

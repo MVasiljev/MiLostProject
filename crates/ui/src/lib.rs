@@ -19,7 +19,7 @@ pub use color::Color;
 pub use font::FontStyle;
 pub use text::TextProps;
 pub use button::{ButtonProps, ButtonStyle};
-pub use stack::{VStackProps, HStackProps};
+pub use stack::{VStackProps, HStackProps, VStackAlignment, HStackAlignment};
 pub use component::UIComponent;
 pub use zstack::ZStackProps;
 pub use image::ImageProps;
