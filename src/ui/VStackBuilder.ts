@@ -5,6 +5,25 @@ import { HStackBuilder } from "./HStackBuilder";
 import { ButtonBuilder } from "./ButtonBuilder";
 import { UI } from "./index.js";
 
+export enum StackAlignment {
+  Leading = "leading",
+  Trailing = "trailing",
+  Center = "center",
+}
+
+export enum LayoutPriority {
+  Low = 0,
+  Medium = 1,
+  High = 2,
+}
+
+export interface EdgeInsetsOptions {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
 export class VStackBuilder {
   private _builder: any;
 
@@ -30,6 +49,66 @@ export class VStackBuilder {
 
   background(color: ColorType): VStackBuilder {
     this._builder = this._builder.background(color);
+    return this;
+  }
+
+  alignment(alignment: StackAlignment): VStackBuilder {
+    this._builder = this._builder.alignment(alignment);
+    return this;
+  }
+
+  edgeInsets(insets: EdgeInsetsOptions): VStackBuilder {
+    this._builder = this._builder.edge_insets(
+      insets.top,
+      insets.right,
+      insets.bottom,
+      insets.left
+    );
+    return this;
+  }
+
+  minWidth(value: number): VStackBuilder {
+    this._builder = this._builder.min_width(value);
+    return this;
+  }
+
+  idealWidth(value: number): VStackBuilder {
+    this._builder = this._builder.ideal_width(value);
+    return this;
+  }
+
+  maxWidth(value: number): VStackBuilder {
+    this._builder = this._builder.max_width(value);
+    return this;
+  }
+
+  minHeight(value: number): VStackBuilder {
+    this._builder = this._builder.min_height(value);
+    return this;
+  }
+
+  idealHeight(value: number): VStackBuilder {
+    this._builder = this._builder.ideal_height(value);
+    return this;
+  }
+
+  maxHeight(value: number): VStackBuilder {
+    this._builder = this._builder.max_height(value);
+    return this;
+  }
+
+  clipToBounds(value: boolean): VStackBuilder {
+    this._builder = this._builder.clip_to_bounds(value);
+    return this;
+  }
+
+  layoutPriority(priority: LayoutPriority | number): VStackBuilder {
+    this._builder = this._builder.layout_priority(priority);
+    return this;
+  }
+
+  equalSpacing(value: boolean): VStackBuilder {
+    this._builder = this._builder.equal_spacing(value);
     return this;
   }
 

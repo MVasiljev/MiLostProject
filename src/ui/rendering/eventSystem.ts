@@ -1,8 +1,6 @@
-// First, let's create a proper event handling system in TypeScript
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import { initWasm, getWasmModule, isWasmInitialized } from "../../wasm/init.js";
 import { MiLostRendererOptions } from "./index.js";
 
-// Define event types to match Rust types
 export enum EventType {
   Tap = "Tap",
   DoubleTap = "DoubleTap",
@@ -14,14 +12,12 @@ export enum EventType {
   Custom = "Custom",
 }
 
-// Define event handler interface
 export interface EventHandler {
   eventType: EventType;
   handlerId: string;
   data?: Record<string, string>;
 }
 
-// Define event bus for centralized event handling
 export class EventBus {
   private static instance: EventBus;
   private eventHandlers: Map<string, Function>;
@@ -55,7 +51,6 @@ export class EventBus {
   }
 }
 
-// Enhanced MiLostRenderer with proper event handling
 export async function mountMiLostRenderer({
   component,
   mountPoint,
@@ -102,26 +97,22 @@ export async function mountMiLostRenderer({
 }
 
 function setupEventListeners(canvas: HTMLCanvasElement, renderNode: any): void {
-  // Check if node has event handlers
   const hasInteractiveElements = containsInteractiveElements(renderNode);
 
   if (hasInteractiveElements) {
-    // Setup click/tap event
     canvas.addEventListener("click", (event) =>
       handleEvent(event, "click", renderNode, canvas)
     );
 
-    // Setup double click event
     canvas.addEventListener("dblclick", (event) =>
       handleEvent(event, "dblclick", renderNode, canvas)
     );
 
-    // Setup long press events using mousedown/mouseup with timeout
     let longPressTimer: number | null = null;
     canvas.addEventListener("mousedown", (event) => {
       longPressTimer = window.setTimeout(() => {
         handleEvent(event, "longpress", renderNode, canvas);
-      }, 500); // 500ms delay for long press
+      }, 500);
     });
 
     canvas.addEventListener("mouseup", () => {
@@ -131,7 +122,6 @@ function setupEventListeners(canvas: HTMLCanvasElement, renderNode: any): void {
       }
     });
 
-    // Setup mouse move for hover effects
     canvas.addEventListener("mousemove", (event) =>
       handleEvent(event, "mousemove", renderNode, canvas)
     );
@@ -155,23 +145,20 @@ function handleEvent(
     click: EventType.Tap,
     dblclick: EventType.DoubleTap,
     longpress: EventType.LongPress,
-    mousemove: EventType.Custom, // For hover effects
+    mousemove: EventType.Custom,
   };
 
   const eventType = eventTypeMap[eventName];
   if (!eventType) return;
 
-  // Find matching event handlers
   if (nodeAtPoint.event_handlers) {
     for (const handler of nodeAtPoint.event_handlers) {
-      // Check if handler matches event type
       if (handler.event_type === eventType.toString()) {
         triggerEventHandler(handler, event, nodeAtPoint);
       }
     }
   }
 
-  // Legacy support for direct on_tap property
   if (eventName === "click" && nodeAtPoint.resolved_props.on_tap) {
     const handlerId = nodeAtPoint.resolved_props.on_tap;
     triggerLegacyHandler(handlerId);
@@ -181,7 +168,6 @@ function handleEvent(
 function triggerEventHandler(handler: any, event: MouseEvent, node: any): void {
   const eventBus = EventBus.getInstance();
 
-  // Create event data with node information
   const eventData = {
     node: {
       id: node.id,
@@ -192,16 +178,13 @@ function triggerEventHandler(handler: any, event: MouseEvent, node: any): void {
     handlerData: handler.data || {},
   };
 
-  // Trigger the event through the event bus
   eventBus.trigger(handler.handler_id, eventData);
 }
 
 function triggerLegacyHandler(handlerId: string): void {
-  // First try the event bus
   const eventBus = EventBus.getInstance();
   eventBus.trigger(handlerId, {});
 
-  // For backward compatibility, also try global functions
   const handler = (window as any)[handlerId];
   if (typeof handler === "function") {
     handler();
@@ -209,12 +192,10 @@ function triggerLegacyHandler(handlerId: string): void {
 }
 
 function containsInteractiveElements(node: any): boolean {
-  // Check if node has event handlers
   if (node.event_handlers && node.event_handlers.length > 0) {
     return true;
   }
 
-  // Legacy check for on_tap
   if (
     node.type_name === "Button" ||
     (node.resolved_props && node.resolved_props.on_tap)
@@ -222,7 +203,6 @@ function containsInteractiveElements(node: any): boolean {
     return true;
   }
 
-  // Check children recursively
   if (node.children && node.children.length > 0) {
     return node.children.some((child: any) =>
       containsInteractiveElements(child)
@@ -248,7 +228,6 @@ function findNodeAtPoint(node: any, x: number, y: number): any | null {
     return null;
   }
 
-  // Check children first (from top to bottom in z-order)
   if (node.children && node.children.length > 0) {
     const reversedChildren = [...node.children].reverse();
 
@@ -260,7 +239,6 @@ function findNodeAtPoint(node: any, x: number, y: number): any | null {
     }
   }
 
-  // If this node has event handlers or is a button, return it
   if (
     node.event_handlers?.length > 0 ||
     node.type_name === "Button" ||
@@ -269,7 +247,5 @@ function findNodeAtPoint(node: any, x: number, y: number): any | null {
     return node;
   }
 
-  // For non-interactive containers, return the container itself
-  // so that hit testing continues to parent elements
   return node;
 }

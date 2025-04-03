@@ -1,9 +1,18 @@
 import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
-import { UI } from "./index.js";
 import type { ColorType } from "./types";
 import { TextBuilder } from "./TextBuilder";
 import { VStackBuilder } from "./VStackBuilder";
 import { ButtonBuilder } from "./ButtonBuilder";
+import { UI } from "./index.js";
+import { EdgeInsetsOptions, LayoutPriority } from "./VStackBuilder";
+
+export enum HStackAlignment {
+  Top = "top",
+  Center = "center",
+  Bottom = "bottom",
+  FirstTextBaseline = "firstTextBaseline",
+  LastTextBaseline = "lastTextBaseline",
+}
 
 export class HStackBuilder {
   private _builder: any;
@@ -33,21 +42,94 @@ export class HStackBuilder {
     return this;
   }
 
+  alignment(alignment: HStackAlignment): HStackBuilder {
+    this._builder = this._builder.alignment(alignment);
+    return this;
+  }
+
+  edgeInsets(insets: EdgeInsetsOptions): HStackBuilder {
+    this._builder = this._builder.edge_insets(
+      insets.top,
+      insets.right,
+      insets.bottom,
+      insets.left
+    );
+    return this;
+  }
+
+  minWidth(value: number): HStackBuilder {
+    this._builder = this._builder.min_width(value);
+    return this;
+  }
+
+  idealWidth(value: number): HStackBuilder {
+    this._builder = this._builder.ideal_width(value);
+    return this;
+  }
+
+  maxWidth(value: number): HStackBuilder {
+    this._builder = this._builder.max_width(value);
+    return this;
+  }
+
+  minHeight(value: number): HStackBuilder {
+    this._builder = this._builder.min_height(value);
+    return this;
+  }
+
+  idealHeight(value: number): HStackBuilder {
+    this._builder = this._builder.ideal_height(value);
+    return this;
+  }
+
+  maxHeight(value: number): HStackBuilder {
+    this._builder = this._builder.max_height(value);
+    return this;
+  }
+
+  clipToBounds(value: boolean): HStackBuilder {
+    this._builder = this._builder.clip_to_bounds(value);
+    return this;
+  }
+
+  layoutPriority(priority: LayoutPriority | number): HStackBuilder {
+    this._builder = this._builder.layout_priority(priority);
+    return this;
+  }
+
+  equalSpacing(value: boolean): HStackBuilder {
+    this._builder = this._builder.equal_spacing(value);
+    return this;
+  }
+
   async child(
     component: UI | TextBuilder | HStackBuilder | VStackBuilder | ButtonBuilder
   ): Promise<HStackBuilder> {
     let json: string;
 
     if (component instanceof UI) {
-      // If it's already a UI object, just get its JSON
       json = component.toJSON();
     } else {
-      // Otherwise it's a builder, so convert it
       json = await this.convertBuilderToJson(component);
     }
 
     this._builder = this._builder.child(json);
     return this;
+  }
+
+  private async convertBuilderToJson(builder: any): Promise<string> {
+    const wasmBuilder = builder._builder;
+    if (!wasmBuilder || !wasmBuilder.build) {
+      throw new Error("Invalid builder object");
+    }
+
+    try {
+      const result = wasmBuilder.build();
+      return result;
+    } catch (error) {
+      console.error("Error converting builder to JSON:", error);
+      throw error;
+    }
   }
 
   async build(): Promise<UI> {
@@ -65,20 +147,5 @@ export class HStackBuilder {
       await initWasm();
     }
     return new HStackBuilder();
-  }
-
-  private async convertBuilderToJson(builder: any): Promise<string> {
-    const wasmBuilder = builder._builder;
-    if (!wasmBuilder || !wasmBuilder.build) {
-      throw new Error("Invalid builder object");
-    }
-
-    try {
-      const result = wasmBuilder.build();
-      return result;
-    } catch (error) {
-      console.error("Error converting builder to JSON:", error);
-      throw error;
-    }
   }
 }

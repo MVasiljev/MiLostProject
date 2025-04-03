@@ -4,9 +4,23 @@ import { VStackBuilder } from "./VStackBuilder";
 import { HStackBuilder } from "./HStackBuilder";
 import { TextBuilder } from "./TextBuilder";
 import { ButtonBuilder } from "./ButtonBuilder";
+import { EdgeInsetsOptions, LayoutPriority } from "./VStackBuilder";
+import { ColorType } from "./types";
+
+export enum ZStackAlignment {
+  Center = "center",
+  TopLeading = "topLeading",
+  Top = "top",
+  TopTrailing = "topTrailing",
+  Leading = "leading",
+  Trailing = "trailing",
+  BottomLeading = "bottomLeading",
+  Bottom = "bottom",
+  BottomTrailing = "bottomTrailing",
+}
 
 export class ZStackBuilder {
-  _builder: any;
+  private _builder: any;
 
   constructor() {
     if (!isWasmInitialized()) {
@@ -18,6 +32,66 @@ export class ZStackBuilder {
     this._builder = new wasm.ZStackBuilder();
   }
 
+  alignment(alignment: ZStackAlignment): ZStackBuilder {
+    this._builder = this._builder.alignment(alignment);
+    return this;
+  }
+
+  edgeInsets(insets: EdgeInsetsOptions): ZStackBuilder {
+    this._builder = this._builder.edge_insets(
+      insets.top,
+      insets.right,
+      insets.bottom,
+      insets.left
+    );
+    return this;
+  }
+
+  background(color: ColorType): ZStackBuilder {
+    this._builder = this._builder.background(color);
+    return this;
+  }
+
+  minWidth(value: number): ZStackBuilder {
+    this._builder = this._builder.min_width(value);
+    return this;
+  }
+
+  idealWidth(value: number): ZStackBuilder {
+    this._builder = this._builder.ideal_width(value);
+    return this;
+  }
+
+  maxWidth(value: number): ZStackBuilder {
+    this._builder = this._builder.max_width(value);
+    return this;
+  }
+
+  minHeight(value: number): ZStackBuilder {
+    this._builder = this._builder.min_height(value);
+    return this;
+  }
+
+  idealHeight(value: number): ZStackBuilder {
+    this._builder = this._builder.ideal_height(value);
+    return this;
+  }
+
+  maxHeight(value: number): ZStackBuilder {
+    this._builder = this._builder.max_height(value);
+    return this;
+  }
+
+  clipToBounds(value: boolean): ZStackBuilder {
+    this._builder = this._builder.clip_to_bounds(value);
+    return this;
+  }
+
+  layoutPriority(priority: LayoutPriority | number): ZStackBuilder {
+    this._builder = this._builder.layout_priority(priority);
+    return this;
+  }
+
   async child(
     component: UI | VStackBuilder | HStackBuilder | TextBuilder | ButtonBuilder
   ): Promise<ZStackBuilder> {
@@ -27,6 +101,10 @@ export class ZStackBuilder {
   }
 
   private async convertBuilderToJson(builder: any): Promise<string> {
+    if (builder instanceof UI) {
+      return builder.toJSON();
+    }
+
     const wasmBuilder = builder._builder;
     if (!wasmBuilder || !wasmBuilder.build) {
       throw new Error("Invalid builder object");

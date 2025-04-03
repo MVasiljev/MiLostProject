@@ -28,6 +28,8 @@ pub fn render(component: &UIComponent) -> RenderNode {
 
         UIComponent::Button(props) => {
             let mut node = RenderNode::new(&generate_unique_id("button"), "Button");
+
+            println!("Button props: {:?}", props);
             
             node.set_prop("label", props.label.clone());
             
@@ -36,9 +38,12 @@ pub fn render(component: &UIComponent) -> RenderNode {
             }
 
             if let Some(on_tap) = &props.on_tap {
-                node.add_event_handler(on_tap.clone());
-        
+                println!("Adding on_tap handler: {:?}", on_tap);
+
+                node.add_event_handler(on_tap.clone());        
                 node.set_prop("on_tap", on_tap.handler_id.clone());
+            } else {
+                println!("No on_tap handler found");
             }
             
             if let Some(disabled) = props.disabled {

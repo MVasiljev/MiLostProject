@@ -8,7 +8,7 @@ export * as concurrency from "./concurrency/index.js";
 export * as contract from "./contract/index.js";
 export * as core from "./core/index.js";
 export * as memory from "./memory/index.js";
-export * as patterns from "./patterns/index.js";
+export { Patterns } from "./patterns/index.js";
 export * as resource from "./resource/index.js";
 export * as types from "./types/index.js";
 export { Str } from "./types/string.js";
@@ -27,9 +27,12 @@ export {
   ResizeMode,
   DividerStyle,
   ButtonStyle,
-  renderComponent,
-  mountMiLostRenderer,
 } from "./ui/index.js";
+export {
+  renderWithMiLostTask,
+  MiLost,
+  mountMiLostRenderer,
+} from "./ui/rendering";
 export {
   AppError,
   ValidationError,
@@ -45,8 +48,8 @@ export { initWasm } from "./wasm/init.js";
 
 export { RefMut, Ref } from "./borrow";
 
-export { VNodeBuilder } from "./ui/dsl";
+export * from "./ui/dsl";
 export * from "./ui/dsl/uiDsl.js";
-export * from "./ui/dsl/renderVNodeTree.js";
+export * from "./ui/dsl/renderNodeTree.js";
 
 initWasm().catch(console.error);

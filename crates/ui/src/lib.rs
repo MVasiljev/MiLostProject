@@ -18,7 +18,7 @@ pub mod events;
 pub use color::Color;
 pub use font::FontStyle;
 pub use text::TextProps;
-pub use button::{ButtonProps, ButtonStyle};
+pub use button::{ButtonProps, ButtonStyle, ButtonSize, ButtonState, Gradient, GradientStop, BorderStyle, LoadingIndicatorType, Overflow, TextTransform, TextAlign, FontWeight};
 pub use stack::{VStackProps, HStackProps, VStackAlignment, HStackAlignment};
 pub use component::UIComponent;
 pub use zstack::ZStackProps;
@@ -33,4 +33,4 @@ pub use render::component::render;
 pub use layout::{Rect, Size, Point, EdgeInsets, Alignment, LayoutEngine};
 
 pub use platform::canvas::{DrawingContext, CanvasRenderer};
-pub use events::{EventType, EventHandler};
+pub use events::{EventType, EventHandler, EventData};

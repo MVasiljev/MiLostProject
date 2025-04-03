@@ -1,5 +1,12 @@
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
-import type { UI } from "./ui";
+import { Task } from "../../concurrency/task.js";
+import { AppError } from "../../core/error.js";
+import { Ok, Err } from "../../core/result.js";
+import { Patterns } from "../../patterns/matching.js";
+import { u32 } from "../../types/primitives.js";
+import { Str } from "../../types/string.js";
+import { initWasm, getWasmModule, isWasmInitialized } from "../../wasm/init.js";
+import { renderNodeTree } from "../dsl/renderNodeTree.js";
+import type { UI } from "../ui.js";
 
 export interface MiLostRendererOptions {
   component: UI | string;
@@ -8,11 +15,11 @@ export interface MiLostRendererOptions {
   height?: number;
 }
 
-export async function mountMiLostRenderer({
+export async function MiLost({
   component,
   mountPoint,
-  width = 800,
-  height = 600,
+  width = window.innerWidth || 800,
+  height = window.innerHeight || 600,
 }: MiLostRendererOptions): Promise<void> {
   try {
     if (!isWasmInitialized()) {
@@ -48,6 +55,53 @@ export async function mountMiLostRenderer({
     );
 
     setupEventListeners(canvas, renderNode);
+
+    function renderWithMiLostTask(
+      component: UI,
+      mountPoint: HTMLElement,
+      width?: u32,
+      height?: u32
+    ): Task<void, AppError> {
+      return Task.new(async (_signal) => {
+        try {
+          await MiLost({
+            component,
+            mountPoint,
+            width,
+            height,
+          });
+
+          return Ok(undefined);
+        } catch (err) {
+          const message =
+            err instanceof Error
+              ? err.message
+              : typeof err === "string"
+              ? err
+              : "Unknown error";
+
+          return Err(
+            new AppError(Str.fromRaw(`MiLost render failed: ${message}`))
+          );
+        }
+      });
+    }
+
+    const resultTask = renderWithMiLostTask(
+      component as unknown as UI,
+      document.body
+    );
+
+    resultTask.run().then(async (result) => {
+      await Patterns.match(result, {
+        Ok: () => {
+          console.log("✅ MiLost successfully rendered.");
+        },
+        Err: (err) => {
+          console.error("❌ Rendering failed:", Str.fromRaw(err.message));
+        },
+      });
+    });
   } catch (err) {
     console.error("Failed to mount MiLost component:", err);
   }
