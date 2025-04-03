@@ -2,7 +2,7 @@ import { ButtonBuilder } from "../ButtonBuilder";
 import { DividerBuilder } from "../DividerBuilder";
 import { HStackBuilder } from "../HStackBuilder";
 import { ImageBuilder } from "../ImageBuilder";
-import { EventBus } from "../rendering/eventSystem";
+import { EventBus } from "../rendering";
 import { SpacerBuilder } from "../SpacerBuilder";
 import { TextBuilder } from "../TextBuilder";
 import { VStackBuilder } from "../VStackBuilder";
