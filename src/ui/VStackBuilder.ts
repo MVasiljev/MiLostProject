@@ -39,8 +39,10 @@ export class VStackBuilder {
     let json: string;
 
     if (component instanceof UI) {
+      // If it's already a UI object, just get its JSON
       json = component.toJSON();
     } else {
+      // Otherwise it's a builder, so convert it
       json = await this.convertBuilderToJson(component);
     }
 

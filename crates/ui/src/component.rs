@@ -2,6 +2,7 @@ use serde::{Serialize, Deserialize};
 use crate::{VStackProps, HStackProps, TextProps, ButtonProps, ZStackProps, ImageProps, ScrollProps, SpacerProps, DividerProps};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "PascalCase")]
 pub enum UIComponent {
     VStack(VStackProps),
     HStack(HStackProps),

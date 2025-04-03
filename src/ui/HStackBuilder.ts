@@ -36,24 +36,18 @@ export class HStackBuilder {
   async child(
     component: UI | TextBuilder | HStackBuilder | VStackBuilder | ButtonBuilder
   ): Promise<HStackBuilder> {
-    const json = await this.convertBuilderToJson(component);
+    let json: string;
+
+    if (component instanceof UI) {
+      // If it's already a UI object, just get its JSON
+      json = component.toJSON();
+    } else {
+      // Otherwise it's a builder, so convert it
+      json = await this.convertBuilderToJson(component);
+    }
+
     this._builder = this._builder.child(json);
     return this;
-  }
-
-  private async convertBuilderToJson(builder: any): Promise<string> {
-    const wasmBuilder = builder._builder;
-    if (!wasmBuilder || !wasmBuilder.build) {
-      throw new Error("Invalid builder object");
-    }
-
-    try {
-      const result = wasmBuilder.build();
-      return result;
-    } catch (error) {
-      console.error("Error converting builder to JSON:", error);
-      throw error;
-    }
   }
 
   async build(): Promise<UI> {
@@ -71,5 +65,20 @@ export class HStackBuilder {
       await initWasm();
     }
     return new HStackBuilder();
+  }
+
+  private async convertBuilderToJson(builder: any): Promise<string> {
+    const wasmBuilder = builder._builder;
+    if (!wasmBuilder || !wasmBuilder.build) {
+      throw new Error("Invalid builder object");
+    }
+
+    try {
+      const result = wasmBuilder.build();
+      return result;
+    } catch (error) {
+      console.error("Error converting builder to JSON:", error);
+      throw error;
+    }
   }
 }

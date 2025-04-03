@@ -35,6 +35,7 @@ async function createBuilderFromType(type: string, props: Record<string, any>) {
       return applyProps(builder, props);
     }
     case "HStack": {
+      console.log("HStackBuilder.create()");
       const builder = await HStackBuilder.create();
       return applyProps(builder, props);
     }

@@ -1,9 +1,13 @@
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "PascalCase")]
 pub enum Color {
     White,
     Blue,
     Black,
-    // Extend with RGBA, gradients, etc.
+    Gray,
+    Red,
+    Yellow,
+    Green,
 }
