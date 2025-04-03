@@ -1,9 +1,7 @@
-
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 use milost_ui::{render, UIComponent, layout::{LayoutEngine, Size}};
 use milost_ui::platform::canvas::CanvasRenderer;
-
 use super::canvas_context::WebCanvasContext;
 
 #[wasm_bindgen]
@@ -38,8 +36,8 @@ pub fn render_to_canvas_element(canvas_id: &str, json: &str) -> Result<(), JsVal
     let mut layout_engine = LayoutEngine::new();
     layout_engine.compute_layout(&mut render_node, container_size);
     
+    // Create renderer and render the node
     let renderer = CanvasRenderer::new(web_canvas);
-    
     renderer.render(&render_node)
         .map_err(|e| JsValue::from_str(&format!("Rendering error: {}", e)))
 }

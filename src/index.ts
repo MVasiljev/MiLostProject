@@ -19,6 +19,14 @@ export {
   TextBuilder,
   ButtonBuilder,
   ZStackBuilder,
+  SpacerBuilder,
+  DividerBuilder,
+  ImageBuilder,
+  ScrollBuilder,
+  ScrollDirection,
+  ResizeMode,
+  DividerStyle,
+  ButtonStyle,
   renderComponent,
   mountMiLostRenderer,
 } from "./ui/index.js";
@@ -36,5 +44,9 @@ export { Result, Ok, Err } from "./core/result.js";
 export { initWasm } from "./wasm/init.js";
 
 export { RefMut, Ref } from "./borrow";
+
+export { VNodeBuilder } from "./ui/dsl";
+export * from "./ui/dsl/uiDsl.js";
+export * from "./ui/dsl/renderVNodeTree.js";
 
 initWasm().catch(console.error);

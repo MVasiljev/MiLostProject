@@ -1,7 +1,7 @@
 import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
 import type { UI } from "./ui";
 
-interface MiLostRendererOptions {
+export interface MiLostRendererOptions {
   component: UI | string;
   mountPoint: HTMLElement;
   width?: number;

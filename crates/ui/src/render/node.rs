@@ -2,12 +2,15 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 
+use crate::EventHandler;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RenderNode {
     pub id: String,
     pub type_name: String,
     pub resolved_props: HashMap<String, String>,
     pub children: Vec<RenderNode>,
+    pub event_handlers: Vec<EventHandler>,
 }
 
 impl RenderNode {
@@ -17,7 +20,13 @@ impl RenderNode {
             type_name: type_name.to_string(),
             resolved_props: HashMap::new(),
             children: Vec::new(),
+            event_handlers: Vec::new(),
         }
+    }
+
+    pub fn add_event_handler(&mut self, handler: EventHandler) -> &mut Self {
+        self.event_handlers.push(handler);
+        self
     }
     
     pub fn add_child(&mut self, child: RenderNode) -> &mut Self {

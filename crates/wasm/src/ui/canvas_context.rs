@@ -139,4 +139,24 @@ impl DrawingContext for WebCanvasContext {
         self.context.clear_rect(x as f64, y as f64, width as f64, height as f64);
         Ok(())
     }
+
+    fn save_drawing_state(&self) -> Result<(), String> {
+        self.context.save();
+        Ok(())
+    }
+
+    fn restore_drawing_state(&self) -> Result<(), String> {
+        self.context.restore();
+        Ok(())
+    }
+
+    fn clip(&self) -> Result<(), String> {
+        self.context.clip();
+        Ok(())
+    }
+
+    fn rect(&self, x: f32, y: f32, width: f32, height: f32) -> Result<(), String> {
+        self.context.rect(x as f64, y as f64, width as f64, height as f64);
+        Ok(())
+    }
 }

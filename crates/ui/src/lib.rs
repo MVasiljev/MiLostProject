@@ -13,18 +13,19 @@ pub mod divider;
 pub mod render;
 pub mod layout;
 pub mod platform;
+pub mod events;
 
 pub use color::Color;
 pub use font::FontStyle;
 pub use text::TextProps;
-pub use button::ButtonProps;
+pub use button::{ButtonProps, ButtonStyle};
 pub use stack::{VStackProps, HStackProps};
 pub use component::UIComponent;
 pub use zstack::ZStackProps;
 pub use image::ImageProps;
 pub use scroll::{ScrollProps, ScrollDirection};
 pub use spacer::SpacerProps;
-pub use divider::DividerProps;
+pub use divider::{DividerProps, DividerStyle};
 
 pub use render::node::RenderNode;
 pub use render::component::render;
@@ -32,3 +33,4 @@ pub use render::component::render;
 pub use layout::{Rect, Size, Point, EdgeInsets, Alignment, LayoutEngine};
 
 pub use platform::canvas::{DrawingContext, CanvasRenderer};
+pub use events::{EventType, EventHandler};

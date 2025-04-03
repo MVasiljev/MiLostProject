@@ -9,6 +9,15 @@ pub struct LayoutInfo {
     pub padding: Option<f32>,
     pub alignment: Option<Alignment>,
     pub content_size: Size,
+    pub flex_grow: Option<f32>,
+    pub flex_shrink: Option<f32>,
+    pub flex_basis: Option<f32>,
+    pub min_width: Option<f32>,
+    pub max_width: Option<f32>,
+    pub min_height: Option<f32>,
+    pub max_height: Option<f32>,
+    pub parent_type: Option<String>,
+    pub resolved_props: HashMap<String, String>,
 }
 
 impl LayoutInfo {
@@ -18,6 +27,15 @@ impl LayoutInfo {
             padding: None,
             alignment: None,
             content_size: Size::zero(),
+            flex_grow: None,
+            flex_shrink: None,
+            flex_basis: None,
+            min_width: None,
+            max_width: None,
+            min_height: None,
+            max_height: None,
+            parent_type: None,
+            resolved_props: HashMap::new(),
         }
     }
     
@@ -41,6 +59,46 @@ impl LayoutInfo {
         self
     }
     
+    pub fn with_flex_grow(mut self, flex_grow: f32) -> Self {
+        self.flex_grow = Some(flex_grow);
+        self
+    }
+    
+    pub fn with_flex_shrink(mut self, flex_shrink: f32) -> Self {
+        self.flex_shrink = Some(flex_shrink);
+        self
+    }
+    
+    pub fn with_flex_basis(mut self, flex_basis: f32) -> Self {
+        self.flex_basis = Some(flex_basis);
+        self
+    }
+    
+    pub fn with_min_width(mut self, min_width: f32) -> Self {
+        self.min_width = Some(min_width);
+        self
+    }
+    
+    pub fn with_max_width(mut self, max_width: f32) -> Self {
+        self.max_width = Some(max_width);
+        self
+    }
+    
+    pub fn with_min_height(mut self, min_height: f32) -> Self {
+        self.min_height = Some(min_height);
+        self
+    }
+    
+    pub fn with_max_height(mut self, max_height: f32) -> Self {
+        self.max_height = Some(max_height);
+        self
+    }
+    
+    pub fn with_parent_type(mut self, parent_type: &str) -> Self {
+        self.parent_type = Some(parent_type.to_string());
+        self
+    }
+    
     pub fn inner_rect(&self) -> Rect {
         if let Some(padding) = self.padding {
             self.frame.inset(padding)
@@ -48,7 +106,36 @@ impl LayoutInfo {
             self.frame
         }
     }
+    
+    pub fn constrain_size(&self, size: Size) -> Size {
+        let width = if let Some(max_width) = self.max_width {
+            size.width.min(max_width)
+        } else {
+            size.width
+        };
+        
+        let width = if let Some(min_width) = self.min_width {
+            width.max(min_width)
+        } else {
+            width
+        };
+        
+        let height = if let Some(max_height) = self.max_height {
+            size.height.min(max_height)
+        } else {
+            size.height
+        };
+        
+        let height = if let Some(min_height) = self.min_height {
+            height.max(min_height)
+        } else {
+            height
+        };
+        
+        Size::new(width, height)
+    }
 }
+
 
 pub struct LayoutEngine {
     layout_cache: HashMap<String, LayoutInfo>,
@@ -71,6 +158,236 @@ impl LayoutEngine {
         self.apply_layout(node);
         
         node
+    }
+
+    fn position_vstack_children_flex(&mut self, node: &RenderNode, frame: Rect) -> () {
+        let spacing = node.resolved_props.get("spacing")
+            .and_then(|val| val.parse::<f32>().ok())
+            .unwrap_or(0.0);
+        
+        let mut total_fixed_height = 0.0;
+        let mut total_flex_grow = 0.0;
+        let mut flex_items = Vec::new();
+        
+        for (i, child) in node.children.iter().enumerate() {
+            if let Some(mut child_layout) = self.layout_cache.get_mut(&child.id) {
+                child_layout.parent_type = Some("VStack".to_string());
+            }
+            
+            let flex_grow = child.resolved_props.get("flex_grow")
+                .and_then(|val| val.parse::<f32>().ok())
+                .unwrap_or(0.0);
+            
+            if flex_grow > 0.0 {
+                total_flex_grow += flex_grow;
+                flex_items.push((i, flex_grow));
+            } else if let Some(child_layout) = self.layout_cache.get(&child.id) {
+                total_fixed_height += child_layout.content_size.height;
+            }
+        }
+        
+        let spacing_height = if node.children.len() > 1 {
+            spacing * (node.children.len() - 1) as f32
+        } else {
+            0.0
+        };
+        
+        total_fixed_height += spacing_height;
+        
+        let available_flex_height = (frame.height - total_fixed_height).max(0.0);
+        
+        let mut y_offset = frame.y;
+        
+        for (i, child) in node.children.iter().enumerate() {
+            if let Some(child_layout) = self.layout_cache.get(&child.id) {
+                let mut child_height = child_layout.content_size.height;
+                
+                if let Some((_, flex_grow)) = flex_items.iter().find(|(idx, _)| *idx == i) {
+                    if total_flex_grow > 0.0 {
+                        child_height = (available_flex_height * flex_grow / total_flex_grow).max(0.0);
+                    }
+                }
+                
+                if let Some(max_height) = child_layout.max_height {
+                    child_height = child_height.min(max_height);
+                }
+                
+                if let Some(min_height) = child_layout.min_height {
+                    child_height = child_height.max(min_height);
+                }
+                
+                let child_frame = Rect::new(
+                    frame.x,
+                    y_offset,
+                    frame.width,
+                    child_height
+                );
+                
+                self.position_node(child, child_frame);
+                
+                y_offset += child_height + spacing;
+            }
+        }
+    }
+    
+    fn position_hstack_children_flex(&mut self, node: &RenderNode, frame: Rect) -> () {
+        let spacing = node.resolved_props.get("spacing")
+            .and_then(|val| val.parse::<f32>().ok())
+            .unwrap_or(0.0);
+        
+        let mut total_fixed_width = 0.0;
+        let mut total_flex_grow = 0.0;
+        let mut flex_items = Vec::new();
+        
+        for (i, child) in node.children.iter().enumerate() {
+            if let Some(mut child_layout) = self.layout_cache.get_mut(&child.id) {
+                child_layout.parent_type = Some("HStack".to_string());
+            }
+            
+            let flex_grow = child.resolved_props.get("flex_grow")
+                .and_then(|val| val.parse::<f32>().ok())
+                .unwrap_or(0.0);
+            
+            if flex_grow > 0.0 {
+                total_flex_grow += flex_grow;
+                flex_items.push((i, flex_grow));
+            } else if let Some(child_layout) = self.layout_cache.get(&child.id) {
+                total_fixed_width += child_layout.content_size.width;
+            }
+        }
+        
+        let spacing_width = if node.children.len() > 1 {
+            spacing * (node.children.len() - 1) as f32
+        } else {
+            0.0
+        };
+        
+        total_fixed_width += spacing_width;
+        
+        let available_flex_width = (frame.width - total_fixed_width).max(0.0);
+        
+        let mut x_offset = frame.x;
+        
+        for (i, child) in node.children.iter().enumerate() {
+            if let Some(child_layout) = self.layout_cache.get(&child.id) {
+                let mut child_width = child_layout.content_size.width;
+                
+                if let Some((_, flex_grow)) = flex_items.iter().find(|(idx, _)| *idx == i) {
+                    if total_flex_grow > 0.0 {
+                        child_width = (available_flex_width * flex_grow / total_flex_grow).max(0.0);
+                    }
+                }
+                
+                if let Some(max_width) = child_layout.max_width {
+                    child_width = child_width.min(max_width);
+                }
+                
+                if let Some(min_width) = child_layout.min_width {
+                    child_width = child_width.max(min_width);
+                }
+                
+                let child_frame = Rect::new(
+                    x_offset,
+                    frame.y,
+                    child_width,
+                    frame.height
+                );
+                
+                self.position_node(child, child_frame);
+                
+                x_offset += child_width + spacing;
+            }
+        }
+    }
+    
+    fn enhanced_measure_node(&mut self, node: &RenderNode, available_size: Size) -> Size {
+        let node_type = &node.type_name;
+        
+        let content_size = match node_type.as_str() {
+            "VStack" => self.measure_vstack(node, available_size),
+            "HStack" => self.measure_hstack(node, available_size),
+            "ZStack" => self.measure_zstack(node, available_size),
+            "Text" => self.measure_text(node, available_size),
+            "Button" => self.measure_button(node, available_size),
+            "Image" => self.measure_image(node, available_size),
+            "Scroll" => self.measure_scroll(node, available_size),
+            "Spacer" => self.measure_spacer(node, available_size),
+            "Divider" => self.measure_divider(node, available_size),
+            _ => Size::zero(),
+        };
+        
+        let mut layout_info = LayoutInfo::new().with_content_size(content_size);
+        
+        if let Some(padding) = node.resolved_props.get("padding") {
+            if let Ok(padding_value) = padding.parse::<f32>() {
+                layout_info = layout_info.with_padding(padding_value);
+            }
+        }
+        
+        if let Some(alignment_str) = node.resolved_props.get("alignment") {
+            let alignment = match alignment_str.as_str() {
+                "topLeading" => Some(Alignment::TopLeading),
+                "top" => Some(Alignment::Top),
+                "topTrailing" => Some(Alignment::TopTrailing),
+                "leading" => Some(Alignment::Leading),
+                "center" => Some(Alignment::Center),
+                "trailing" => Some(Alignment::Trailing),
+                "bottomLeading" => Some(Alignment::BottomLeading),
+                "bottom" => Some(Alignment::Bottom),
+                "bottomTrailing" => Some(Alignment::BottomTrailing),
+                _ => None,
+            };
+            
+            if let Some(a) = alignment {
+                layout_info = layout_info.with_alignment(a);
+            }
+        }
+        
+        if let Some(flex_grow) = node.resolved_props.get("flex_grow") {
+            if let Ok(value) = flex_grow.parse::<f32>() {
+                layout_info = layout_info.with_flex_grow(value);
+            }
+        }
+        
+        if let Some(flex_shrink) = node.resolved_props.get("flex_shrink") {
+            if let Ok(value) = flex_shrink.parse::<f32>() {
+                layout_info = layout_info.with_flex_shrink(value);
+            }
+        }
+        
+        if let Some(flex_basis) = node.resolved_props.get("flex_basis") {
+            if let Ok(value) = flex_basis.parse::<f32>() {
+                layout_info = layout_info.with_flex_basis(value);
+            }
+        }
+        
+        if let Some(min_width) = node.resolved_props.get("min_width") {
+            if let Ok(value) = min_width.parse::<f32>() {
+                layout_info = layout_info.with_min_width(value);
+            }
+        }
+        
+        if let Some(max_width) = node.resolved_props.get("max_width") {
+            if let Ok(value) = max_width.parse::<f32>() {
+                layout_info = layout_info.with_max_width(value);
+            }
+        }
+        
+        if let Some(min_height) = node.resolved_props.get("min_height") {
+            if let Ok(value) = min_height.parse::<f32>() {
+                layout_info = layout_info.with_min_height(value);
+            }
+        }
+        
+        if let Some(max_height) = node.resolved_props.get("max_height") {
+            if let Ok(value) = max_height.parse::<f32>() {
+                layout_info = layout_info.with_max_height(value);
+            }
+        }
+        
+        self.layout_cache.insert(node.id.clone(), layout_info);
+        
+        content_size
     }
     
     fn measure_node(&mut self, node: &RenderNode, available_size: Size) -> Size {
@@ -267,12 +584,48 @@ impl LayoutEngine {
         Size::new(available_size.width, available_size.height)
     }
     
-    fn measure_spacer(&mut self, node: &RenderNode, _available_size: Size) -> Size {
+    fn measure_spacer(&mut self, node: &RenderNode, available_size: Size) -> Size {
         let size = node.resolved_props.get("size")
+            .and_then(|val| val.parse::<f32>().ok());
+        
+        let min_size = node.resolved_props.get("min_size")
             .and_then(|val| val.parse::<f32>().ok())
             .unwrap_or(0.0);
         
-        Size::new(size, size)
+        let max_size = node.resolved_props.get("max_size")
+            .and_then(|val| val.parse::<f32>().ok())
+            .unwrap_or(f32::MAX);
+        
+        // If in a VStack, the spacer takes width from container but custom height
+        // If in a HStack, the spacer takes height from container but custom width
+        // We need to determine the container type to apply spacing correctly
+        let parent_type = node.resolved_props.get("_parent_type")
+            .cloned()
+            .unwrap_or_else(|| "Unknown".to_string());
+        
+        match parent_type.as_str() {
+            "VStack" => {
+                let height = if let Some(s) = size {
+                    s.max(min_size).min(max_size)
+                } else {
+                    min_size
+                };
+                Size::new(available_size.width, height)
+            },
+            "HStack" => {
+                let width = if let Some(s) = size {
+                    s.max(min_size).min(max_size)
+                } else {
+                    min_size
+                };
+                Size::new(width, available_size.height)
+            },
+            _ => {
+                // If parent type is unknown or not a stack, use square dimensions
+                let dimension = size.unwrap_or(0.0).max(min_size).min(max_size);
+                Size::new(dimension, dimension)
+            }
+        }
     }
     
     fn measure_divider(&mut self, node: &RenderNode, available_size: Size) -> Size {
@@ -280,7 +633,14 @@ impl LayoutEngine {
             .and_then(|val| val.parse::<f32>().ok())
             .unwrap_or(1.0);
         
-        Size::new(available_size.width, thickness)
+        let padding = node.resolved_props.get("padding")
+            .and_then(|val| val.parse::<f32>().ok())
+            .unwrap_or(0.0);
+        
+        // Add padding to the divider's height
+        let total_height = thickness + (padding * 2.0);
+        
+        Size::new(available_size.width, total_height)
     }
     
     
@@ -289,22 +649,66 @@ impl LayoutEngine {
             .and_then(|val| val.parse::<f32>().ok())
             .unwrap_or(0.0);
         
+        // First pass: Calculate total fixed height and count flex items
+        let mut total_fixed_height = 0.0;
+        let mut total_flex_grow = 0.0;
+        let mut flex_items = Vec::new();
+        
+        for (i, child) in node.children.iter().enumerate() {
+            // Mark each child with its parent type for proper sizing
+            if let Some(mut child_layout) = self.layout_cache.get_mut(&child.id) {
+                child_layout.resolved_props.insert("_parent_type".to_string(), "VStack".to_string());
+            }
+            
+            let is_spacer = child.type_name == "Spacer";
+            let flex_grow = if is_spacer {
+                child.resolved_props.get("flex_grow")
+                    .and_then(|val| val.parse::<f32>().ok())
+                    .unwrap_or(if child.resolved_props.get("size").is_none() { 1.0 } else { 0.0 })
+            } else {
+                0.0
+            };
+            
+            if flex_grow > 0.0 {
+                total_flex_grow += flex_grow;
+                flex_items.push((i, flex_grow));
+            } else if let Some(child_layout) = self.layout_cache.get(&child.id) {
+                total_fixed_height += child_layout.content_size.height;
+            }
+        }
+        
+        // Add spacing between items
+        if node.children.len() > 1 {
+            total_fixed_height += spacing * (node.children.len() - 1) as f32;
+        }
+        
+        // Calculate remaining space for flex items
+        let available_flex_height = (frame.height - total_fixed_height).max(0.0);
+        
+        // Second pass: Position all children with flex distribution
         let mut y_offset = frame.y;
         
-        for child in &node.children {
+        for (i, child) in node.children.iter().enumerate() {
             if let Some(child_layout) = self.layout_cache.get(&child.id) {
-                let child_size = child_layout.content_size;
+                let mut child_height = child_layout.content_size.height;
+                
+                // Apply flex growth if this is a flex item
+                if let Some((_, flex_grow)) = flex_items.iter().find(|(idx, _)| *idx == i) {
+                    if total_flex_grow > 0.0 {
+                        child_height = (available_flex_height * flex_grow / total_flex_grow).max(0.0);
+                    }
+                }
                 
                 let child_frame = Rect::new(
                     frame.x,
                     y_offset,
                     frame.width,
-                    child_size.height
+                    child_height
                 );
                 
                 self.position_node(child, child_frame);
                 
-                y_offset += child_size.height + spacing;
+                y_offset += child_height + spacing;
             }
         }
     }
