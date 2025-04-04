@@ -172,15 +172,34 @@ export class ButtonBuilder {
     return this;
   }
 
-  // Visual properties
   backgroundColor(color: string): ButtonBuilder {
-    this._builder = this._builder.background_color(color);
+    // Normalize CSS color formats
+    const normalizedColor = this.normalizeCssColor(color);
+    this._builder = this._builder.background_color(normalizedColor);
     return this;
   }
 
   textColor(color: string): ButtonBuilder {
-    this._builder = this._builder.text_color(color);
+    // Normalize CSS color formats
+    const normalizedColor = this.normalizeCssColor(color);
+    this._builder = this._builder.text_color(normalizedColor);
     return this;
+  }
+
+  private normalizeCssColor(color: string): string {
+    // If it's already a hex code or a named CSS color, return as is
+    if (
+      color.startsWith("#") ||
+      color.startsWith("rgb") ||
+      color.startsWith("hsl") ||
+      /^[a-zA-Z]+$/.test(color)
+    ) {
+      return color;
+    }
+
+    // Default to a hex color if format is unknown
+    console.warn(`Unrecognized color format: ${color}, defaulting to black`);
+    return "#000000";
   }
 
   borderColor(color: string): ButtonBuilder {

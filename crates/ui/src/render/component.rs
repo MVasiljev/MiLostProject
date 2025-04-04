@@ -1,4 +1,4 @@
-use crate::{stack::LayoutPriority, zstack::ZStackAlignment, HStackAlignment, UIComponent, VStackAlignment};
+use crate::{image::{ImageFilter, ImageSource}, stack::LayoutPriority, zstack::ZStackAlignment, HStackAlignment, UIComponent, VStackAlignment};
 use super::node::RenderNode;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -274,8 +274,24 @@ pub fn render(component: &UIComponent) -> RenderNode {
         UIComponent::Image(props) => {
             let mut node = RenderNode::new(&generate_unique_id("image"), "Image");
             
-            node.set_prop("src", props.src.clone());
+            // Handle different image sources
+            match &props.source {
+                ImageSource::Remote(url) => {
+                    node.set_prop("src", url.clone());
+                    node.set_prop("source_type", "remote".to_string());
+                },
+                ImageSource::Asset(path) => {
+                    node.set_prop("src", path.clone());
+                    node.set_prop("source_type", "asset".to_string());
+                    node.set_prop("source_path", path.clone());
+                },
+                ImageSource::Memory(_) => {
+                    node.set_prop("src", "memory://image".to_string());
+                    node.set_prop("source_type", "memory".to_string());
+                }
+            }
             
+            // Basic properties
             if let Some(alt) = &props.alt {
                 node.set_prop("alt", alt.clone());
             }
@@ -292,10 +308,16 @@ pub fn render(component: &UIComponent) -> RenderNode {
                 node.set_prop("aspect_ratio", aspect_ratio.to_string());
             }
             
+            // Resize and content modes
             if let Some(resize_mode) = &props.resize_mode {
-                node.set_prop("resize_mode", resize_mode.clone());
+                node.set_prop("resize_mode", format!("{:?}", resize_mode).to_lowercase());
             }
             
+            if let Some(content_mode) = &props.content_mode {
+                node.set_prop("content_mode", format!("{:?}", content_mode));
+            }
+            
+            // Styling properties
             if let Some(corner_radius) = props.corner_radius {
                 node.set_prop("corner_radius", corner_radius.to_string());
             }
@@ -306,6 +328,120 @@ pub fn render(component: &UIComponent) -> RenderNode {
             
             if let Some(border_color) = &props.border_color {
                 node.set_prop("border_color", border_color.clone());
+            }
+            
+            // Shadow properties
+            if let Some(shadow_radius) = props.shadow_radius {
+                node.set_prop("shadow_radius", shadow_radius.to_string());
+            }
+            
+            if let Some(shadow_color) = &props.shadow_color {
+                node.set_prop("shadow_color", shadow_color.clone());
+            }
+            
+            if let Some(shadow_offset) = props.shadow_offset {
+                node.set_prop("shadow_offset_x", shadow_offset.0.to_string());
+                node.set_prop("shadow_offset_y", shadow_offset.1.to_string());
+            }
+            
+            // Tint and filters
+            if let Some(tint_color) = &props.tint_color {
+                node.set_prop("tint_color", tint_color.clone());
+            }
+            
+            if let Some(filters) = &props.filters {
+                for (i, filter) in filters.iter().enumerate() {
+                    match filter {
+                        ImageFilter::Blur(radius) => {
+                            let type_prop = format!("filter_{}_type", i);
+                            let value_prop = format!("filter_{}_value", i);
+                            node.set_prop(&type_prop, "blur".to_string());
+                            node.set_prop(&value_prop, radius.to_string());
+                        },
+                        ImageFilter::Grayscale(intensity) => {
+                            let type_prop = format!("filter_{}_type", i);
+                            let value_prop = format!("filter_{}_value", i);
+                            node.set_prop(&type_prop, "grayscale".to_string());
+                            node.set_prop(&value_prop, intensity.to_string());
+                        },
+                        ImageFilter::Sepia(intensity) => {
+                            let type_prop = format!("filter_{}_type", i);
+                            let value_prop = format!("filter_{}_value", i);
+                            node.set_prop(&type_prop, "sepia".to_string());
+                            node.set_prop(&value_prop, intensity.to_string());
+                        },
+                        ImageFilter::Saturation(value) => {
+                            let type_prop = format!("filter_{}_type", i);
+                            let value_prop = format!("filter_{}_value", i);
+                            node.set_prop(&type_prop, "saturation".to_string());
+                            node.set_prop(&value_prop, value.to_string());
+                        },
+                        ImageFilter::Brightness(value) => {
+                            let type_prop = format!("filter_{}_type", i);
+                            let value_prop = format!("filter_{}_value", i);
+                            node.set_prop(&type_prop, "brightness".to_string());
+                            node.set_prop(&value_prop, value.to_string());
+                        },
+                        ImageFilter::Contrast(value) => {
+                            let type_prop = format!("filter_{}_type", i);
+                            let value_prop = format!("filter_{}_value", i);
+                            node.set_prop(&type_prop, "contrast".to_string());
+                            node.set_prop(&value_prop, value.to_string());
+                        },
+                        ImageFilter::Hue(value) => {
+                            let type_prop = format!("filter_{}_type", i);
+                            let value_prop = format!("filter_{}_value", i);
+                            node.set_prop(&type_prop, "hue".to_string());
+                            node.set_prop(&value_prop, value.to_string());
+                        },
+                        ImageFilter::Invert(enabled) => {
+                            let type_prop = format!("filter_{}_type", i);
+                            let value_prop = format!("filter_{}_value", i);
+                            node.set_prop(&type_prop, "invert".to_string());
+                            node.set_prop(&value_prop, enabled.to_string());
+                        },
+                    }
+                }
+            }
+            
+            if let Some(opacity) = props.opacity {
+                node.set_prop("opacity", opacity.to_string());
+            }
+            
+            if let Some(blur_radius) = props.blur_radius {
+                node.set_prop("blur_radius", blur_radius.to_string());
+            }
+            
+            // Placeholder images
+            if let Some(loading_placeholder) = &props.loading_placeholder {
+                node.set_prop("loading_placeholder", loading_placeholder.clone());
+            }
+            
+            if let Some(error_placeholder) = &props.error_placeholder {
+                node.set_prop("error_placeholder", error_placeholder.clone());
+            }
+            
+            // Constraint properties
+            if let Some(clip_to_bounds) = props.clip_to_bounds {
+                node.set_prop("clip_to_bounds", clip_to_bounds.to_string());
+            }
+            
+            if let Some(preserve_aspect_ratio) = props.preserve_aspect_ratio {
+                node.set_prop("preserve_aspect_ratio", preserve_aspect_ratio.to_string());
+            }
+            
+            // Animation properties
+            if let Some(animation_duration) = props.animation_duration {
+                node.set_prop("animation_duration", animation_duration.to_string());
+            }
+            
+            if let Some(is_animating) = props.is_animating {
+                node.set_prop("is_animating", is_animating.to_string());
+            }
+            
+            // Cache policy
+            if let Some(cache_policy) = &props.cache_policy {
+                node.set_prop("cache_policy", cache_policy.clone());
             }
             
             node

@@ -1,7 +1,7 @@
 
 use crate::render::node::RenderNode;
 use crate::layout::Rect;
-use crate::{EdgeInsets, UIComponent};
+use crate::EdgeInsets;
 
 pub trait DrawingContext {
     fn set_fill_color(&self, color: &str) -> Result<(), String>;
@@ -95,7 +95,6 @@ impl<T: DrawingContext> CanvasRenderer<T> {
         
         let frame = Rect::new(x, y, width, height);
         
-        // Check if this node should clip its contents
         let should_clip = node.get_prop("clip_to_bounds")
             .map(|v| v == "true")
             .unwrap_or(false);
@@ -103,13 +102,11 @@ impl<T: DrawingContext> CanvasRenderer<T> {
         if should_clip {
             self.context.save_drawing_state()?;
             
-            // Create clipping region
             self.context.begin_path()?;
             self.context.rect(frame.x, frame.y, frame.width, frame.height)?;
             self.context.clip()?;
         }
         
-        // Draw the current node
         match node.type_name.as_str() {
             "VStack" => self.draw_vstack_enhanced(node, frame)?,
             "HStack" => self.draw_hstack_enhanced(node, frame)?,
@@ -122,12 +119,10 @@ impl<T: DrawingContext> CanvasRenderer<T> {
             _ => {},
         }
         
-        // Draw all children
         for child in &node.children {
             self.draw_node_with_clipping(child)?;
         }
         
-        // Restore context if we clipped
         if should_clip {
             self.context.restore_drawing_state()?;
         }
@@ -136,15 +131,12 @@ impl<T: DrawingContext> CanvasRenderer<T> {
     }
 
     fn draw_vstack_enhanced(&self, node: &RenderNode, frame: Rect) -> Result<(), String> {
-        // Get edge insets
         let insets = self.parse_edge_insets_from_node(node);
         
-        // Draw background if provided
         if let Some(bg_str) = node.get_prop("background") {
             let color = self.parse_color(bg_str);
             self.context.set_fill_color(&color)?;
             
-            // If we have corner radius, draw rounded rectangle
             if let Some(corner_radius) = node.get_prop_f32("corner_radius") {
                 if corner_radius > 0.0 {
                     self.draw_rounded_rect(frame.x, frame.y, frame.width, frame.height, corner_radius)?;
@@ -157,7 +149,6 @@ impl<T: DrawingContext> CanvasRenderer<T> {
             }
         }
         
-        // Draw border if specified
         if let Some(border_width) = node.get_prop_f32("border_width") {
             if border_width > 0.0 {
                 let border_color = node.get_prop("border_color")
@@ -167,7 +158,6 @@ impl<T: DrawingContext> CanvasRenderer<T> {
                 self.context.set_stroke_color(&border_color)?;
                 self.context.set_line_width(border_width)?;
                 
-                // If we have corner radius, draw rounded rectangle
                 if let Some(corner_radius) = node.get_prop_f32("corner_radius") {
                     if corner_radius > 0.0 {
                         self.draw_rounded_rect(
@@ -191,16 +181,12 @@ impl<T: DrawingContext> CanvasRenderer<T> {
     }
     
     fn draw_hstack_enhanced(&self, node: &RenderNode, frame: Rect) -> Result<(), String> {
-        // Implementation similar to draw_vstack_enhanced
-        // Get edge insets
         let insets = self.parse_edge_insets_from_node(node);
         
-        // Draw background if provided
         if let Some(bg_str) = node.get_prop("background") {
             let color = self.parse_color(bg_str);
             self.context.set_fill_color(&color)?;
             
-            // If we have corner radius, draw rounded rectangle
             if let Some(corner_radius) = node.get_prop_f32("corner_radius") {
                 if corner_radius > 0.0 {
                     self.draw_rounded_rect(frame.x, frame.y, frame.width, frame.height, corner_radius)?;
@@ -213,7 +199,6 @@ impl<T: DrawingContext> CanvasRenderer<T> {
             }
         }
         
-        // Draw border if specified
         if let Some(border_width) = node.get_prop_f32("border_width") {
             if border_width > 0.0 {
                 let border_color = node.get_prop("border_color")
@@ -223,7 +208,6 @@ impl<T: DrawingContext> CanvasRenderer<T> {
                 self.context.set_stroke_color(&border_color)?;
                 self.context.set_line_width(border_width)?;
                 
-                // If we have corner radius, draw rounded rectangle
                 if let Some(corner_radius) = node.get_prop_f32("corner_radius") {
                     if corner_radius > 0.0 {
                         self.draw_rounded_rect(
@@ -247,16 +231,12 @@ impl<T: DrawingContext> CanvasRenderer<T> {
     }
 
     fn draw_zstack_enhanced(&self, node: &RenderNode, frame: Rect) -> Result<(), String> {
-        // Similar implementation as the other stacks
-        // Get edge insets
         let insets = self.parse_edge_insets_from_node(node);
         
-        // Draw background if provided
         if let Some(bg_str) = node.get_prop("background") {
             let color = self.parse_color(bg_str);
             self.context.set_fill_color(&color)?;
             
-            // If we have corner radius, draw rounded rectangle
             if let Some(corner_radius) = node.get_prop_f32("corner_radius") {
                 if corner_radius > 0.0 {
                     self.draw_rounded_rect(frame.x, frame.y, frame.width, frame.height, corner_radius)?;
@@ -269,7 +249,6 @@ impl<T: DrawingContext> CanvasRenderer<T> {
             }
         }
         
-        // Draw border if specified
         if let Some(border_width) = node.get_prop_f32("border_width") {
             if border_width > 0.0 {
                 let border_color = node.get_prop("border_color")
@@ -279,7 +258,6 @@ impl<T: DrawingContext> CanvasRenderer<T> {
                 self.context.set_stroke_color(&border_color)?;
                 self.context.set_line_width(border_width)?;
                 
-                // If we have corner radius, draw rounded rectangle
                 if let Some(corner_radius) = node.get_prop_f32("corner_radius") {
                     if corner_radius > 0.0 {
                         self.draw_rounded_rect(
@@ -307,22 +285,17 @@ impl<T: DrawingContext> CanvasRenderer<T> {
         
         let r = radius;
         
-        // Top-left arc
         self.context.move_to(x + r, y)?;
         
-        // Top border and top-right arc
         self.context.line_to(x + width - r, y)?;
         self.context.arc(x + width - r, y + r, r, -0.5 * std::f32::consts::PI, 0.0, false)?;
         
-        // Right border and bottom-right arc
         self.context.line_to(x + width, y + height - r)?;
         self.context.arc(x + width - r, y + height - r, r, 0.0, 0.5 * std::f32::consts::PI, false)?;
         
-        // Bottom border and bottom-left arc
         self.context.line_to(x + r, y + height)?;
         self.context.arc(x + r, y + height - r, r, 0.5 * std::f32::consts::PI, std::f32::consts::PI, false)?;
         
-        // Left border and top-left arc
         self.context.line_to(x, y + r)?;
         self.context.arc(x + r, y + r, r, std::f32::consts::PI, 1.5 * std::f32::consts::PI, false)?;
         
@@ -347,7 +320,6 @@ impl<T: DrawingContext> CanvasRenderer<T> {
             }
         }
         
-        // Fallback to using padding as a uniform inset
         if let Some(padding) = node.get_prop_f32("padding") {
             EdgeInsets::all(padding)
         } else {
@@ -418,11 +390,10 @@ impl<T: DrawingContext> CanvasRenderer<T> {
         let disabled = node.get_prop("disabled")
             .and_then(|val| val.parse::<bool>().ok())
             .unwrap_or(false);
-    
         let corner_radius = node.get_prop_f32("corner_radius").unwrap_or(4.0);
         let padding = node.get_prop_f32("padding").unwrap_or(10.0);
-    
-        let (bg_color, text_color, border_color, border_width): (String, String, String, f32) = if disabled {
+        
+        let (mut bg_color, mut text_color, mut border_color, mut border_width): (String, String, String, f32) = if disabled {
             ("#cccccc".to_string(), "#666666".to_string(), "#bbbbbb".to_string(), 0.0)
         } else {
             match style.as_str() {
@@ -436,33 +407,41 @@ impl<T: DrawingContext> CanvasRenderer<T> {
                     ("#ffffff".to_string(), "#0066cc".to_string(), "#0066cc".to_string(), 1.0),
                 "Text" | "ButtonStyle::Text" => 
                     ("transparent".to_string(), "#0066cc".to_string(), "transparent".to_string(), 0.0),
-                "Custom" | "ButtonStyle::Custom" => {
-                    let bg = node.get_prop("background_color").cloned().unwrap_or_else(|| "#3498db".to_string());
-                    let txt = node.get_prop("text_color").cloned().unwrap_or_else(|| "#ffffff".to_string());
-                    let bdr = node.get_prop("border_color").cloned().unwrap_or_else(|| bg.clone());
-                    let bw = node.get_prop_f32("border_width").unwrap_or(0.0);
-                    (bg, txt, bdr, bw)
-                },
-                _ => 
-                    ("#0066cc".to_string(), "#ffffff".to_string(), "#0066cc".to_string(), 0.0),
+                _ => ("#0066cc".to_string(), "#ffffff".to_string(), "#0066cc".to_string(), 0.0),
             }
         };
-    
+        
+        if let Some(custom_bg) = node.get_prop("background_color") {
+            bg_color = custom_bg.clone();
+        }
+        
+        if let Some(custom_text) = node.get_prop("text_color") {
+            text_color = custom_text.clone();
+        }
+        
+        if let Some(custom_border) = node.get_prop("border_color") {
+            border_color = custom_border.clone();
+        }
+        
+        if let Some(custom_border_width) = node.get_prop_f32("border_width") {
+            border_width = custom_border_width;
+        }
+        
         self.context.set_fill_color(&bg_color)?;
-    
+        
         if border_width > 0.0 {
             self.context.set_stroke_color(&border_color)?;
             self.context.set_line_width(border_width)?;
         }
-    
+        
         self.context.begin_path()?;
-    
+        
         let r = corner_radius;
         let x = frame.x;
         let y = frame.y;
         let w = frame.width;
         let h = frame.height;
-    
+        
         self.context.move_to(x + r, y)?;
         self.context.line_to(x + w - r, y)?;
         self.context.arc(x + w - r, y + r, r, -0.5 * std::f32::consts::PI, 0.0, false)?;
@@ -472,31 +451,50 @@ impl<T: DrawingContext> CanvasRenderer<T> {
         self.context.arc(x + r, y + h - r, r, 0.5 * std::f32::consts::PI, std::f32::consts::PI, false)?;
         self.context.line_to(x, y + r)?;
         self.context.arc(x + r, y + r, r, std::f32::consts::PI, 1.5 * std::f32::consts::PI, false)?;
-    
+        
         self.context.close_path()?;
         self.context.fill()?;
-    
+        
         if border_width > 0.0 {
             self.context.stroke()?;
         }
-    
-        self.context.set_font("16px sans-serif")?;
+        
+        let font_size = node.get_prop_f32("font_size").unwrap_or(16.0);
+        let font = format!("{}px sans-serif", font_size);
+        
+        self.context.set_font(&font)?;
         self.context.set_fill_color(&text_color)?;
         self.context.set_text_align("center")?;
         self.context.set_text_baseline("middle")?;
-    
+        
         let text_x = frame.x + frame.width / 2.0;
         let text_y = frame.y + frame.height / 2.0;
         self.context.fill_text(&label, text_x, text_y)?;
-    
+        
         self.context.set_text_align("left")?;
         self.context.set_text_baseline("alphabetic")?;
-    
+        
         Ok(())
     }
     
     fn draw_image(&self, node: &RenderNode, frame: Rect) -> Result<(), String> {
         let src = node.get_prop("src").cloned().unwrap_or_default();
+    
+        let remote_str = "remote".to_string();
+        let source_type = node.get_prop("source_type").unwrap_or(&remote_str);
+        
+        let display_src = if source_type == "asset" {
+            if let Some(path) = node.get_prop("source_path") {
+                format!("asset://{}", path)
+            } else {
+                src.clone()
+            }
+        } else if source_type == "memory" {
+            "memory://image".to_string()
+        } else {
+            src.clone()
+        };
+        
         let alt = node.get_prop("alt").cloned().unwrap_or_default();
         
         let corner_radius = node.get_prop_f32("corner_radius").unwrap_or(0.0);
@@ -504,6 +502,39 @@ impl<T: DrawingContext> CanvasRenderer<T> {
         let border_color = node.get_prop("border_color")
             .cloned()
             .unwrap_or_else(|| "#cccccc".to_string());
+            
+        let opacity = node.get_prop_f32("opacity").unwrap_or(1.0);
+        let tint_color = node.get_prop("tint_color").cloned();
+        let blur_radius = node.get_prop_f32("blur_radius").unwrap_or(0.0);
+        
+        let shadow_radius = node.get_prop_f32("shadow_radius").unwrap_or(0.0);
+        let shadow_color = node.get_prop("shadow_color")
+            .cloned()
+            .unwrap_or_else(|| "#000000".to_string());
+        let shadow_offset_x = node.get_prop_f32("shadow_offset_x").unwrap_or(0.0);
+        let shadow_offset_y = node.get_prop_f32("shadow_offset_y").unwrap_or(0.0);
+        
+        let loading_placeholder = node.get_prop("loading_placeholder").cloned();
+        let error_placeholder = node.get_prop("error_placeholder").cloned();
+        let is_loading = node.get_prop("is_loading")
+            .and_then(|v| v.parse::<bool>().ok())
+            .unwrap_or(false);
+        let has_error = node.get_prop("has_error")
+            .and_then(|v| v.parse::<bool>().ok())
+            .unwrap_or(false);
+        
+        let final_src = if is_loading {
+            loading_placeholder.unwrap_or_else(|| "loading_placeholder".to_string())
+        } else if has_error {
+            error_placeholder.unwrap_or_else(|| "error_placeholder".to_string())
+        } else {
+            display_src
+        };
+        
+        if shadow_radius > 0.0 {
+            self.context.save_drawing_state()?;
+            self.context.restore_drawing_state()?;
+        }
         
         self.context.save_drawing_state()?;
         
@@ -528,6 +559,9 @@ impl<T: DrawingContext> CanvasRenderer<T> {
             
             self.context.close_path()?;
             self.context.clip()?;
+        }
+        
+        if opacity < 1.0 {
         }
         
         self.context.set_fill_color("#f5f5f5")?;
@@ -562,10 +596,10 @@ impl<T: DrawingContext> CanvasRenderer<T> {
         self.context.fill()?;
         
         let display_text = if alt.is_empty() {
-            if src.is_empty() { 
+            if final_src.is_empty() { 
                 "Image".to_string() 
             } else {
-                src.split('/')
+                final_src.split('/')
                    .last()
                    .map(|s| s.to_string())
                    .unwrap_or_else(|| "Image".to_string())
@@ -578,7 +612,7 @@ impl<T: DrawingContext> CanvasRenderer<T> {
         let truncated_text = if display_text.len() > max_display_length {
             format!("{}...", &display_text[0..max_display_length-3])
         } else {
-            display_text.to_string()
+            display_text
         };
         
         self.context.set_font("10px sans-serif")?;

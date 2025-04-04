@@ -243,6 +243,38 @@ export class ButtonNodeBuilder extends BaseNodeBuilder {
     return this.setProp("gradientIsRadial", isRadial);
   }
 
+  gradientColors(
+    colors: string[],
+    vertical: boolean = false,
+    isRadial: boolean = false
+  ): this {
+    if (!colors || colors.length === 0) {
+      return this;
+    }
+
+    if (vertical) {
+      this.setProp("gradientStartX", 0.5);
+      this.setProp("gradientStartY", 0);
+      this.setProp("gradientEndX", 0.5);
+      this.setProp("gradientEndY", 1);
+    } else {
+      this.setProp("gradientStartX", 0);
+      this.setProp("gradientStartY", 0.5);
+      this.setProp("gradientEndX", 1);
+      this.setProp("gradientEndY", 0.5);
+    }
+
+    this.setProp("gradientIsRadial", isRadial);
+
+    const numColors = colors.length;
+    colors.forEach((color, index) => {
+      const position = numColors > 1 ? index / (numColors - 1) : 0.5;
+      this.setProp(`gradientStop_${index}`, { color, position });
+    });
+
+    return this;
+  }
+
   onDoubleTap(handler: string | Function): this {
     return this.setProp("onDoubleTap", handler);
   }

@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "crates/wasm",
+    "crates/ui",
 ]
 
 [workspace.package]

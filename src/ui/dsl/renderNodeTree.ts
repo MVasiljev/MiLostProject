@@ -33,7 +33,6 @@ type BuiltComponent = any;
 export async function renderNodeTree(
   vnode: BaseNodeBuilder | SpecificNodeBuilder
 ): Promise<BuiltComponent> {
-  // If it's a base node builder, we need to convert it
   const convertedNode =
     vnode instanceof BaseNodeBuilder ? convertBaseNodeToSpecific(vnode) : vnode;
 
@@ -55,7 +54,6 @@ export async function renderNodeTree(
 function convertBaseNodeToSpecific(
   baseNode: BaseNodeBuilder
 ): SpecificNodeBuilder {
-  // Map the base node type to a specific node builder
   switch (baseNode.type) {
     case "VStack":
       return new VStackNodeBuilder(baseNode.children)
@@ -95,13 +93,33 @@ function convertBaseNodeToSpecific(
     case "Divider":
       return new DividerNodeBuilder();
 
+    // In the convertBaseNodeToSpecific function in renderNodeTree.ts
     case "Image":
-      return new ImageNodeBuilder(baseNode.props.src || "")
-        .setProp("width", baseNode.props.width)
-        .setProp("height", baseNode.props.height)
-        .setProp("cornerRadius", baseNode.props.cornerRadius)
-        .setProp("borderWidth", baseNode.props.borderWidth)
-        .setProp("borderColor", baseNode.props.borderColor);
+      // Create a new image builder
+      const imageBuilder = new ImageNodeBuilder(baseNode.props.src || "");
+
+      // Apply key image properties explicitly
+      if (baseNode.props.width !== undefined) {
+        imageBuilder.width(baseNode.props.width);
+      }
+
+      if (baseNode.props.height !== undefined) {
+        imageBuilder.height(baseNode.props.height);
+      }
+
+      if (baseNode.props.cornerRadius !== undefined) {
+        imageBuilder.cornerRadius(baseNode.props.cornerRadius);
+      }
+
+      if (baseNode.props.borderWidth !== undefined) {
+        imageBuilder.borderWidth(baseNode.props.borderWidth);
+      }
+
+      if (baseNode.props.borderColor !== undefined) {
+        imageBuilder.borderColor(baseNode.props.borderColor);
+      }
+
+      return imageBuilder;
 
     default:
       throw new Error(`Unknown node type: ${baseNode.type}`);
@@ -157,8 +175,17 @@ async function createBuilderFromType(vnode: SpecificNodeBuilder) {
 function applyProps(builder: any, props: Record<string, any>) {
   console.log("Applying props to builder:", props);
 
+  if (
+    props.src &&
+    builder.constructor.name.includes("Image") &&
+    typeof builder.src === "function"
+  ) {
+    builder.src(props.src);
+    // Or alternatively if that's not the right method name:
+    // builder._builder = builder._builder.src(props.src);
+  }
+
   for (const [key, value] of Object.entries(props)) {
-    // Skip undefined values
     if (value === undefined) {
       console.log(`Skipping undefined prop: ${key}`);
       continue;
@@ -166,9 +193,7 @@ function applyProps(builder: any, props: Record<string, any>) {
 
     console.log(`Trying to apply prop: ${key} with value:`, value);
 
-    // Try multiple ways of applying props
     try {
-      // Special handling for event handlers
       if (key === "onTap" && typeof value === "function") {
         const handlerId = `btn_${Date.now()}_${Math.floor(
           Math.random() * 1000
@@ -183,9 +208,7 @@ function applyProps(builder: any, props: Record<string, any>) {
         continue;
       }
 
-      // Special handling for string values to prevent WASM errors
       if (typeof value === "string") {
-        // Trim and check for empty string
         const trimmedValue = value.trim();
         if (trimmedValue === "") {
           console.log(`Skipping empty string prop: ${key}`);
@@ -193,14 +216,12 @@ function applyProps(builder: any, props: Record<string, any>) {
         }
       }
 
-      // First, try direct method call
       if (typeof builder[key] === "function") {
         console.log(`Calling method: ${key}`);
         builder[key](value);
         continue;
       }
 
-      // Try camelCase conversion
       const camelKey = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
       if (typeof builder[camelKey] === "function") {
         console.log(`Calling camelCase method: ${camelKey}`);
@@ -208,7 +229,6 @@ function applyProps(builder: any, props: Record<string, any>) {
         continue;
       }
 
-      // Try snake_case conversion
       const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
       if (typeof builder[snakeKey] === "function") {
         console.log(`Calling snake_case method: ${snakeKey}`);

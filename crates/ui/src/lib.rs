@@ -22,7 +22,7 @@ pub use button::{ButtonProps, ButtonStyle, ButtonSize, ButtonState, Gradient, Gr
 pub use stack::{VStackProps, HStackProps, VStackAlignment, HStackAlignment};
 pub use component::UIComponent;
 pub use zstack::ZStackProps;
-pub use image::ImageProps;
+pub use image::{ImageProps, ImageFilter, ImageSource, ResizeMode, ContentMode};
 pub use scroll::{ScrollProps, ScrollDirection};
 pub use spacer::SpacerProps;
 pub use divider::{DividerProps, DividerStyle};

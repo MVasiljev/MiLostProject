@@ -20,8 +20,13 @@ export class TextBuilder {
     return this;
   }
 
-  color(color: ColorType): TextBuilder {
-    this._builder = this._builder.color(color);
+  color(color: ColorType | string): TextBuilder {
+    if (color === "White" || color === "Blue" || color === "Black") {
+      this._builder = this._builder.color(color);
+    } else {
+      console.log(`Using custom color: ${color}`);
+      this._builder = this._builder.color(color);
+    }
     return this;
   }
 

@@ -411,19 +411,75 @@ export function insetVertical(value: number): EdgeInsets {
   return { top: value, right: 0, bottom: value, left: 0 };
 }
 
-export function CircleImage(src: string, size: number): ImageNodeBuilder {
-  return Image(src)
-    .width(size)
-    .height(size)
-    .cornerRadius(size / 2)
-    .resizeMode(ResizeMode.Cover);
+export function CircleImage(src: string, size: number = 50): ImageNodeBuilder {
+  return Image(src).circular(size);
 }
 
-export function BackgroundImage(src: string): ImageNodeBuilder {
-  return Image(src)
-    .resizeMode(ResizeMode.Cover)
-    .cornerRadius(0)
-    .clipToBounds(true);
+export function AvatarImage(
+  src: string,
+  size: number = 50,
+  fallbackInitials?: string
+): ImageNodeBuilder {
+  const image = Image(src).circular(size);
+
+  if (fallbackInitials) {
+    image
+      .errorPlaceholder("avatar-placeholder")
+      .setProp("fallbackInitials", fallbackInitials);
+  }
+
+  return image;
+}
+
+export function BackgroundImage(
+  src: string,
+  overlay?: string
+): ImageNodeBuilder {
+  return Image(src).resizeMode(ResizeMode.Cover).asBackground(overlay);
+}
+
+export function GradientImage(
+  size: { width: number; height: number },
+  colors: string[],
+  direction: "horizontal" | "vertical" | "diagonal" = "vertical"
+): ImageNodeBuilder {
+  const image = Image("gradient")
+    .setProp("sourceType", "gradient")
+    .setProp("gradientColors", colors)
+    .setProp("gradientDirection", direction)
+    .width(size.width)
+    .height(size.height);
+
+  return image;
+}
+
+export function ImageWithCaption(
+  src: string,
+  caption: string,
+  options?: {
+    width?: number;
+    height?: number;
+    captionColor?: string;
+    captionSize?: number;
+  }
+): VStackNodeBuilder {
+  const imageBuilder = Image(src);
+
+  if (options?.width) {
+    imageBuilder.width(options.width);
+  }
+
+  if (options?.height) {
+    imageBuilder.height(options.height);
+  }
+
+  return VStack(
+    imageBuilder,
+    Text(caption)
+      .fontSize(options?.captionSize || 12)
+      .color(options?.captionColor || "#666666")
+      .textAlign(TextAlign.Center)
+  ).spacing(8);
 }
 
 export function Heading(text: string): TextNodeBuilder {

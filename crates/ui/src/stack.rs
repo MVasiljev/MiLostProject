@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use crate::{Color, UIComponent, EdgeInsets, Alignment};
+use crate::{Color, UIComponent, EdgeInsets};
 
 // Split the alignments into separate enums to prevent misuse
 #[derive(Debug, Serialize, Deserialize, Clone)]
