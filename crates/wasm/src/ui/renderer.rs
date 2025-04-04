@@ -1,7 +1,7 @@
+use milost_ui::CanvasRenderer;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 use milost_ui::{render, UIComponent, layout::{LayoutEngine, Size}};
-use milost_ui::platform::canvas::CanvasRenderer;
 use super::canvas_context::WebCanvasContext;
 
 #[wasm_bindgen]

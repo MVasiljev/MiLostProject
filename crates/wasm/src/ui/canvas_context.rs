@@ -1,8 +1,8 @@
 
+use milost_ui::DrawingContext;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
-use milost_ui::platform::canvas::DrawingContext;
 
 pub struct WebCanvasContext {
     context: CanvasRenderingContext2d,

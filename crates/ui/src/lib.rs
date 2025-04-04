@@ -1,4 +1,3 @@
-
 pub mod color;
 pub mod font;
 pub mod text;
@@ -12,7 +11,6 @@ pub mod spacer;
 pub mod divider;
 pub mod render;
 pub mod layout;
-pub mod platform;
 pub mod events;
 
 pub use color::Color;
@@ -27,10 +25,14 @@ pub use scroll::{ScrollProps, ScrollDirection};
 pub use spacer::SpacerProps;
 pub use divider::{DividerProps, DividerStyle};
 
+// Render system exports
 pub use render::node::RenderNode;
 pub use render::component::render;
+pub use render::renderer::{DrawingContext, Renderer, ComponentRenderer};
+pub use render::components::canvas_renderer::{CanvasRenderer, CanvasContext};
 
+// Layout system exports
 pub use layout::{Rect, Size, Point, EdgeInsets, Alignment, LayoutEngine};
 
-pub use platform::canvas::{DrawingContext, CanvasRenderer};
+// Event system exports
 pub use events::{EventType, EventHandler, EventData};
