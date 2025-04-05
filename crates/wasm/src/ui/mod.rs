@@ -10,6 +10,8 @@ pub mod spacer;
 pub mod divider;
 pub mod renderer;
 pub mod canvas_context;
+pub mod font;
+pub mod color;
 
 pub use parser::UIParser;
 pub use text::TextBuilder;
@@ -21,3 +23,6 @@ pub use scroll::ScrollBuilder;
 pub use spacer::SpacerBuilder;
 pub use divider::DividerBuilder;
 pub use renderer::{render_component, render_to_canvas_element};
+pub use canvas_context::CanvasContext;
+pub use font::Font;
+pub use color::Color;

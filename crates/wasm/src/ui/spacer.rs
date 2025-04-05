@@ -1,62 +1,174 @@
+use milost_ui::UIComponent;
+use serde::{Serialize, Deserialize};
 use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsValue;
-use milost_ui::{SpacerProps, UIComponent};
 
+/// Spacer sizing strategies
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum SpacerStrategy {
+    /// Fixed size in pixels
+    Fixed(f32),
+    
+    /// Flexible growth factor
+    Flexible(f32),
+    
+    /// Minimum size constraint
+    Minimum(f32),
+    
+    /// Maximum size constraint
+    Maximum(f32),
+}
+
+/// Spacer configuration properties
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SpacerProps {
+    /// Sizing strategy for the spacer
+    pub strategy: Option<SpacerStrategy>,
+    
+    /// Child components (rare for spacers, but possible)
+    pub children: Vec<UIComponent>,
+    
+    /// Accessibility label
+    pub accessibility_label: Option<String>,
+}
+
+impl Default for SpacerProps {
+    fn default() -> Self {
+        Self {
+            strategy: None,
+            children: Vec::new(),
+            accessibility_label: None,
+        }
+    }
+}
+
+impl SpacerProps {
+    /// Create a new spacer with default properties
+    pub fn new() -> Self {
+        Self::default()
+    }
+    
+    /// Create a fixed-size spacer
+    pub fn fixed(size: f32) -> Self {
+        Self {
+            strategy: Some(SpacerStrategy::Fixed(size)),
+            ..Default::default()
+        }
+    }
+    
+    /// Create a flexible spacer
+    pub fn flexible(grow: f32) -> Self {
+        Self {
+            strategy: Some(SpacerStrategy::Flexible(grow)),
+            ..Default::default()
+        }
+    }
+    
+    /// Create a minimum-size spacer
+    pub fn min(size: f32) -> Self {
+        Self {
+            strategy: Some(SpacerStrategy::Minimum(size)),
+            ..Default::default()
+        }
+    }
+    
+    /// Create a maximum-size spacer
+    pub fn max(size: f32) -> Self {
+        Self {
+            strategy: Some(SpacerStrategy::Maximum(size)),
+            ..Default::default()
+        }
+    }
+    
+    /// Set an accessibility label
+    pub fn accessibility_label(mut self, label: impl Into<String>) -> Self {
+        self.accessibility_label = Some(label.into());
+        self
+    }
+}
+
+/// WASM-specific spacer builder
 #[wasm_bindgen]
 pub struct SpacerBuilder {
-    size: Option<f32>,
-    min_size: Option<f32>,
-    max_size: Option<f32>,
-    flex_grow: Option<f32>,
+    props: SpacerProps,
 }
 
 #[wasm_bindgen]
 impl SpacerBuilder {
+    /// Create a new spacer builder
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
-        Self { 
-            size: None, 
-            min_size: None, 
-            max_size: None, 
-            flex_grow: None 
+        Self {
+            props: SpacerProps::new(),
         }
     }
 
+    /// Set fixed size
     #[wasm_bindgen(method)]
-    pub fn size(mut self, value: f32) -> Self {
-        self.size = Some(value);
+    pub fn fixed(mut self, size: f32) -> Self {
+        self.props.strategy = Some(SpacerStrategy::Fixed(size));
         self
     }
 
+    /// Set flexible grow
     #[wasm_bindgen(method)]
-    pub fn min_size(mut self, value: f32) -> Self {
-        self.min_size = Some(value);
+    pub fn flexible(mut self, grow: f32) -> Self {
+        self.props.strategy = Some(SpacerStrategy::Flexible(grow));
         self
     }
 
+    /// Set minimum size
     #[wasm_bindgen(method)]
-    pub fn max_size(mut self, value: f32) -> Self {
-        self.max_size = Some(value);
+    pub fn min(mut self, size: f32) -> Self {
+        self.props.strategy = Some(SpacerStrategy::Minimum(size));
         self
     }
 
+    /// Set maximum size
     #[wasm_bindgen(method)]
-    pub fn flex_grow(mut self, value: f32) -> Self {
-        self.flex_grow = Some(value);
+    pub fn max(mut self, size: f32) -> Self {
+        self.props.strategy = Some(SpacerStrategy::Maximum(size));
         self
     }
 
+    /// Set accessibility label
     #[wasm_bindgen(method)]
-    pub fn build(&self) -> Result<JsValue, JsValue> {
-        let component = UIComponent::Spacer(SpacerProps {
-            size: self.size,
-            min_size: self.min_size,
-            max_size: self.max_size,
-            flex_grow: self.flex_grow,
-        });
+    pub fn accessibility_label(mut self, label: &str) -> Self {
+        self.props.accessibility_label = Some(label.to_string());
+        self
+    }
+
+    /// Add a child component
+    #[wasm_bindgen(method)]
+    pub fn child(mut self, component_str: &str) -> Self {
+        if let Ok(component) = serde_json::from_str::<UIComponent>(component_str) {
+            self.props.children.push(component);
+        }
+        self
+    }
+
+    /// Build the spacer
+    #[wasm_bindgen(method)]
+    pub fn build(self) -> Result<String, JsValue> {
+        let component = UIComponent::Spacer(self.props);
 
         serde_json::to_string(&component)
-            .map(|s| JsValue::from_str(&s))
             .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
     }
+}
+
+/// Default spacer creation functions for WASM
+#[wasm_bindgen]
+pub fn default_fixed_spacer(size: f32) -> Result<String, JsValue> {
+    let component = UIComponent::Spacer(SpacerProps::fixed(size));
+
+    serde_json::to_string(&component)
+        .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
+}
+
+#[wasm_bindgen]
+pub fn default_flexible_spacer(grow: f32) -> Result<String, JsValue> {
+    let component = UIComponent::Spacer(SpacerProps::flexible(grow));
+
+    serde_json::to_string(&component)
+        .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
 }

@@ -13,8 +13,8 @@ pub mod render;
 pub mod layout;
 pub mod events;
 
-pub use color::Color;
-pub use font::FontStyle;
+pub use color::*;
+pub use font::*;
 pub use text::TextProps;
 pub use button::{ButtonProps, ButtonStyle, ButtonSize, ButtonState, Gradient, GradientStop, BorderStyle, LoadingIndicatorType, Overflow, TextTransform, TextAlign, FontWeight};
 pub use stack::{VStackProps, HStackProps, VStackAlignment, HStackAlignment};
