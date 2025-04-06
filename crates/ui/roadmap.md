@@ -196,7 +196,7 @@ The framework is organized around several core concepts:
 
 1. **Rendering System**
 
-   - The current canvas renderer is mostly a placeholder with limited implementation
+   - The DrawingContext trait needs to be expanded with more drawing capabilities, Need for additional rendering features like gradients, shadows, and effects, Need optimizations like dirty region tracking and draw operation batching
    - Need for more comprehensive rendering capabilities for all components
    - Shadow rendering is incomplete and needs proper implementation
    - Limited support for advanced visual effects
@@ -234,10 +234,12 @@ The framework is organized around several core concepts:
 
 - [ ] Complete the canvas renderer implementation with proper drawing for all components
 
-  - Files to update:
-    - `src/render/components/canvas_renderer.rs` - Implement actual drawing context methods
-    - `src/render/components/shared.rs` - Complete shadow rendering implementation
-    - `src/render/renderer.rs` - Add optimization for batched rendering
+  - Enhance the DrawingContext trait and renderer capabilities
+
+    - `Files to update:
+      - `src/render/renderer.rs - Define expanded drawing context interface
+      - `src/render/components/shared.rs - Implement drawing utilities for gradients, shadows, etc.
+      - `Add renderer optimizations like dirty region tracking and operation batching
 
 - [ ] Implement proper image loading and caching
 

@@ -1,7 +1,6 @@
 use crate::render::node::RenderNode;
 use super::types::{Size};
 
-/// Measure Button component
 pub fn measure_button(node: &RenderNode, available_size: Size) -> Size {
     let label = node.get_prop("label")
         .cloned()

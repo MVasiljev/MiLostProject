@@ -6,7 +6,6 @@ use super::layout_info::LayoutInfo;
 use super::layout_utils::parse_edge_insets;
 use super::types::{Rect, Size};
 
-/// Measure VStack component
 pub fn measure_vstack(node: &RenderNode, available_size: Size, engine: &mut impl LayoutMeasurement) -> Size {
     let spacing = node.get_prop_f32("spacing").unwrap_or(0.0);
     let equal_spacing = node.get_prop("equal_spacing")
@@ -60,7 +59,6 @@ pub fn measure_vstack(node: &RenderNode, available_size: Size, engine: &mut impl
     )
 }
 
-/// Measure HStack component
 pub fn measure_hstack(node: &RenderNode, available_size: Size, engine: &mut impl LayoutMeasurement) -> Size {
     let spacing = node.get_prop_f32("spacing").unwrap_or(0.0);
     let equal_spacing = node.get_prop("equal_spacing")
@@ -114,7 +112,6 @@ pub fn measure_hstack(node: &RenderNode, available_size: Size, engine: &mut impl
     )
 }
 
-/// Position VStack children
 pub fn position_vstack_children(
     node: &RenderNode, 
     frame: Rect, 
@@ -133,7 +130,7 @@ pub fn position_vstack_children(
         frame.height - insets.top - insets.bottom
     );
     
-    let alignment_str = node.get_prop("alignment").map_or("Leading", |v| v.as_str());
+    let alignment_str = node.get_prop("alignment").map_or("leading", |v| v.as_str());
     
     let mut total_fixed_height = 0.0;
     let mut total_flex_grow = 0.0;
@@ -159,7 +156,6 @@ pub fn position_vstack_children(
     }
     
     let mut total_spacing = 0.0;
-    
     if equal_spacing && node.children.len() > 1 {
         let items_count = node.children.len() - 1;
         let available_space = content_frame.height - total_fixed_height;
@@ -196,10 +192,10 @@ pub fn position_vstack_children(
                 }
             }
             
-            let x_pos = match alignment_str {
-                s if s.eq_ignore_ascii_case("leading") => content_frame.x,
-                s if s.eq_ignore_ascii_case("trailing") => content_frame.x + content_frame.width - child_width,
-                s if s.eq_ignore_ascii_case("center") => content_frame.x + (content_frame.width - child_width) / 2.0,
+            let x_pos = match alignment_str.to_lowercase().as_str() {
+                "leading" => content_frame.x,
+                "trailing" => content_frame.x + content_frame.width - child_width,
+                "center" => content_frame.x + (content_frame.width - child_width) / 2.0,
                 _ => content_frame.x
             };
             
@@ -217,7 +213,6 @@ pub fn position_vstack_children(
     }
 }
 
-/// Position HStack children
 pub fn position_hstack_children(
     node: &RenderNode, 
     frame: Rect, 
@@ -236,7 +231,7 @@ pub fn position_hstack_children(
         frame.height - insets.top - insets.bottom
     );
     
-    let alignment_str = node.get_prop("alignment").map_or("Center", |v| v.as_str());
+    let alignment_str = node.get_prop("alignment").map_or("center", |v| v.as_str());
     
     let mut total_fixed_width = 0.0;
     let mut total_flex_grow = 0.0;
@@ -262,7 +257,6 @@ pub fn position_hstack_children(
     }
     
     let mut total_spacing = 0.0;
-    
     if equal_spacing && node.children.len() > 1 {
         let items_count = node.children.len() - 1;
         let available_space = content_frame.width - total_fixed_width;
@@ -299,10 +293,12 @@ pub fn position_hstack_children(
                 }
             }
             
-            let y_pos = match alignment_str {
-                "Top" | "top" => content_frame.y,
-                "Bottom" | "bottom" => content_frame.y + content_frame.height - child_height,
-                "Center" | "center" => content_frame.y + (content_frame.height - child_height) / 2.0,
+            let y_pos = match alignment_str.to_lowercase().as_str() {
+                "top" => content_frame.y,
+                "bottom" => content_frame.y + content_frame.height - child_height,
+                "center" => content_frame.y + (content_frame.height - child_height) / 2.0,
+                "first_text_baseline" | "last_text_baseline" => 
+                    content_frame.y + (content_frame.height - child_height) / 2.0,
                 _ => content_frame.y + (content_frame.height - child_height) / 2.0
             };
             

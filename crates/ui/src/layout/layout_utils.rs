@@ -1,7 +1,6 @@
 use crate::render::node::RenderNode;
 use super::types::{EdgeInsets};
 
-/// Parse edge insets from a node's properties
 pub fn parse_edge_insets(node: &RenderNode) -> EdgeInsets {
     if let Some(insets_str) = node.get_prop("edge_insets") {
         if let Some(parts) = insets_str.split(',').collect::<Vec<&str>>().get(0..4) {
@@ -25,7 +24,6 @@ pub fn parse_edge_insets(node: &RenderNode) -> EdgeInsets {
     }
 }
 
-/// Parse edge insets from a string
 pub fn parse_edge_insets_from_string(insets_str: &str) -> Option<EdgeInsets> {
     let parts: Vec<&str> = insets_str.split(',').collect();
     if parts.len() == 4 {

@@ -1,5 +1,9 @@
 use serde::{Serialize, Deserialize};
-use crate::{Color, EventHandler, EdgeInsets, Alignment};
+use crate::styles::{BorderStyle, Overflow};
+use crate::{Alignment, Color, EdgeInsets, Gradient, LoadingIndicatorType};
+use crate::events::EventType;
+
+use super::text::{FontWeight, TextAlign, TextTransform};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ButtonStyle {
@@ -48,118 +52,21 @@ impl Default for ButtonState {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum BorderStyle {
-    Solid,
-    Dashed,
-    Dotted,
-    None,
-}
-
-impl Default for BorderStyle {
-    fn default() -> Self {
-        BorderStyle::Solid
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum TextTransform {
-    None,
-    Uppercase,
-    Lowercase,
-    Capitalize,
-}
-
-impl Default for TextTransform {
-    fn default() -> Self {
-        TextTransform::None
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum TextAlign {
-    Left,
-    Center,
-    Right,
-}
-
-impl Default for TextAlign {
-    fn default() -> Self {
-        TextAlign::Center
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum FontWeight {
-    Thin,
-    ExtraLight,
-    Light,
-    Regular,
-    Medium,
-    SemiBold,
-    Bold,
-    ExtraBold,
-    Black,
-    Custom(u32),
-}
-
-impl Default for FontWeight {
-    fn default() -> Self {
-        FontWeight::Regular
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum LoadingIndicatorType {
-    Spinner,
-    DotPulse,
-    BarPulse,
-    Custom,
-}
-
-impl Default for LoadingIndicatorType {
-    fn default() -> Self {
-        LoadingIndicatorType::Spinner
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum Overflow {
-    Visible,
-    Hidden,
-    Scroll,
-    Ellipsis,
-}
-
-impl Default for Overflow {
-    fn default() -> Self {
-        Overflow::Visible
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GradientStop {
-    pub color: String,
-    pub position: f32,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Gradient {
-    pub stops: Vec<GradientStop>,
-    pub start_point: (f32, f32),
-    pub end_point: (f32, f32),
-    pub is_radial: bool,
+pub struct ButtonEventHandler {
+    pub event_type: EventType,
+    pub handler_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ButtonProps {
     pub label: String,
-    pub on_tap: Option<EventHandler>,
+    pub on_tap: Option<ButtonEventHandler>,
     pub disabled: Option<bool>,
     pub style: Option<ButtonStyle>,
     
-    pub background_color: Option<String>,
-    pub text_color: Option<String>,
-    pub border_color: Option<String>,
+    pub background_color: Option<Color>,
+    pub text_color: Option<Color>,
+    pub border_color: Option<Color>,
     pub corner_radius: Option<f32>,
     pub padding: Option<f32>,
     pub icon: Option<String>,
@@ -169,7 +76,7 @@ pub struct ButtonProps {
     pub button_state: Option<ButtonState>,
     pub elevation: Option<f32>,
     pub opacity: Option<f32>,
-    pub shadow_color: Option<String>,
+    pub shadow_color: Option<Color>,
     pub shadow_offset: Option<(f32, f32)>,
     pub shadow_radius: Option<f32>,
     pub gradient: Option<Gradient>,
@@ -192,16 +99,16 @@ pub struct ButtonProps {
     
     pub is_loading: Option<bool>,
     pub loading_indicator_type: Option<LoadingIndicatorType>,
-    pub loading_indicator_color: Option<String>,
+    pub loading_indicator_color: Option<Color>,
     pub loading_indicator_size: Option<f32>,
     pub hide_text_while_loading: Option<bool>,
     
-    pub on_double_tap: Option<EventHandler>,
-    pub on_long_press: Option<EventHandler>,
-    pub on_hover_enter: Option<EventHandler>,
-    pub on_hover_exit: Option<EventHandler>,
-    pub on_focus: Option<EventHandler>,
-    pub on_blur: Option<EventHandler>,
+    pub on_double_tap: Option<ButtonEventHandler>,
+    pub on_long_press: Option<ButtonEventHandler>,
+    pub on_hover_enter: Option<ButtonEventHandler>,
+    pub on_hover_exit: Option<ButtonEventHandler>,
+    pub on_focus: Option<ButtonEventHandler>,
+    pub on_blur: Option<ButtonEventHandler>,
     
     pub accessibility_label: Option<String>,
     pub accessibility_hint: Option<String>,
@@ -210,7 +117,7 @@ pub struct ButtonProps {
     pub animation_duration: Option<f32>,
     pub press_effect: Option<bool>,
     pub press_scale: Option<f32>,
-    pub press_color_change: Option<String>,
+    pub press_color_change: Option<Color>,
     pub press_offset: Option<(f32, f32)>,
 }
 
@@ -289,8 +196,11 @@ impl ButtonProps {
         }
     }
     
-    pub fn with_on_tap(mut self, handler: EventHandler) -> Self {
-        self.on_tap = Some(handler);
+    pub fn with_on_tap(mut self, handler_id: &str) -> Self {
+        self.on_tap = Some(ButtonEventHandler {
+            event_type: EventType::Tap,
+            handler_id: handler_id.to_string(),
+        });
         self
     }
     
@@ -305,17 +215,17 @@ impl ButtonProps {
     }
     
     pub fn with_background_color(mut self, color: String) -> Self {
-        self.background_color = Some(color);
+        self.background_color = Some(Color::from_hex(&color));
         self
     }
     
     pub fn with_text_color(mut self, color: String) -> Self {
-        self.text_color = Some(color);
+        self.text_color = Some(Color::from_hex(&color));
         self
     }
     
     pub fn with_border_color(mut self, color: String) -> Self {
-        self.border_color = Some(color);
+        self.border_color = Some(Color::from_hex(&color));
         self
     }
     
@@ -358,7 +268,7 @@ impl ButtonProps {
     }
     
     pub fn with_shadow(mut self, color: String, offset: (f32, f32), radius: f32) -> Self {
-        self.shadow_color = Some(color);
+        self.shadow_color = Some(Color::from_hex(&color));
         self.shadow_offset = Some(offset);
         self.shadow_radius = Some(radius);
         self
@@ -372,7 +282,7 @@ impl ButtonProps {
     pub fn with_border(mut self, width: f32, style: BorderStyle, color: String) -> Self {
         self.border_width = Some(width);
         self.border_style = Some(style);
-        self.border_color = Some(color);
+        self.border_color = Some(Color::from_hex(&color));
         self
     }
     
@@ -416,7 +326,7 @@ impl ButtonProps {
         mut self,
         is_loading: bool,
         indicator_type: Option<LoadingIndicatorType>,
-        indicator_color: Option<String>,
+        indicator_color: Option<Color>,
         indicator_size: Option<f32>,
         hide_text: Option<bool>
     ) -> Self {
@@ -430,19 +340,43 @@ impl ButtonProps {
     
     pub fn with_event_handlers(
         mut self,
-        on_double_tap: Option<EventHandler>,
-        on_long_press: Option<EventHandler>,
-        on_hover_enter: Option<EventHandler>,
-        on_hover_exit: Option<EventHandler>,
-        on_focus: Option<EventHandler>,
-        on_blur: Option<EventHandler>
+        on_double_tap: Option<&str>,
+        on_long_press: Option<&str>,
+        on_hover_enter: Option<&str>,
+        on_hover_exit: Option<&str>,
+        on_focus: Option<&str>,
+        on_blur: Option<&str>
     ) -> Self {
-        self.on_double_tap = on_double_tap;
-        self.on_long_press = on_long_press;
-        self.on_hover_enter = on_hover_enter;
-        self.on_hover_exit = on_hover_exit;
-        self.on_focus = on_focus;
-        self.on_blur = on_blur;
+        self.on_double_tap = on_double_tap.map(|id| ButtonEventHandler {
+            event_type: EventType::DoubleTap,
+            handler_id: id.to_string(),
+        });
+        
+        self.on_long_press = on_long_press.map(|id| ButtonEventHandler {
+            event_type: EventType::LongPress,
+            handler_id: id.to_string(),
+        });
+        
+        self.on_hover_enter = on_hover_enter.map(|id| ButtonEventHandler {
+            event_type: EventType::HoverEnter,
+            handler_id: id.to_string(),
+        });
+        
+        self.on_hover_exit = on_hover_exit.map(|id| ButtonEventHandler {
+            event_type: EventType::HoverExit,
+            handler_id: id.to_string(),
+        });
+        
+        self.on_focus = on_focus.map(|id| ButtonEventHandler {
+            event_type: EventType::Focus,
+            handler_id: id.to_string(),
+        });
+        
+        self.on_blur = on_blur.map(|id| ButtonEventHandler {
+            event_type: EventType::Blur,
+            handler_id: id.to_string(),
+        });
+        
         self
     }
     
@@ -462,7 +396,7 @@ impl ButtonProps {
         mut self,
         enabled: bool,
         scale: Option<f32>,
-        color_change: Option<String>,
+        color_change: Option<Color>,
         offset: Option<(f32, f32)>,
         duration: Option<f32>
     ) -> Self {
@@ -472,5 +406,12 @@ impl ButtonProps {
         self.press_offset = offset;
         self.animation_duration = duration;
         self
+    }
+    
+    pub fn convert_to_node_event_handler(&self, event_handler: &ButtonEventHandler) -> crate::render::node::EventHandler {
+        crate::render::node::EventHandler {
+            event_type: event_handler.event_type.clone(),
+            handler_id: event_handler.handler_id.clone(),
+        }
     }
 }

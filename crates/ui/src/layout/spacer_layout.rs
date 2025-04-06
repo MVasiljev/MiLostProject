@@ -1,14 +1,11 @@
 use crate::render::node::RenderNode;
 use crate::layout::types::Size;
 
-/// Measure spacer component based on strategy and available space
 pub fn measure_spacer(node: &RenderNode, available_size: Size) -> Size {
-    // Determine parent type
     let parent_type = node.get_prop("_parent_type")
         .cloned()
         .unwrap_or_else(|| "Unknown".to_string());
     
-    // Get strategy and related properties
     let strategy = node.get_prop("strategy")
         .map(|s| s.as_str());
     
@@ -17,7 +14,6 @@ pub fn measure_spacer(node: &RenderNode, available_size: Size) -> Size {
     let max_size = node.get_prop_f32("max_size").unwrap_or(f32::MAX);
     let flex_grow = node.get_prop_f32("flex_grow").unwrap_or(0.0);
     
-    // Calculate size based on parent type and strategy
     match parent_type.as_str() {
         "VStack" => {
             let height = match (strategy, size, flex_grow) {
