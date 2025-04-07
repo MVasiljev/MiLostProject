@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 use crate::{UIComponent, Color, EdgeInsets, Alignment};
+use crate::shared::styles::{Gradient, ShadowEffect, BorderStyle};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum ZStackAlignment {
@@ -51,6 +52,22 @@ pub struct ZStackProps {
     pub max_height: Option<f32>,
     pub clip_to_bounds: Option<bool>,
     pub layout_priority: Option<f32>,
+    
+    pub shadow_radius: Option<f32>,
+    pub shadow_color: Option<Color>,
+    pub shadow_offset: Option<(f32, f32)>,
+    
+    pub gradient: Option<Gradient>,
+    
+    pub border_width: Option<f32>,
+    pub border_color: Option<Color>,
+    pub border_radius: Option<f32>,
+    pub border_style: Option<BorderStyle>,
+    
+    pub opacity: Option<f32>,
+    pub accessibility_label: Option<String>,
+    pub accessibility_hint: Option<String>,
+    pub is_accessibility_element: Option<bool>,
 }
 
 impl Default for ZStackProps {
@@ -68,6 +85,18 @@ impl Default for ZStackProps {
             max_height: None,
             clip_to_bounds: None,
             layout_priority: None,
+            shadow_radius: None,
+            shadow_color: None,
+            shadow_offset: None,
+            gradient: None,
+            border_width: None,
+            border_color: None,
+            border_radius: None,
+            border_style: None,
+            opacity: None,
+            accessibility_label: None,
+            accessibility_hint: None,
+            is_accessibility_element: None,
         }
     }
 }
@@ -134,6 +163,38 @@ impl ZStackProps {
     
     pub fn with_layout_priority(mut self, priority: f32) -> Self {
         self.layout_priority = Some(priority);
+        self
+    }
+    
+    pub fn with_shadow(mut self, radius: f32, color: Color, offset: Option<(f32, f32)>) -> Self {
+        self.shadow_radius = Some(radius);
+        self.shadow_color = Some(color);
+        self.shadow_offset = offset;
+        self
+    }
+    
+    pub fn with_gradient(mut self, gradient: Gradient) -> Self {
+        self.gradient = Some(gradient);
+        self
+    }
+    
+    pub fn with_border(mut self, width: f32, color: Color, radius: Option<f32>, style: Option<BorderStyle>) -> Self {
+        self.border_width = Some(width);
+        self.border_color = Some(color);
+        self.border_radius = radius;
+        self.border_style = style;
+        self
+    }
+    
+    pub fn with_opacity(mut self, opacity: f32) -> Self {
+        self.opacity = Some(opacity);
+        self
+    }
+    
+    pub fn with_accessibility(mut self, label: Option<String>, hint: Option<String>, is_element: Option<bool>) -> Self {
+        self.accessibility_label = label;
+        self.accessibility_hint = hint;
+        self.is_accessibility_element = is_element;
         self
     }
 }

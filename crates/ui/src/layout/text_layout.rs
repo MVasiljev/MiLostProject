@@ -1,14 +1,11 @@
 use crate::render::node::RenderNode;
 use super::types::Size;
+use super::layout_utils::parse_edge_insets;
 
 pub fn measure_text(node: &RenderNode, available_size: Size) -> Size {
-    let content = node.get_prop("content")
-        .cloned()
-        .unwrap_or_else(|| "".to_string());
+    let content = node.get_prop_as_string("content").unwrap_or_default();
     
-    let font_style = node.get_prop("font_style")
-        .cloned()
-        .unwrap_or_else(|| "Body".to_string());
+    let font_style = node.get_prop_as_string("font_style").unwrap_or_else(|| "Body".to_string());
     
     let base_font_size = match font_style.as_str() {
         "Title" | "FontStyle::Title" => 24.0,
@@ -40,15 +37,9 @@ pub fn measure_text(node: &RenderNode, available_size: Size) -> Size {
     let char_width_base = font_size * 0.6;
     let char_width = char_width_base * char_width_factor;
     
-    let italic_factor = if node.get_prop("italic")
-        .and_then(|v| v.parse::<bool>().ok())
-        .unwrap_or(false) {
-        1.1
-    } else {
-        1.0
-    };
+    let italic_factor = node.get_prop_bool("italic").unwrap_or(false) as u8 as f32 * 0.1 + 1.0;
     
-    let weight_factor = match node.get_prop("font_weight").map(|s| s.as_str()) {
+    let weight_factor = match node.get_prop_as_string("font_weight").as_deref() {
         Some("Bold") | Some("ExtraBold") | Some("Black") => 1.05,
         _ => 1.0,
     };
@@ -60,7 +51,8 @@ pub fn measure_text(node: &RenderNode, available_size: Size) -> Size {
     };
     
     let max_lines = node.get_prop("max_lines")
-        .and_then(|v| v.parse::<usize>().ok())
+        .and_then(|v| v.as_integer())
+        .map(|v| v as usize)
         .unwrap_or(usize::MAX);
     
     let line_count = line_count.min(max_lines);
@@ -68,11 +60,9 @@ pub fn measure_text(node: &RenderNode, available_size: Size) -> Size {
     let mut wrapped_line_count = line_count;
     let text_width = content.len() as f32 * char_width * italic_factor * weight_factor;
     
-    let soft_wrap = node.get_prop("soft_wrap")
-        .and_then(|v| v.parse::<bool>().ok())
-        .unwrap_or(true);
+    let soft_wrap = node.get_prop_bool("soft_wrap").unwrap_or(true);
     
-    if soft_wrap && text_width > available_size.width {
+    if soft_wrap && text_width > available_size.width && available_size.width > 0.0 {
         let chars_per_line = (available_size.width / (char_width * italic_factor * weight_factor)).floor() as usize;
         if chars_per_line > 0 {
             let wrap_lines = (content.len() as f32 / chars_per_line as f32).ceil() as usize;
@@ -85,11 +75,21 @@ pub fn measure_text(node: &RenderNode, available_size: Size) -> Size {
     let constrained_width = text_width.min(available_size.width);
     
     let padding = node.get_prop_f32("padding").unwrap_or(0.0);
-    let padded_width = constrained_width + (padding * 2.0);
-    let padded_height = text_height + (padding * 2.0);
+    let insets = parse_edge_insets(node);
+    
+    let padded_width = constrained_width + (padding * 2.0) + insets.horizontal_insets();
+    let padded_height = text_height + (padding * 2.0) + insets.vertical_insets();
     
     let width = node.get_prop_f32("width").unwrap_or(padded_width);
     let height = node.get_prop_f32("height").unwrap_or(padded_height);
     
-    Size::new(width, height)
+    let min_width = node.get_prop_f32("min_width").unwrap_or(0.0);
+    let max_width = node.get_prop_f32("max_width").unwrap_or(f32::MAX);
+    let min_height = node.get_prop_f32("min_height").unwrap_or(0.0);
+    let max_height = node.get_prop_f32("max_height").unwrap_or(f32::MAX);
+    
+    let final_width = width.max(min_width).min(max_width);
+    let final_height = height.max(min_height).min(max_height);
+    
+    Size::new(final_width, final_height)
 }

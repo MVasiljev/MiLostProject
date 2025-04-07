@@ -1,7 +1,8 @@
 use serde::{Serialize, Deserialize};
 use crate::{Color, FontStyle};
-use crate::shared::styles::{TextAlign, TextTransform};
+use crate::shared::styles::{TextAlign, TextTransform, BorderStyle, ShadowEffect};
 use crate::shared::font::{FontWeight, FontSlant, FontWidth};
+use crate::shared::edge_insets::EdgeInsets;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum TextDecoration {
@@ -35,6 +36,8 @@ pub struct TextProps {
     pub font_size: Option<f32>,
     pub font_family: Option<String>,
     pub font_weight: Option<FontWeight>,
+    pub font_slant: Option<FontSlant>,
+    pub font_width: Option<FontWidth>,
     pub line_height: Option<f32>,
     pub letter_spacing: Option<f32>,
     pub word_spacing: Option<f32>,
@@ -62,16 +65,36 @@ pub struct TextProps {
     pub exclude_from_semantics: Option<bool>,
     
     pub padding: Option<f32>,
+    pub edge_insets: Option<EdgeInsets>,
     pub width: Option<f32>,
     pub height: Option<f32>,
+    pub min_width: Option<f32>,
+    pub max_width: Option<f32>,
+    pub min_height: Option<f32>,
+    pub max_height: Option<f32>,
     pub fixed_size: Option<bool>,
     pub selectable: Option<bool>,
+    
+    pub border_width: Option<f32>,
+    pub border_color: Option<Color>,
+    pub border_radius: Option<f32>,
+    pub border_style: Option<BorderStyle>,
+    
+    pub shadow_radius: Option<f32>,
+    pub shadow_color: Option<Color>,
+    pub shadow_offset: Option<(f32, f32)>,
+    pub shadow_effect: Option<ShadowEffect>,
     
     pub locale: Option<String>,
     pub text_direction: Option<String>,
     pub text_scaling_factor: Option<f32>,
     pub underline: Option<bool>,
     pub strikethrough: Option<bool>,
+    
+    pub clip_to_bounds: Option<bool>,
+    pub accessibility_label: Option<String>,
+    pub accessibility_hint: Option<String>,
+    pub is_accessibility_element: Option<bool>,
 }
 
 impl Default for TextProps {
@@ -83,6 +106,8 @@ impl Default for TextProps {
             font_size: None,
             font_family: None,
             font_weight: None,
+            font_slant: None,
+            font_width: None,
             line_height: None,
             letter_spacing: None,
             word_spacing: None,
@@ -104,15 +129,32 @@ impl Default for TextProps {
             semantic_label: None,
             exclude_from_semantics: None,
             padding: None,
+            edge_insets: None,
             width: None,
             height: None,
+            min_width: None,
+            max_width: None,
+            min_height: None,
+            max_height: None,
             fixed_size: None,
             selectable: None,
+            border_width: None,
+            border_color: None,
+            border_radius: None,
+            border_style: None,
+            shadow_radius: None,
+            shadow_color: None,
+            shadow_offset: None,
+            shadow_effect: None,
             locale: None,
             text_direction: None,
             text_scaling_factor: None,
             underline: None,
             strikethrough: None,
+            clip_to_bounds: None,
+            accessibility_label: None,
+            accessibility_hint: None,
+            is_accessibility_element: None,
         }
     }
 }
@@ -147,6 +189,16 @@ impl TextProps {
     
     pub fn with_font_weight(mut self, weight: FontWeight) -> Self {
         self.font_weight = Some(weight);
+        self
+    }
+    
+    pub fn with_font_slant(mut self, slant: FontSlant) -> Self {
+        self.font_slant = Some(slant);
+        self
+    }
+    
+    pub fn with_font_width(mut self, width: FontWidth) -> Self {
+        self.font_width = Some(width);
         self
     }
     
@@ -200,14 +252,75 @@ impl TextProps {
         self
     }
     
+    pub fn with_edge_insets(mut self, insets: EdgeInsets) -> Self {
+        self.edge_insets = Some(insets);
+        self
+    }
+    
     pub fn with_dimensions(mut self, width: f32, height: f32) -> Self {
         self.width = Some(width);
         self.height = Some(height);
         self
     }
     
+    pub fn with_min_dimensions(mut self, width: f32, height: f32) -> Self {
+        self.min_width = Some(width);
+        self.min_height = Some(height);
+        self
+    }
+    
+    pub fn with_max_dimensions(mut self, width: f32, height: f32) -> Self {
+        self.max_width = Some(width);
+        self.max_height = Some(height);
+        self
+    }
+    
     pub fn with_semantic_label(mut self, label: impl Into<String>) -> Self {
         self.semantic_label = Some(label.into());
+        self
+    }
+    
+    pub fn with_shadow(mut self, shadow: TextShadow) -> Self {
+        self.shadow = Some(shadow);
+        self
+    }
+    
+    pub fn with_box_shadow(mut self, radius: f32, color: Color, offset: Option<(f32, f32)>) -> Self {
+        self.shadow_radius = Some(radius);
+        self.shadow_color = Some(color);
+        self.shadow_offset = offset;
+        self
+    }
+    
+    pub fn with_border(mut self, width: f32, color: Color, radius: Option<f32>, style: Option<BorderStyle>) -> Self {
+        self.border_width = Some(width);
+        self.border_color = Some(color);
+        self.border_radius = radius;
+        self.border_style = style;
+        self
+    }
+    
+    pub fn with_clip_to_bounds(mut self, clip: bool) -> Self {
+        self.clip_to_bounds = Some(clip);
+        self
+    }
+    
+    pub fn with_accessibility(mut self, label: Option<String>, hint: Option<String>, is_element: Option<bool>) -> Self {
+        self.accessibility_label = label;
+        self.accessibility_hint = hint;
+        self.is_accessibility_element = is_element;
+        self
+    }
+    
+    pub fn with_text_decoration_options(
+        mut self, 
+        decoration: TextDecoration, 
+        color: Option<Color>, 
+        thickness: Option<f32>
+    ) -> Self {
+        self.text_decoration = Some(decoration);
+        self.decoration_color = color;
+        self.decoration_thickness = thickness;
         self
     }
 }

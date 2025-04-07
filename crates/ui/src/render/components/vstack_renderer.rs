@@ -16,7 +16,7 @@ impl<T: DrawingContext> ComponentRenderer<T> for VStackRenderer {
     fn render(&self, node: &RenderNode, context: &T, frame: Rect) -> Result<(), String> {
         let shadow_applied = apply_shadow(
             context, 
-            node.get_prop("shadow_color").map(|s| s.as_str()),
+            node.get_prop_as_string("shadow_color").as_deref(),
             node.get_prop_f32("shadow_offset_x"),
             node.get_prop_f32("shadow_offset_y"),
             node.get_prop_f32("shadow_radius")

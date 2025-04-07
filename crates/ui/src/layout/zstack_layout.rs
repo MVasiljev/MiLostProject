@@ -6,8 +6,8 @@ use super::layout_utils::parse_edge_insets;
 pub fn measure_zstack(node: &RenderNode, available_size: Size, engine: &mut impl LayoutMeasurement) -> Size {
     let insets = parse_edge_insets(node);
     
-    let content_width = available_size.width - insets.left - insets.right;
-    let content_height = available_size.height - insets.top - insets.bottom;
+    let content_width = available_size.width - insets.horizontal_insets();
+    let content_height = available_size.height - insets.vertical_insets();
     let content_size = Size::new(content_width, content_height);
     
     let mut max_width: f32 = 0.0;
@@ -28,8 +28,8 @@ pub fn measure_zstack(node: &RenderNode, available_size: Size, engine: &mut impl
     max_height = max_height.max(min_height).min(max_height_constraint);
     
     Size::new(
-        max_width + insets.left + insets.right,
-        max_height + insets.top + insets.bottom
+        max_width + insets.horizontal_insets(),
+        max_height + insets.vertical_insets()
     )
 }
 
@@ -43,21 +43,21 @@ pub fn position_zstack_children(
     let content_frame = Rect::new(
         frame.x + insets.left,
         frame.y + insets.top,
-        frame.width - insets.left - insets.right,
-        frame.height - insets.top - insets.bottom
+        frame.width - insets.horizontal_insets(),
+        frame.height - insets.vertical_insets()
     );
     
-    let alignment_str = node.get_prop("alignment").map_or("Center", |v| v.as_str());
+    let alignment_str = node.get_prop_as_string("alignment").unwrap_or_else(|| "Center".to_string());
     
-    let alignment = match alignment_str {
-        "TopLeading" | "topleading" => Alignment::TopLeading,
-        "Top" | "top" => Alignment::Top,
-        "TopTrailing" | "toptrailing" => Alignment::TopTrailing,
-        "Leading" | "leading" => Alignment::Leading,
-        "Trailing" | "trailing" => Alignment::Trailing,
-        "BottomLeading" | "bottomleading" => Alignment::BottomLeading,
-        "Bottom" | "bottom" => Alignment::Bottom,
-        "BottomTrailing" | "bottomtrailing" => Alignment::BottomTrailing,
+    let alignment = match alignment_str.to_lowercase().as_str() {
+        "topleading" => Alignment::TopLeading,
+        "top" => Alignment::Top,
+        "toptrailing" => Alignment::TopTrailing,
+        "leading" => Alignment::Leading,
+        "trailing" => Alignment::Trailing,
+        "bottomleading" => Alignment::BottomLeading,
+        "bottom" => Alignment::Bottom,
+        "bottomtrailing" => Alignment::BottomTrailing,
         _ => Alignment::Center,
     };
     
@@ -86,7 +86,6 @@ pub fn position_zstack_children(
                 };
                 
                 let child_frame = Rect::new(x, y, child_size.width, child_size.height);
-                
                 child_frames.push((child, child_frame));
             }
         }
