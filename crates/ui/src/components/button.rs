@@ -1,9 +1,10 @@
 use serde::{Serialize, Deserialize};
-use crate::styles::{BorderStyle, Overflow};
-use crate::{Alignment, Color, EdgeInsets, Gradient, LoadingIndicatorType};
+use crate::shared::styles::{BorderStyle, Overflow, TextAlign, TextTransform, Gradient, ShadowEffect, LoadingIndicatorType};
+use crate::shared::font::FontWeight;
+use crate::shared::color::Color;
+use crate::shared::edge_insets::EdgeInsets;
+use crate::layout::Alignment;
 use crate::events::EventType;
-
-use super::text::{FontWeight, TextAlign, TextTransform};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ButtonStyle {
@@ -214,18 +215,18 @@ impl ButtonProps {
         self
     }
     
-    pub fn with_background_color(mut self, color: String) -> Self {
-        self.background_color = Some(Color::from_hex(&color));
+    pub fn with_background_color(mut self, color: Color) -> Self {
+        self.background_color = Some(color);
         self
     }
     
-    pub fn with_text_color(mut self, color: String) -> Self {
-        self.text_color = Some(Color::from_hex(&color));
+    pub fn with_text_color(mut self, color: Color) -> Self {
+        self.text_color = Some(color);
         self
     }
     
-    pub fn with_border_color(mut self, color: String) -> Self {
-        self.border_color = Some(Color::from_hex(&color));
+    pub fn with_border_color(mut self, color: Color) -> Self {
+        self.border_color = Some(color);
         self
     }
     
@@ -267,8 +268,8 @@ impl ButtonProps {
         self
     }
     
-    pub fn with_shadow(mut self, color: String, offset: (f32, f32), radius: f32) -> Self {
-        self.shadow_color = Some(Color::from_hex(&color));
+    pub fn with_shadow(mut self, color: Color, offset: (f32, f32), radius: f32) -> Self {
+        self.shadow_color = Some(color);
         self.shadow_offset = Some(offset);
         self.shadow_radius = Some(radius);
         self
@@ -279,10 +280,10 @@ impl ButtonProps {
         self
     }
     
-    pub fn with_border(mut self, width: f32, style: BorderStyle, color: String) -> Self {
+    pub fn with_border(mut self, width: f32, style: BorderStyle, color: Color) -> Self {
         self.border_width = Some(width);
         self.border_style = Some(style);
-        self.border_color = Some(Color::from_hex(&color));
+        self.border_color = Some(color);
         self
     }
     

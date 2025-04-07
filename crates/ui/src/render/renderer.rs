@@ -192,7 +192,7 @@ impl<T: DrawingContext> Renderer<T> {
         }
         
         let should_clip = enable_clipping && node.get_prop("clip_to_bounds")
-            .map(|v| v == "true")
+            .map(|v| v.to_string_value() == "true")
             .unwrap_or(false);
         
         if should_clip {
@@ -244,22 +244,23 @@ impl<T: DrawingContext> Renderer<T> {
         if has_shadow {
             let shadow_radius = node.get_prop_f32("shadow_radius").unwrap_or(0.0);
             let default_shadow_color = "rgba(0,0,0,0.5)".to_string();
-            let shadow_color = node.get_prop("shadow_color").unwrap_or(&default_shadow_color);
+            let shadow_color = node.get_prop_as_string("shadow_color")
+                .unwrap_or_else(|| default_shadow_color);
+            
             let shadow_offset_x = node.get_prop_f32("shadow_offset_x").unwrap_or(0.0);
             let shadow_offset_y = node.get_prop_f32("shadow_offset_y").unwrap_or(0.0);
             
-            self.context.set_shadow(shadow_offset_x, shadow_offset_y, shadow_radius, shadow_color)?;
+            self.context.set_shadow(shadow_offset_x, shadow_offset_y, shadow_radius, &shadow_color)?;
         }
         
-        let should_clip = enable_clipping && node.get_prop("clip_to_bounds")
-            .map(|v| v == "true")
+        let should_clip = enable_clipping && node.get_prop_bool("clip_to_bounds")
             .unwrap_or(false);
         
         if should_clip {
             self.context.save_drawing_state()?;
             self.context.begin_path()?;
             
-            let corner_radius = node.get_prop_f32("corner_radius");
+            let corner_radius = node.get_prop_f32("border_radius");
             if let Some(radius) = corner_radius {
                 if radius > 0.0 {
                     self.context.clip_rounded_rect(frame.x, frame.y, frame.width, frame.height, radius)?;
@@ -273,9 +274,9 @@ impl<T: DrawingContext> Renderer<T> {
             }
         }
         
-        let blend_mode = node.get_prop("blend_mode");
+        let blend_mode = node.get_prop_as_string("blend_mode");
         if let Some(mode) = blend_mode {
-            self.context.set_blend_mode(mode)?;
+            self.context.set_blend_mode(&mode)?;
         }
         
         if let Some(renderer) = self.renderers.get(node.type_name.as_str()) {

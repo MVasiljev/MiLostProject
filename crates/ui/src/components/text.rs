@@ -1,14 +1,8 @@
 use serde::{Serialize, Deserialize};
 use crate::{Color, FontStyle};
-
-/// Text alignment options
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub enum TextAlign {
-    Left,
-    Center,
-    Right,
-    Justify,
-}
+// Import shared enum types
+use crate::shared::styles::{TextAlign, TextTransform};
+use crate::shared::font::{FontWeight, FontSlant, FontWidth};
 
 /// Text decoration options
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -25,47 +19,6 @@ pub enum TextOverflow {
     Clip,
     Ellipsis,
     Fade,
-}
-
-/// Text transform options
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub enum TextTransform {
-    None,
-    Uppercase,
-    Lowercase,
-    Capitalize,
-}
-
-/// Font weight options
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub enum FontWeight {
-    Thin,
-    ExtraLight,
-    Light,
-    Regular,
-    Medium,
-    SemiBold,
-    Bold,
-    ExtraBold,
-    Black,
-    Custom(u16), // Custom weight value (100-900)
-}
-
-impl FontWeight {
-    pub fn to_css_weight(&self) -> String {
-        match self {
-            FontWeight::Thin => "100".to_string(),
-            FontWeight::ExtraLight => "200".to_string(), 
-            FontWeight::Light => "300".to_string(),
-            FontWeight::Regular => "400".to_string(),
-            FontWeight::Medium => "500".to_string(),
-            FontWeight::SemiBold => "600".to_string(),
-            FontWeight::Bold => "700".to_string(),
-            FontWeight::ExtraBold => "800".to_string(),
-            FontWeight::Black => "900".to_string(),
-            FontWeight::Custom(weight) => weight.to_string(),
-        }
-    }
 }
 
 /// Defines shadow properties for text
@@ -237,5 +190,39 @@ impl TextProps {
         self
     }
     
-    // Add more builder methods for other properties as needed
+    pub fn with_text_transform(mut self, transform: TextTransform) -> Self {
+        self.text_transform = Some(transform);
+        self
+    }
+    
+    pub fn with_text_decoration(mut self, decoration: TextDecoration) -> Self {
+        self.text_decoration = Some(decoration);
+        self
+    }
+    
+    pub fn with_background_color(mut self, color: Color) -> Self {
+        self.background_color = Some(color);
+        self
+    }
+    
+    pub fn with_opacity(mut self, opacity: f32) -> Self {
+        self.opacity = Some(opacity);
+        self
+    }
+    
+    pub fn with_padding(mut self, padding: f32) -> Self {
+        self.padding = Some(padding);
+        self
+    }
+    
+    pub fn with_dimensions(mut self, width: f32, height: f32) -> Self {
+        self.width = Some(width);
+        self.height = Some(height);
+        self
+    }
+    
+    pub fn with_semantic_label(mut self, label: impl Into<String>) -> Self {
+        self.semantic_label = Some(label.into());
+        self
+    }
 }

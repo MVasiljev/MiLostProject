@@ -9,6 +9,7 @@ use crate::font::{FontWeight, FontSlant, FontWidth, FontFeatures};
 
 /// Property key definitions to ensure consistent naming throughout the system
 pub mod keys {
+    pub const THICKNESS: &str = "thickness";
     // Visual properties
     pub const BACKGROUND: &str = "background";
     pub const OPACITY: &str = "opacity";
