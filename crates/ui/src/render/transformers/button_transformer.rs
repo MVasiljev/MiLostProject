@@ -8,14 +8,12 @@ use super::utils::generate_unique_id;
 pub fn transform_button(props: &ButtonProps) -> RenderNode {
     let mut node = RenderNode::new(&generate_unique_id("button"), "Button");
     
-    // Set core button properties with strongly-typed properties
     node.set_prop(keys::LABEL, props.label.clone());
     
     if let Some(style) = &props.style {
         node.set_prop(keys::BUTTON_STYLE, format!("{:?}", style));
     }
     
-    // Apply button state
     if let Some(button_state) = &props.button_state {
         node.set_prop("button_state", format!("{:?}", button_state));
         
@@ -36,7 +34,6 @@ pub fn transform_button(props: &ButtonProps) -> RenderNode {
         }
     }
     
-    // Apply visual properties
     if let Some(bg_color) = &props.background_color {
         node.set_prop(keys::BACKGROUND, bg_color.clone());
     }
@@ -61,7 +58,6 @@ pub fn transform_button(props: &ButtonProps) -> RenderNode {
         node.set_prop(keys::BORDER_STYLE, border_style.clone());
     }
     
-    // Apply text styling properties
     if let Some(text_transform) = &props.text_transform {
         node.set_prop(keys::TEXT_TRANSFORM, text_transform.clone());
     }
@@ -86,7 +82,6 @@ pub fn transform_button(props: &ButtonProps) -> RenderNode {
         node.set_prop(keys::OVERFLOW, overflow.clone());
     }
     
-    // Apply loading state properties
     if let Some(is_loading) = props.is_loading {
         node.set_prop(keys::IS_LOADING, is_loading);
     }
@@ -107,7 +102,6 @@ pub fn transform_button(props: &ButtonProps) -> RenderNode {
         node.set_prop("hide_text_while_loading", hide_text);
     }
     
-    // Apply icon properties
     if let Some(icon) = &props.icon {
         node.set_prop("icon", icon.clone());
     }
@@ -116,7 +110,6 @@ pub fn transform_button(props: &ButtonProps) -> RenderNode {
         node.set_prop("icon_position", icon_position.clone());
     }
     
-    // Apply shadow properties
     if let Some(shadow_color) = &props.shadow_color {
         node.set_prop(keys::SHADOW_COLOR, shadow_color.clone());
     }
@@ -130,7 +123,6 @@ pub fn transform_button(props: &ButtonProps) -> RenderNode {
         node.set_prop(keys::SHADOW_RADIUS, shadow_radius);
     }
     
-    // Apply press effect properties
     if let Some(press_effect) = props.press_effect {
         node.set_prop("press_effect", press_effect);
     }
@@ -148,12 +140,10 @@ pub fn transform_button(props: &ButtonProps) -> RenderNode {
         node.set_prop("press_offset_y", press_offset.1);
     }
     
-    // Register event handlers
     if let Some(on_tap) = &props.on_tap {
         node.on_event(EventType::Tap, &on_tap.handler_id);
     }
     
-    // Register other event handlers
     let event_handlers = [
         ("on_double_tap", &props.on_double_tap, EventType::DoubleTap),
         ("on_long_press", &props.on_long_press, EventType::LongPress),
@@ -169,10 +159,8 @@ pub fn transform_button(props: &ButtonProps) -> RenderNode {
         }
     }
     
-    // Create and apply BaseComponentProps
     let mut base_props = BaseComponentProps::new();
     
-    // Map ButtonProps to BaseComponentProps
     if let Some(disabled) = props.disabled {
         base_props.enabled = Some(!disabled);
     }
@@ -254,7 +242,6 @@ pub fn transform_button(props: &ButtonProps) -> RenderNode {
         base_props.edge_insets = Some(ei.clone());
     }
     
-    // Apply the base component properties
     apply_base_props(&mut node, &base_props);
     
     node

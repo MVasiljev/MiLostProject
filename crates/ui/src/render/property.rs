@@ -1,4 +1,3 @@
-// src/render/property.rs
 use std::collections::HashMap;
 use std::fmt;
 use serde::{Serialize, Deserialize};
@@ -7,14 +6,11 @@ use crate::shared::edge_insets::EdgeInsets;
 use crate::styles::{Gradient, ShadowEffect, BorderStyle, TextAlign, TextTransform, Overflow};
 use crate::font::{FontWeight, FontSlant, FontWidth, FontFeatures};
 
-/// Property key definitions to ensure consistent naming throughout the system
 pub mod keys {
     pub const THICKNESS: &str = "thickness";
-    // Visual properties
     pub const BACKGROUND: &str = "background";
     pub const OPACITY: &str = "opacity";
     
-    // Layout properties
     pub const WIDTH: &str = "width";
     pub const HEIGHT: &str = "height";
     pub const MIN_WIDTH: &str = "min_width";
@@ -28,19 +24,16 @@ pub mod keys {
     pub const EQUAL_SPACING: &str = "equal_spacing";
     pub const FLEX_GROW: &str = "flex_grow";
     
-    // Border properties
     pub const BORDER_WIDTH: &str = "border_width";
     pub const BORDER_COLOR: &str = "border_color";
     pub const BORDER_RADIUS: &str = "border_radius";
     pub const BORDER_STYLE: &str = "border_style";
     
-    // Shadow properties
     pub const SHADOW_RADIUS: &str = "shadow_radius";
     pub const SHADOW_COLOR: &str = "shadow_color";
     pub const SHADOW_OFFSET_X: &str = "shadow_offset_x";
     pub const SHADOW_OFFSET_Y: &str = "shadow_offset_y";
     
-    // Text properties
     pub const TEXT: &str = "text";
     pub const FONT_SIZE: &str = "font_size";
     pub const FONT_WEIGHT: &str = "font_weight";
@@ -52,87 +45,58 @@ pub mod keys {
     pub const LETTER_SPACING: &str = "letter_spacing";
     pub const TEXT_TRANSFORM: &str = "text_transform";
     
-    // Image properties
     pub const SOURCE: &str = "source";
     pub const CONTENT_MODE: &str = "content_mode";
     pub const TINT_COLOR: &str = "tint_color";
     
-    // Interaction properties
     pub const ENABLED: &str = "enabled";
     pub const FOCUSABLE: &str = "focusable";
     pub const PRESSED: &str = "pressed";
     pub const HOVERED: &str = "hovered";
     pub const FOCUSED: &str = "focused";
     
-    // Accessibility properties
     pub const ACCESSIBILITY_LABEL: &str = "accessibility_label";
     pub const ACCESSIBILITY_HINT: &str = "accessibility_hint";
     pub const IS_ACCESSIBILITY_ELEMENT: &str = "is_accessibility_element";
     
-    // Button properties
     pub const LABEL: &str = "label";
     pub const BUTTON_STYLE: &str = "button_style";
     pub const IS_LOADING: &str = "is_loading";
     
-    // Clipping and masking
     pub const CLIP_TO_BOUNDS: &str = "clip_to_bounds";
     pub const OVERFLOW: &str = "overflow";
     
-    // Positioning
     pub const X: &str = "x";
     pub const Y: &str = "y";
     
-    // Animation
     pub const ANIMATION_DURATION: &str = "animation_duration";
 }
 
-/// Defines the different types of properties that can be stored
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Property {
-    /// String value (text, identifiers, etc.)
     String(String),
-    /// Numeric value (sizes, dimensions, etc.)
     Number(f32),
-    /// Boolean value (flags, toggles, etc.)
     Boolean(bool),
-    /// Integer value
     Integer(i32),
-    /// Color value (backgrounds, text colors, borders, etc.)
     Color(Color),
-    /// Edge insets value (padding, margins, etc.)
     EdgeInsets(EdgeInsets),
-    /// Gradient definition
     Gradient(Gradient),
-    /// Shadow effect
     ShadowEffect(ShadowEffect),
-    /// Font weight
     FontWeight(FontWeight),
-    /// Font slant
     FontSlant(FontSlant),
-    /// Font width
     FontWidth(FontWidth),
-    /// Font features
     FontFeatures(FontFeatures),
-    /// Border style
     BorderStyle(BorderStyle),
-    /// Text alignment
     TextAlign(TextAlign),
-    /// Text transformation
     TextTransform(TextTransform),
-    /// Overflow handling
     Overflow(Overflow),
-    /// Array of property values
     Array(Vec<Property>),
-    /// Map of property values
     Map(HashMap<String, Property>),
-    /// None value (explicitly set to none/null)
     None,
 }
 
 impl Property {
-    // Type-checking getters
     
-    /// Gets the value as a string reference if it's a string property
     pub fn as_string(&self) -> Option<&String> {
         match self {
             Property::String(value) => Some(value),
@@ -140,7 +104,6 @@ impl Property {
         }
     }
 
-    /// Gets the value as an f32 if it's a number property
     pub fn as_number(&self) -> Option<f32> {
         match self {
             Property::Number(value) => Some(*value),
@@ -149,12 +112,10 @@ impl Property {
         }
     }
 
-    /// Gets the value as an i32 if it's an integer property
     pub fn as_integer(&self) -> Option<i32> {
         match self {
             Property::Integer(value) => Some(*value),
             Property::Number(value) => {
-                // Only convert if it's a whole number
                 if *value == (*value as i32) as f32 {
                     Some(*value as i32)
                 } else {
@@ -165,7 +126,6 @@ impl Property {
         }
     }
 
-    /// Gets the value as a boolean if it's a boolean property
     pub fn as_boolean(&self) -> Option<bool> {
         match self {
             Property::Boolean(value) => Some(*value),
@@ -173,7 +133,6 @@ impl Property {
         }
     }
 
-    /// Gets the value as a Color reference if it's a color property
     pub fn as_color(&self) -> Option<&Color> {
         match self {
             Property::Color(value) => Some(value),
@@ -181,7 +140,6 @@ impl Property {
         }
     }
 
-    /// Gets the value as an EdgeInsets reference if it's an edge insets property
     pub fn as_edge_insets(&self) -> Option<&EdgeInsets> {
         match self {
             Property::EdgeInsets(value) => Some(value),
@@ -189,7 +147,6 @@ impl Property {
         }
     }
     
-    /// Gets the value as a Gradient reference if it's a gradient property
     pub fn as_gradient(&self) -> Option<&Gradient> {
         match self {
             Property::Gradient(value) => Some(value),
@@ -197,7 +154,6 @@ impl Property {
         }
     }
     
-    /// Gets the value as a ShadowEffect reference if it's a shadow effect property
     pub fn as_shadow_effect(&self) -> Option<&ShadowEffect> {
         match self {
             Property::ShadowEffect(value) => Some(value),
@@ -205,7 +161,6 @@ impl Property {
         }
     }
     
-    /// Gets the value as a FontWeight reference if it's a font weight property
     pub fn as_font_weight(&self) -> Option<&FontWeight> {
         match self {
             Property::FontWeight(value) => Some(value),
@@ -213,7 +168,6 @@ impl Property {
         }
     }
     
-    /// Gets the value as a FontSlant reference if it's a font slant property
     pub fn as_font_slant(&self) -> Option<&FontSlant> {
         match self {
             Property::FontSlant(value) => Some(value),
@@ -221,7 +175,6 @@ impl Property {
         }
     }
     
-    /// Gets the value as a FontWidth reference if it's a font width property
     pub fn as_font_width(&self) -> Option<&FontWidth> {
         match self {
             Property::FontWidth(value) => Some(value),
@@ -229,7 +182,6 @@ impl Property {
         }
     }
     
-    /// Gets the value as a FontFeatures reference if it's a font features property
     pub fn as_font_features(&self) -> Option<&FontFeatures> {
         match self {
             Property::FontFeatures(value) => Some(value),
@@ -237,7 +189,6 @@ impl Property {
         }
     }
     
-    /// Gets the value as a BorderStyle reference if it's a border style property
     pub fn as_border_style(&self) -> Option<&BorderStyle> {
         match self {
             Property::BorderStyle(value) => Some(value),
@@ -245,7 +196,6 @@ impl Property {
         }
     }
     
-    /// Gets the value as a TextAlign reference if it's a text align property
     pub fn as_text_align(&self) -> Option<&TextAlign> {
         match self {
             Property::TextAlign(value) => Some(value),
@@ -253,7 +203,6 @@ impl Property {
         }
     }
     
-    /// Gets the value as a TextTransform reference if it's a text transform property
     pub fn as_text_transform(&self) -> Option<&TextTransform> {
         match self {
             Property::TextTransform(value) => Some(value),
@@ -261,7 +210,6 @@ impl Property {
         }
     }
     
-    /// Gets the value as an Overflow reference if it's an overflow property
     pub fn as_overflow(&self) -> Option<&Overflow> {
         match self {
             Property::Overflow(value) => Some(value),
@@ -269,7 +217,6 @@ impl Property {
         }
     }
     
-    /// Gets the value as a Vec<Property> reference if it's an array property
     pub fn as_array(&self) -> Option<&Vec<Property>> {
         match self {
             Property::Array(value) => Some(value),
@@ -277,7 +224,6 @@ impl Property {
         }
     }
     
-    /// Gets the value as a HashMap<String, Property> reference if it's a map property
     pub fn as_map(&self) -> Option<&HashMap<String, Property>> {
         match self {
             Property::Map(value) => Some(value),
@@ -285,7 +231,6 @@ impl Property {
         }
     }
     
-    /// Attempts to convert the property to a string regardless of its type
     pub fn to_string_value(&self) -> String {
         match self {
             Property::String(value) => value.clone(),
@@ -311,14 +256,12 @@ impl Property {
     }
 }
 
-// Auto-implement Display for Property
 impl fmt::Display for Property {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.to_string_value())
     }
 }
 
-// From implementations for various types
 impl From<String> for Property {
     fn from(value: String) -> Self {
         Property::String(value)
@@ -433,167 +376,133 @@ impl From<HashMap<String, Property>> for Property {
     }
 }
 
-/// A collection of strongly-typed properties
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct PropertyBag {
     properties: HashMap<String, Property>,
 }
 
 impl PropertyBag {
-    /// Creates a new, empty PropertyBag
     pub fn new() -> Self {
         Self {
             properties: HashMap::new(),
         }
     }
 
-    /// Sets a property with the given key and value.
-    /// The value is converted to a Property using the Into trait.
     pub fn set<T: Into<Property>>(&mut self, key: &str, value: T) {
         self.properties.insert(key.to_string(), value.into());
     }
 
-    /// Gets a property with the given key
     pub fn get(&self, key: &str) -> Option<&Property> {
         self.properties.get(key)
     }
 
-    /// Gets a property as a string if it exists and is a string property
     pub fn get_string(&self, key: &str) -> Option<&String> {
         self.get(key).and_then(|prop| prop.as_string())
     }
 
-    /// Gets a property as a number if it exists and is a number property
     pub fn get_number(&self, key: &str) -> Option<f32> {
         self.get(key).and_then(|prop| prop.as_number())
     }
 
-    /// Gets a property as an integer if it exists and is an integer property
     pub fn get_integer(&self, key: &str) -> Option<i32> {
         self.get(key).and_then(|prop| prop.as_integer())
     }
 
-    /// Gets a property as a boolean if it exists and is a boolean property
     pub fn get_boolean(&self, key: &str) -> Option<bool> {
         self.get(key).and_then(|prop| prop.as_boolean())
     }
 
-    /// Gets a property as a Color if it exists and is a color property
     pub fn get_color(&self, key: &str) -> Option<&Color> {
         self.get(key).and_then(|prop| prop.as_color())
     }
 
-    /// Gets a property as an EdgeInsets if it exists and is an edge insets property
     pub fn get_edge_insets(&self, key: &str) -> Option<&EdgeInsets> {
         self.get(key).and_then(|prop| prop.as_edge_insets())
     }
 
-    /// Gets a property as a Gradient if it exists and is a gradient property
     pub fn get_gradient(&self, key: &str) -> Option<&Gradient> {
         self.get(key).and_then(|prop| prop.as_gradient())
     }
 
-    /// Gets a property as a ShadowEffect if it exists and is a shadow effect property
     pub fn get_shadow_effect(&self, key: &str) -> Option<&ShadowEffect> {
         self.get(key).and_then(|prop| prop.as_shadow_effect())
     }
 
-    /// Gets a property as a FontWeight if it exists and is a font weight property
     pub fn get_font_weight(&self, key: &str) -> Option<&FontWeight> {
         self.get(key).and_then(|prop| prop.as_font_weight())
     }
 
-    /// Gets a property as a FontSlant if it exists and is a font slant property
     pub fn get_font_slant(&self, key: &str) -> Option<&FontSlant> {
         self.get(key).and_then(|prop| prop.as_font_slant())
     }
 
-    /// Gets a property as a FontWidth if it exists and is a font width property
     pub fn get_font_width(&self, key: &str) -> Option<&FontWidth> {
         self.get(key).and_then(|prop| prop.as_font_width())
     }
 
-    /// Gets a property as a FontFeatures if it exists and is a font features property
     pub fn get_font_features(&self, key: &str) -> Option<&FontFeatures> {
         self.get(key).and_then(|prop| prop.as_font_features())
     }
 
-    /// Gets a property as a BorderStyle if it exists and is a border style property
     pub fn get_border_style(&self, key: &str) -> Option<&BorderStyle> {
         self.get(key).and_then(|prop| prop.as_border_style())
     }
 
-    /// Gets a property as a TextAlign if it exists and is a text align property
     pub fn get_text_align(&self, key: &str) -> Option<&TextAlign> {
         self.get(key).and_then(|prop| prop.as_text_align())
     }
 
-    /// Gets a property as a TextTransform if it exists and is a text transform property
     pub fn get_text_transform(&self, key: &str) -> Option<&TextTransform> {
         self.get(key).and_then(|prop| prop.as_text_transform())
     }
 
-    /// Gets a property as an Overflow if it exists and is an overflow property
     pub fn get_overflow(&self, key: &str) -> Option<&Overflow> {
         self.get(key).and_then(|prop| prop.as_overflow())
     }
 
-    /// Gets a property as a Vec<Property> if it exists and is an array property
     pub fn get_array(&self, key: &str) -> Option<&Vec<Property>> {
         self.get(key).and_then(|prop| prop.as_array())
     }
 
-    /// Gets a property as a HashMap<String, Property> if it exists and is a map property
     pub fn get_map(&self, key: &str) -> Option<&HashMap<String, Property>> {
         self.get(key).and_then(|prop| prop.as_map())
     }
 
-    /// Checks if a property exists
     pub fn has(&self, key: &str) -> bool {
         self.properties.contains_key(key)
     }
 
-    /// Removes a property and returns it if it exists
     pub fn remove(&mut self, key: &str) -> Option<Property> {
         self.properties.remove(key)
     }
 
-    /// Returns an iterator over the property keys
     pub fn keys(&self) -> impl Iterator<Item = &String> {
         self.properties.keys()
     }
 
-    /// Returns an iterator over the property values
     pub fn values(&self) -> impl Iterator<Item = &Property> {
         self.properties.values()
     }
 
-    /// Returns an iterator over the property entries (key-value pairs)
     pub fn entries(&self) -> impl Iterator<Item = (&String, &Property)> {
         self.properties.iter()
     }
 
-    /// Returns the number of properties in the bag
     pub fn len(&self) -> usize {
         self.properties.len()
     }
 
-    /// Checks if the property bag is empty
     pub fn is_empty(&self) -> bool {
         self.properties.is_empty()
     }
     
-    /// Gets a property as a string value regardless of its type
     pub fn get_as_string(&self, key: &str) -> Option<String> {
         self.get(key).map(|prop| prop.to_string_value())
     }
     
-    /// Creates a PropertyBag from a HashMap<String, String>
-    /// This is useful for migrating from the old property system
     pub fn from_string_map(map: &HashMap<String, String>) -> Self {
         let mut bag = Self::new();
         for (key, value) in map {
-            // Try to parse as various types
             if let Ok(num) = value.parse::<f32>() {
                 bag.set(key, Property::Number(num));
             } else if let Ok(bool_val) = value.parse::<bool>() {
@@ -607,8 +516,6 @@ impl PropertyBag {
         bag
     }
     
-    /// Converts the PropertyBag to a HashMap<String, String>
-    /// This is useful for backward compatibility
     pub fn to_string_map(&self) -> HashMap<String, String> {
         let mut map = HashMap::new();
         for (key, value) in &self.properties {
@@ -617,14 +524,12 @@ impl PropertyBag {
         map
     }
     
-    /// Merges another PropertyBag into this one
     pub fn merge(&mut self, other: &PropertyBag) {
         for (key, value) in other.entries() {
             self.properties.insert(key.clone(), value.clone());
         }
     }
     
-    /// Creates a new PropertyBag with the merged properties
     pub fn merged(self, other: &PropertyBag) -> Self {
         let mut result = self;
         result.merge(other);
@@ -632,11 +537,9 @@ impl PropertyBag {
     }
 }
 
-/// Provides utility functions for working with properties
 pub mod utils {
     use super::*;
     
-    /// Sets an optional property on a PropertyBag
     pub fn set_optional_prop<T: Into<Property> + Clone>(
         bag: &mut PropertyBag, 
         key: &str, 
@@ -647,30 +550,24 @@ pub mod utils {
         }
     }
     
-    /// Parses a string value into a typed property if possible
     pub fn parse_property_value(value: &str) -> Property {
-        // Try to parse as boolean
         if value == "true" || value == "false" {
             if let Ok(bool_val) = value.parse::<bool>() {
                 return Property::Boolean(bool_val);
             }
         }
         
-        // Try to parse as number
         if let Ok(num_val) = value.parse::<f32>() {
             return Property::Number(num_val);
         }
         
-        // Try to parse as edge insets
         if let Some(insets) = crate::shared::edge_insets::parse_edge_insets(value) {
             return Property::EdgeInsets(insets);
         }
         
-        // Default to string
         Property::String(value.to_string())
     }
     
-    /// Gets a property with a default value
     pub fn get_property_with_default<T>(
         bag: &PropertyBag,
         key: &str,

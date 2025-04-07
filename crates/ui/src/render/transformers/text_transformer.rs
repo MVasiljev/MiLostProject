@@ -7,10 +7,8 @@ use super::utils::generate_unique_id;
 pub fn transform_text(props: &TextProps) -> RenderNode {
     let mut node = RenderNode::new(&generate_unique_id("text"), "Text");
     
-    // Apply core text properties
     node.set_prop(keys::TEXT, props.content.clone());
     
-    // Apply styling properties using the strongly-typed system
     if let Some(color) = &props.color {
         node.set_prop(keys::TEXT_COLOR, color.clone());
     }
@@ -23,7 +21,6 @@ pub fn transform_text(props: &TextProps) -> RenderNode {
         node.set_prop(keys::FONT_SIZE, font_size);
     }
     
-    // Now we can directly use the shared types
     if let Some(font_weight) = &props.font_weight {
         node.set_prop(keys::FONT_WEIGHT, font_weight.clone());
     }
@@ -56,7 +53,6 @@ pub fn transform_text(props: &TextProps) -> RenderNode {
         node.set_prop(keys::TEXT_TRANSFORM, text_transform.clone());
     }
     
-    // Apply text constraints
     if let Some(max_lines) = props.max_lines {
         node.set_prop("max_lines", max_lines as i32);
     }
@@ -69,7 +65,6 @@ pub fn transform_text(props: &TextProps) -> RenderNode {
         node.set_prop("soft_wrap", soft_wrap);
     }
     
-    // Apply visual effects
     if let Some(background_color) = &props.background_color {
         node.set_prop(keys::BACKGROUND, background_color.clone());
     }
@@ -85,7 +80,6 @@ pub fn transform_text(props: &TextProps) -> RenderNode {
         node.set_prop(keys::OPACITY, opacity);
     }
     
-    // Apply accessibility properties
     if let Some(semantic_label) = &props.semantic_label {
         node.set_prop(keys::ACCESSIBILITY_LABEL, semantic_label.clone());
     }
@@ -94,7 +88,6 @@ pub fn transform_text(props: &TextProps) -> RenderNode {
         node.set_prop("exclude_from_semantics", exclude);
     }
     
-    // Apply legacy properties for backward compatibility
     if let Some(underline) = props.underline {
         node.set_prop("underline", underline);
     }
@@ -103,10 +96,8 @@ pub fn transform_text(props: &TextProps) -> RenderNode {
         node.set_prop("strikethrough", strikethrough);
     }
     
-    // Apply BaseComponentProps
     let mut base_props = BaseComponentProps::new();
     
-    // Map TextProps to BaseComponentProps
     if let Some(w) = props.width {
         base_props.width = Some(w);
     }
@@ -127,7 +118,6 @@ pub fn transform_text(props: &TextProps) -> RenderNode {
         base_props.opacity = Some(o);
     }
     
-    // Apply the base component properties
     apply_base_props(&mut node, &base_props);
     
     node
