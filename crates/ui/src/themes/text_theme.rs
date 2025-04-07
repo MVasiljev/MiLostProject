@@ -12,6 +12,16 @@ pub struct TextTheme {
     pub error_color: Color,
 }
 
+pub fn apply_theme_to_text(props: TextProps, theme: &TextTheme) -> TextProps {
+    let mut updated = props;
+    
+    if updated.font_family.is_none() {
+        updated.font_family = Some(theme.body_font_family.clone());
+    }
+    
+    updated
+}
+
 impl Default for TextTheme {
     fn default() -> Self {
         Self {

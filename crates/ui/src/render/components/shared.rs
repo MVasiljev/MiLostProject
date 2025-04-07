@@ -184,3 +184,85 @@ pub fn create_gradient<T: DrawingContext>(
     
     Ok(Some(gradient_id))
 }
+
+pub fn draw_scrollbar<T: DrawingContext>(
+    context: &T, 
+    frame: Rect, 
+    direction: &str,
+    content_size: f32, 
+    scroll_position: f32, 
+    scrollbar_color: String, 
+    scrollbar_width: f32, 
+    scrollbar_margin: f32
+) -> Result<(), String> {
+    match direction {
+        "Horizontal" => {
+            let visible_ratio = if content_size > frame.width {
+                frame.width / content_size
+            } else {
+                1.0
+            };
+            
+            let scrollbar_length = (frame.width * visible_ratio).max(30.0);
+            let max_scroll = content_size - frame.width;
+            let scroll_ratio = if max_scroll > 0.0 {
+                scroll_position / max_scroll
+            } else {
+                0.0
+            };
+            
+            let scrollbar_pos = frame.x + (frame.width - scrollbar_length) * scroll_ratio;
+            
+            context.set_fill_color("#eeeeee")?;
+            context.fill_rect(
+                frame.x, 
+                frame.y + frame.height - scrollbar_width - scrollbar_margin,
+                frame.width,
+                scrollbar_width
+            )?;
+            
+            context.set_fill_color(&scrollbar_color)?;
+            context.fill_rect(
+                scrollbar_pos, 
+                frame.y + frame.height - scrollbar_width - scrollbar_margin,
+                scrollbar_length,
+                scrollbar_width
+            )?;
+        },
+        _ => {
+            let visible_ratio = if content_size > frame.height {
+                frame.height / content_size
+            } else {
+                1.0
+            };
+            
+            let scrollbar_length = (frame.height * visible_ratio).max(30.0);
+            let max_scroll = content_size - frame.height;
+            let scroll_ratio = if max_scroll > 0.0 {
+                scroll_position / max_scroll
+            } else {
+                0.0
+            };
+            
+            let scrollbar_pos = frame.y + (frame.height - scrollbar_length) * scroll_ratio;
+            
+            context.set_fill_color("#eeeeee")?;
+            context.fill_rect(
+                frame.x + frame.width - scrollbar_width - scrollbar_margin, 
+                frame.y,
+                scrollbar_width,
+                frame.height
+            )?;
+            
+            context.set_fill_color(&scrollbar_color)?;
+            context.fill_rect(
+                frame.x + frame.width - scrollbar_width - scrollbar_margin, 
+                scrollbar_pos,
+                scrollbar_width,
+                scrollbar_length
+            )?;
+        }
+    }
+    
+    Ok(())
+}

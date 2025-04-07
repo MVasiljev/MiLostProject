@@ -271,31 +271,6 @@ pub fn use_subtitle_style() -> impl Fn(TextProps) -> TextProps {
     }
 }
 
-pub fn use_body_style() -> impl Fn(TextProps) -> TextProps {
-    |props| {
-        props
-            .with_font_size(16.0)
-            .with_line_height(1.5)
-            .with_color(Color::Black)
-    }
-}
-
-pub fn use_caption_style() -> impl Fn(TextProps) -> TextProps {
-    |props| {
-        props
-            .with_font_size(12.0)
-            .with_color(Color::Gray)
-    }
-}
-
-pub fn use_link_style() -> impl Fn(TextProps) -> TextProps {
-    |props| {
-        props
-            .with_color(Color::Blue)
-            .with_text_decoration(TextDecoration::Underline)
-    }
-}
-
 pub fn use_centered_text() -> impl Fn(TextProps) -> TextProps {
     |props| {
         props.with_text_align(TextAlign::Center)

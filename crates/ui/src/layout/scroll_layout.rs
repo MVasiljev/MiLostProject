@@ -1,23 +1,25 @@
 use crate::render::node::RenderNode;
-use super::{
+use crate::layout::{
     layout_engine::{LayoutMeasurement, LayoutPositioning}, 
     types::{Rect, Size}
 };
 
-pub fn measure_scroll(node: &RenderNode, available_size: Size, engine: &mut impl LayoutMeasurement) -> Size {
+pub fn measure_scroll(
+    node: &RenderNode, 
+    available_size: Size, 
+    engine: &mut impl LayoutMeasurement
+) -> Size {
     if node.children.is_empty() {
         return Size::new(available_size.width, available_size.height);
     }
     
-    let direction = node.get_prop("direction")
-        .map(|d| d.as_str())
-        .unwrap_or("Vertical");
+    let direction = node.get_prop_as_string("direction")
+        .unwrap_or_else(|| "Vertical".to_string());
     
-    let paging_enabled = node.get_prop("paging_enabled")
-        .and_then(|v| v.parse::<bool>().ok())
+    let paging_enabled = node.get_prop_bool("paging_enabled")
         .unwrap_or(false);
     
-    let content_inset = node.get_prop("content_inset")
+    let content_inset = node.get_prop_as_string("content_inset")
         .and_then(|inset_str| {
             let parts: Vec<f32> = inset_str.split(',')
                 .filter_map(|s| s.parse().ok())
@@ -39,7 +41,7 @@ pub fn measure_scroll(node: &RenderNode, available_size: Size, engine: &mut impl
     }
     
     if paging_enabled {
-        match direction {
+        match direction.as_str() {
             "Horizontal" => {
                 let page_width = available_size.width;
                 let total_pages = (child_size.width / page_width).ceil();
@@ -53,7 +55,7 @@ pub fn measure_scroll(node: &RenderNode, available_size: Size, engine: &mut impl
         }
     }
     
-    match direction {
+    match direction.as_str() {
         "Horizontal" => Size::new(available_size.width, child_size.height),
         _ => Size::new(available_size.width, child_size.height)
     }
@@ -74,11 +76,10 @@ pub fn position_scroll_children(
             if let Some(child_layout) = layout_cache.get(&child.id) {
                 let child_size = child_layout.content_size;
                 
-                let direction = node.get_prop("direction")
-                    .map(|d| d.as_str())
-                    .unwrap_or("Vertical");
+                let direction = node.get_prop_as_string("direction")
+                    .unwrap_or_else(|| "Vertical".to_string());
                 
-                let content_inset = node.get_prop("content_inset")
+                let content_inset = node.get_prop_as_string("content_inset")
                     .and_then(|inset_str| {
                         let parts: Vec<f32> = inset_str.split(',')
                             .filter_map(|s| s.parse().ok())

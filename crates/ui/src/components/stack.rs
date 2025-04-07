@@ -178,6 +178,11 @@ impl VStackProps {
     pub fn new() -> Self {
         Self::default()
     }
+
+    pub fn spacing(mut self, spacing: f32) -> Self {
+        self.spacing = Some(spacing);
+        self
+    }
     
     pub fn with_gradient(mut self, gradient: Gradient) -> Self {
         self.gradient = Some(gradient);
@@ -202,6 +207,11 @@ impl VStackProps {
 impl HStackProps {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn spacing(mut self, spacing: f32) -> Self {
+        self.spacing = Some(spacing);
+        self
     }
     
     pub fn with_gradient(mut self, gradient: Gradient) -> Self {

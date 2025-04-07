@@ -1,5 +1,7 @@
 use serde::{Serialize, Deserialize};
 use crate::{Color, UIComponent};
+use crate::shared::styles::BorderStyle;
+use crate::shared::edge_insets::EdgeInsets;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum ScrollDirection {
@@ -23,7 +25,7 @@ pub enum DecelerationRate {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub struct ContentInset {
+pub struct ScrollInsets {
     pub top: Option<f32>,
     pub left: Option<f32>,
     pub bottom: Option<f32>,
@@ -48,11 +50,28 @@ pub struct ScrollProps {
 
     pub deceleration_rate: Option<DecelerationRate>,
 
-    pub content_inset: Option<ContentInset>,
+    pub content_insets: Option<ScrollInsets>,
 
     pub indicator_style: Option<ScrollIndicatorStyle>,
 
     pub accessibility_label: Option<String>,
+
+    pub width: Option<f32>,
+    pub height: Option<f32>,
+    pub min_width: Option<f32>,
+    pub max_width: Option<f32>,
+    pub min_height: Option<f32>,
+    pub max_height: Option<f32>,
+
+    pub background_color: Option<Color>,
+    pub border_width: Option<f32>,
+    pub border_color: Option<Color>,
+    pub border_radius: Option<f32>,
+    pub border_style: Option<BorderStyle>,
+
+    pub padding: Option<f32>,
+    pub edge_insets: Option<EdgeInsets>,
+    pub opacity: Option<f32>,
 }
 
 impl Default for ScrollProps {
@@ -69,9 +88,26 @@ impl Default for ScrollProps {
             scroll_enabled: Some(true),
             paging_enabled: Some(false),
             deceleration_rate: Some(DecelerationRate::Normal),
-            content_inset: None,
+            content_insets: None,
             indicator_style: Some(ScrollIndicatorStyle::Default),
             accessibility_label: None,
+
+            width: None,
+            height: None,
+            min_width: None,
+            max_width: None,
+            min_height: None,
+            max_height: None,
+
+            background_color: None,
+            border_width: None,
+            border_color: None,
+            border_radius: None,
+            border_style: None,
+
+            padding: None,
+            edge_insets: None,
+            opacity: None,
         }
     }
 }
@@ -81,13 +117,6 @@ impl ScrollProps {
         Self::default()
     }
 
-    pub fn horizontal() -> Self {
-        Self {
-            direction: ScrollDirection::Horizontal,
-            ..Default::default()
-        }
-    }
-
     pub fn vertical() -> Self {
         Self {
             direction: ScrollDirection::Vertical,
@@ -95,68 +124,15 @@ impl ScrollProps {
         }
     }
 
+    pub fn horizontal() -> Self {
+        Self {
+            direction: ScrollDirection::Horizontal,
+            ..Default::default()
+        }
+    }
+
     pub fn add_child(mut self, child: UIComponent) -> Self {
         self.children.push(child);
-        self
-    }
-
-    pub fn shows_indicators(mut self, shows: bool) -> Self {
-        self.shows_indicators = Some(shows);
-        self
-    }
-
-    pub fn scrollbar_color(mut self, color: Color) -> Self {
-        self.scrollbar_color = Some(color);
-        self
-    }
-
-    pub fn scrollbar_width(mut self, width: f32) -> Self {
-        self.scrollbar_width = Some(width);
-        self
-    }
-
-    pub fn scrollbar_margin(mut self, margin: f32) -> Self {
-        self.scrollbar_margin = Some(margin);
-        self
-    }
-
-    pub fn always_bounces_horizontal(mut self, bounces: bool) -> Self {
-        self.always_bounces_horizontal = Some(bounces);
-        self
-    }
-
-    pub fn always_bounces_vertical(mut self, bounces: bool) -> Self {
-        self.always_bounces_vertical = Some(bounces);
-        self
-    }
-
-    pub fn scroll_enabled(mut self, enabled: bool) -> Self {
-        self.scroll_enabled = Some(enabled);
-        self
-    }
-
-    pub fn paging_enabled(mut self, enabled: bool) -> Self {
-        self.paging_enabled = Some(enabled);
-        self
-    }
-
-    pub fn deceleration_rate(mut self, rate: DecelerationRate) -> Self {
-        self.deceleration_rate = Some(rate);
-        self
-    }
-
-    pub fn content_inset(mut self, inset: ContentInset) -> Self {
-        self.content_inset = Some(inset);
-        self
-    }
-
-    pub fn indicator_style(mut self, style: ScrollIndicatorStyle) -> Self {
-        self.indicator_style = Some(style);
-        self
-    }
-
-    pub fn accessibility_label(mut self, label: impl Into<String>) -> Self {
-        self.accessibility_label = Some(label.into());
         self
     }
 }

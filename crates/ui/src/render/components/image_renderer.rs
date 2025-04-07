@@ -1,49 +1,35 @@
 use crate::render::renderer::{DrawingContext, ComponentRenderer};
 use crate::render::node::RenderNode;
 use crate::layout::Rect;
-use super::shared::{parse_color, draw_rounded_rect};
+use crate::render::property::keys;
+use crate::image::{ImageSource, ResizeMode, ContentMode};
+use super::shared::{
+    draw_rounded_rect, 
+    draw_background,
+    draw_border, 
+    apply_shadow,
+    clear_shadow,
+    parse_color
+};
 use std::f32::consts::PI;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct ImageRenderer;
 
 impl<T: DrawingContext> ComponentRenderer<T> for ImageRenderer {
     fn render(&self, node: &RenderNode, context: &T, frame: Rect) -> Result<(), String> {
-        let src = node.get_prop("src").cloned().unwrap_or_default();
-        let alt = node.get_prop("alt").cloned().unwrap_or_default();
+        let shadow_applied = apply_shadow(
+            context,
+            node.get_prop_as_string(keys::SHADOW_COLOR).as_deref(),
+            node.get_prop_f32(keys::SHADOW_OFFSET_X),
+            node.get_prop_f32(keys::SHADOW_OFFSET_Y),
+            node.get_prop_f32(keys::SHADOW_RADIUS)
+        )?;
         
-        // Determine source type and path
-        let source_type = node.get_prop("source_type").map_or("remote", |v| v.as_str());
-        let display_src = if source_type == "asset" {
-            if let Some(path) = node.get_prop("source_path") {
-                format!("asset://{}", path)
-            } else {
-                src.clone()
-            }
-        } else if source_type == "memory" {
-            "memory://image".to_string()
-        } else {
-            src.clone()
-        };
+        let corner_radius = node.get_prop_f32(keys::BORDER_RADIUS).unwrap_or(0.0);
         
-        // Handle image styling properties
-        let corner_radius = node.get_prop_f32("corner_radius").unwrap_or(0.0);
-        let border_width = node.get_prop_f32("border_width").unwrap_or(0.0);
-        let border_color = node.get_prop("border_color")
-            .map(|c| parse_color(c))
-            .unwrap_or_else(|| "#cccccc".to_string());
-            
-        let opacity = node.get_prop_f32("opacity").unwrap_or(1.0);
-        let scale_mode = node.get_prop("scale_mode").map_or("fit",  |v| v.as_str());
+        draw_background(context, node, frame)?;
         
-        // Handle loading and error states
-        let is_loading = node.get_prop("is_loading")
-            .and_then(|v| v.parse::<bool>().ok())
-            .unwrap_or(false);
-        let has_error = node.get_prop("has_error")
-            .and_then(|v| v.parse::<bool>().ok())
-            .unwrap_or(false);
-        
-        // Apply clipping for rounded corners if needed
         if corner_radius > 0.0 {
             context.save_drawing_state()?;
             context.begin_path()?;
@@ -51,63 +37,42 @@ impl<T: DrawingContext> ComponentRenderer<T> for ImageRenderer {
             context.clip()?;
         }
         
-        // Fill background color (could be placeholder or for transparent images)
-        let background_color = node.get_prop("background_color")
-            .map(|c| parse_color(c))
-            .unwrap_or_else(|| "#f5f5f5".to_string());
-            
-        context.set_fill_color(&background_color)?;
-        context.fill_rect(frame.x, frame.y, frame.width, frame.height)?;
+        let source_type = node.get_prop_as_string("source_type").unwrap_or_else(|| "remote".to_string());
         
-        // In a real implementation, we would load and draw the actual image here
-        // Since we don't have actual image loading capabilities in this example,
-        // we'll draw a placeholder representation
+        let is_loading = node.get_prop_bool("is_loading").unwrap_or(false);
+        let has_error = node.get_prop_bool("has_error").unwrap_or(false);
+        
+        let tint_color = node.get_prop_as_string("tint_color");
         
         if is_loading {
-            // Draw loading indicator
             self.draw_loading_indicator(context, frame)?;
         } else if has_error {
-            // Draw error indicator
-            self.draw_error_indicator(context, frame)?;
-        } else if src.is_empty() {
-            // Draw empty placeholder
-            self.draw_empty_placeholder(context, frame, &alt)?;
+            let alt = node.get_prop_as_string("alt").unwrap_or_default();
+            self.draw_error_indicator(context, frame, &alt)?;
         } else {
-            // Draw image placeholder 
-            self.draw_image_placeholder(context, frame, &display_src, &alt)?;
+            let src = node.get_prop_as_string("src").unwrap_or_default();
+            let alt = node.get_prop_as_string("alt").unwrap_or_default();
+            
+            if !src.is_empty() {
+                self.draw_image(context, node, frame, &source_type, &src, &alt)?;
+            } else {
+                self.draw_empty_placeholder(context, frame, &alt)?;
+            }
         }
         
-        // Restore drawing state if we applied clipping
+        if let Some(tint) = tint_color {
+            self.apply_tint(context, frame, &tint)?;
+        }
+        
+        self.apply_filters(context, node, frame)?;
+        
         if corner_radius > 0.0 {
             context.restore_drawing_state()?;
         }
         
-        // Draw border if specified
-        if border_width > 0.0 {
-            context.begin_path()?;
-            
-            if corner_radius > 0.0 {
-                draw_rounded_rect(
-                    context,
-                    frame.x + border_width / 2.0,
-                    frame.y + border_width / 2.0,
-                    frame.width - border_width,
-                    frame.height - border_width,
-                    corner_radius
-                )?;
-            } else {
-                context.rect(
-                    frame.x + border_width / 2.0,
-                    frame.y + border_width / 2.0,
-                    frame.width - border_width,
-                    frame.height - border_width
-                )?;
-            }
-            
-            context.set_stroke_color(&border_color)?;
-            context.set_line_width(border_width)?;
-            context.stroke()?;
-        }
+        draw_border(context, node, frame)?;
+        
+        clear_shadow(context, shadow_applied)?;
         
         Ok(())
     }
@@ -121,24 +86,38 @@ impl ImageRenderer {
     ) -> Result<(), String> {
         let center_x = frame.x + frame.width / 2.0;
         let center_y = frame.y + frame.height / 2.0;
-        let indicator_size = (frame.width.min(frame.height) * 0.2).min(32.0);
+        let indicator_size = (frame.width.min(frame.height) * 0.2).min(32.0).max(16.0);
         
-        // Draw spinning circle (simplified representation)
-        context.set_stroke_color("#888888")?;
-        context.set_line_width(2.0)?;
+        context.save_drawing_state()?;
         
         context.begin_path()?;
-        context.arc(center_x, center_y, indicator_size / 2.0, 0.0, 1.5 * PI, false)?;
+        context.arc(center_x, center_y, indicator_size / 2.0, 0.0, 2.0 * PI, false)?;
+        context.set_fill_color("rgba(0,0,0,0.1)")?;
+        context.fill()?;
+        
+        context.set_stroke_color("#ffffff")?;
+        context.set_line_width(indicator_size / 8.0)?;
+        
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as f32;
+        
+        let start_angle = (now / 150.0) % (2.0 * PI as f32);
+        let end_angle = start_angle + PI * 0.75;
+        
+        context.begin_path()?;
+        context.arc(
+            center_x,
+            center_y,
+            indicator_size / 2.0 - (indicator_size / 16.0),
+            start_angle,
+            end_angle,
+            false
+        )?;
         context.stroke()?;
         
-        // Add "Loading..." text
-        context.set_font("12px sans-serif")?;
-        context.set_fill_color("#888888")?;
-        context.set_text_align("center")?;
-        context.set_text_baseline("top")?;
-        
-        let text_y = center_y + indicator_size / 2.0 + 10.0;
-        context.fill_text("Loading...", center_x, text_y)?;
+        context.restore_drawing_state()?;
         
         Ok(())
     }
@@ -146,35 +125,41 @@ impl ImageRenderer {
     fn draw_error_indicator<T: DrawingContext>(
         &self,
         context: &T,
-        frame: Rect
+        frame: Rect,
+        alt: &str
     ) -> Result<(), String> {
         let center_x = frame.x + frame.width / 2.0;
         let center_y = frame.y + frame.height / 2.0;
-        let icon_size = (frame.width.min(frame.height) * 0.2).min(32.0);
+        let icon_size = (frame.width.min(frame.height) * 0.2).min(48.0).max(24.0);
         
-        // Draw error X
-        context.set_stroke_color("#ff3b30")?;
-        context.set_line_width(2.0)?;
+        context.save_drawing_state()?;
         
-        let offset = icon_size / 2.0;
+        context.set_fill_color("#ff0000")?;
+        context.begin_path()?;
+        context.arc(center_x, center_y, icon_size / 2.0, 0.0, 2.0 * PI, false)?;
+        context.fill()?;
+        
+        context.set_stroke_color("#ffffff")?;
+        context.set_line_width(icon_size / 10.0)?;
         
         context.begin_path()?;
-        context.move_to(center_x - offset, center_y - offset)?;
-        context.line_to(center_x + offset, center_y + offset)?;
-        
-        context.move_to(center_x + offset, center_y - offset)?;
-        context.line_to(center_x - offset, center_y + offset)?;
-        
+        context.move_to(center_x - icon_size * 0.25, center_y - icon_size * 0.25)?;
+        context.line_to(center_x + icon_size * 0.25, center_y + icon_size * 0.25)?;
         context.stroke()?;
         
-        // Add "Failed to load image" text
-        context.set_font("12px sans-serif")?;
-        context.set_fill_color("#888888")?;
-        context.set_text_align("center")?;
-        context.set_text_baseline("top")?;
+        context.begin_path()?;
+        context.move_to(center_x + icon_size * 0.25, center_y - icon_size * 0.25)?;
+        context.line_to(center_x - icon_size * 0.25, center_y + icon_size * 0.25)?;
+        context.stroke()?;
         
-        let text_y = center_y + icon_size / 2.0 + 10.0;
-        context.fill_text("Failed to load image", center_x, text_y)?;
+        if !alt.is_empty() {
+            context.set_font("12px sans-serif")?;
+            context.set_text_align("center")?;
+            context.set_fill_color("#ffffff")?;
+            context.fill_text(alt, center_x, center_y + icon_size * 0.75)?;
+        }
+        
+        context.restore_drawing_state()?;
         
         Ok(())
     }
@@ -187,101 +172,147 @@ impl ImageRenderer {
     ) -> Result<(), String> {
         let center_x = frame.x + frame.width / 2.0;
         let center_y = frame.y + frame.height / 2.0;
-        let icon_size = (frame.width.min(frame.height) * 0.2).min(24.0).max(12.0);
         
-        // Draw image icon placeholder
-        context.set_fill_color("#bbbbbb")?;
+        context.save_drawing_state()?;
         
-        let camera_width = icon_size * 1.2;
-        let camera_height = icon_size * 0.8;
-        let camera_x = center_x - camera_width / 2.0;
-        let camera_y = center_y - camera_height / 2.0;
-        
-        // Draw camera body
+        context.set_fill_color("#e0e0e0")?;
         context.begin_path()?;
-        context.rect(camera_x, camera_y, camera_width, camera_height)?;
+        context.rect(frame.x, frame.y, frame.width, frame.height)?;
         context.fill()?;
         
-        // Draw camera lens
+        let icon_size = (frame.width.min(frame.height) * 0.2).min(48.0).max(24.0);
+        context.set_fill_color("#a0a0a0")?;
+        
         context.begin_path()?;
-        context.arc(center_x, center_y, icon_size * 0.25, 0.0, 2.0 * PI, false)?;
+        context.rect(
+            center_x - icon_size * 0.3, 
+            center_y - icon_size * 0.2, 
+            icon_size * 0.6, 
+            icon_size * 0.4
+        )?;
         context.fill()?;
         
-        // Draw alt text or placeholder text
-        let display_text = if alt.is_empty() {
-            "No Image".to_string()
-        } else {
-            alt.to_string()
-        };
+        context.set_fill_color("#808080")?;
+        context.begin_path()?;
+        context.arc(
+            center_x, 
+            center_y, 
+            icon_size * 0.2, 
+            0.0, 
+            2.0 * PI, 
+            false
+        )?;
+        context.fill()?;
         
-        let max_display_length = 20;
-        let truncated_text = if display_text.len() > max_display_length {
-            format!("{}...", &display_text[0..max_display_length-3])
-        } else {
-            display_text
-        };
+        if !alt.is_empty() {
+            context.set_font("12px sans-serif")?;
+            context.set_text_align("center")?;
+            context.set_fill_color("#000000")?;
+            context.fill_text(alt, center_x, center_y + icon_size * 0.75)?;
+        }
         
-        context.set_font("10px sans-serif")?;
-        context.set_fill_color("#888888")?;
-        context.set_text_align("center")?;
-        context.set_text_baseline("top")?;
-        
-        let text_y = center_y + icon_size / 2.0 + 8.0;
-        context.fill_text(&truncated_text, center_x, text_y)?;
+        context.restore_drawing_state()?;
         
         Ok(())
     }
     
-    fn draw_image_placeholder<T: DrawingContext>(
+    fn draw_image<T: DrawingContext>(
         &self,
         context: &T,
+        node: &RenderNode,
         frame: Rect,
+        source_type: &str,
         src: &str,
         alt: &str
     ) -> Result<(), String> {
-        // In a real implementation, we would draw the actual image here
-        // Since we don't have actual image loading capabilities in this example,
-        // we'll draw crossed lines to indicate the image area
+        let resize_mode = node.get_prop_as_string("resize_mode")
+            .unwrap_or_else(|| "Fit".to_string());
         
-        // Draw crossed lines
-        context.set_stroke_color("#e0e0e0")?;
-        context.set_line_width(1.0)?;
+        let content_mode = node.get_prop_as_string("content_mode")
+            .unwrap_or_else(|| "ScaleAspectFit".to_string());
         
+        match source_type {
+            "remote" => {
+                context.draw_image(src, frame.x, frame.y, frame.width, frame.height)?;
+            },
+            "asset" => {
+                context.draw_image(src, frame.x, frame.y, frame.width, frame.height)?;
+            },
+            "memory" => {
+                return Err("Memory image drawing not implemented".to_string());
+            },
+            _ => {
+                return Err(format!("Unsupported image source type: {}", source_type));
+            }
+        }
+        
+        Ok(())
+    }
+    
+    fn apply_tint<T: DrawingContext>(
+        &self,
+        context: &T,
+        frame: Rect,
+        tint_color: &str
+    ) -> Result<(), String> {
+        context.save_drawing_state()?;
+        context.set_global_composite_operation("multiply")?;
+        context.set_fill_color(tint_color)?;
         context.begin_path()?;
-        context.move_to(frame.x, frame.y)?;
-        context.line_to(frame.x + frame.width, frame.y + frame.height)?;
+        context.rect(frame.x, frame.y, frame.width, frame.height)?;
+        context.fill()?;
+        context.restore_drawing_state()?;
         
-        context.move_to(frame.x + frame.width, frame.y)?;
-        context.line_to(frame.x, frame.y + frame.height)?;
+        Ok(())
+    }
+    
+    fn apply_filters<T: DrawingContext>(
+        &self,
+        context: &T,
+        node: &RenderNode,
+        frame: Rect
+    ) -> Result<(), String> {
+        let filter_count = node.get_prop_f32("filter_count").unwrap_or(0.0) as usize;
         
-        context.stroke()?;
-        
-        // Display the image source as text
-        let center_x = frame.x + frame.width / 2.0;
-        let center_y = frame.y + frame.height / 2.0;
-        
-        let display_text = if !alt.is_empty() {
-            alt.to_string()
-        } else {
-            src.split('/')
-                .last()
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| "Image".to_string())
-        };
-        
-        let max_display_length = 30;
-        let truncated_text = if display_text.len() > max_display_length {
-            format!("{}...", &display_text[0..max_display_length-3])
-        } else {
-            display_text
-        };
-        
-        context.set_font("12px sans-serif")?;
-        context.set_fill_color("#888888")?;
-        context.set_text_align("center")?;
-        context.set_text_baseline("middle")?;
-        
-        context.fill_text(&truncated_text, center_x, center_y)?;
+        for i in 0..filter_count {
+            let filter_type_key = format!("filter_{}_type", i);
+            let filter_value_key = format!("filter_{}_value", i);
+            
+            if let (Some(filter_type), Some(filter_value)) = (
+                node.get_prop_as_string(&filter_type_key), 
+                node.get_prop_f32(&filter_value_key)
+            ) {
+                match filter_type.to_lowercase().as_str() {
+                    "blur" => {
+                        context.apply_filter(&format!("blur({}px)", filter_value))?;
+                    },
+                    "grayscale" => {
+                        context.apply_filter(&format!("grayscale({}%)", filter_value * 100.0))?;
+                    },
+                    "sepia" => {
+                        context.apply_filter(&format!("sepia({}%)", filter_value * 100.0))?;
+                    },
+                    "saturation" => {
+                        context.apply_filter(&format!("saturate({}%)", filter_value * 100.0))?;
+                    },
+                    "brightness" => {
+                        context.apply_filter(&format!("brightness({}%)", filter_value * 100.0))?;
+                    },
+                    "contrast" => {
+                        context.apply_filter(&format!("contrast({}%)", filter_value * 100.0))?;
+                    },
+                    "hue" => {
+                        context.apply_filter(&format!("hue-rotate({}deg)", filter_value * 360.0))?;
+                    },
+                    "invert" => {
+                        context.apply_filter("invert(100%)")?;
+                    },
+                    _ => {
+                        return Err(format!("Unsupported filter type: {}", filter_type));
+                    }
+                }
+            }
+        }
         
         Ok(())
     }

@@ -323,4 +323,8 @@ impl TextProps {
         self.decoration_thickness = thickness;
         self
     }
+    
+    pub(crate) fn with_border_radius(&self, some: Option<f64>) -> TextProps {
+        todo!()
+    }
 }
