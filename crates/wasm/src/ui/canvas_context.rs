@@ -1,11 +1,13 @@
-use crate::render::renderer::DrawingContext;
-use std::collections::HashMap;
+use milost_ui::DrawingContext;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, HtmlImageElement};
+use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, HtmlImageElement, Event};
+use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+
+#[wasm_bindgen]
 pub struct CanvasContext {
     ctx: CanvasRenderingContext2d,
     canvas: HtmlCanvasElement,
@@ -13,10 +15,6 @@ pub struct CanvasContext {
     active_gradients: Rc<RefCell<HashMap<String, JsValue>>>,
     images: Rc<RefCell<HashMap<String, HtmlImageElement>>>,
     gradient_counter: Rc<RefCell<u32>>,
-}
-
-pub struct CanvasRenderer {
-    context: CanvasContext,
 }
 
 impl CanvasContext {
@@ -65,12 +63,12 @@ impl CanvasContext {
         let image_id = image_id.to_string();
         let img_clone = img.clone();
         
-        let success_callback = Closure::wrap(Box::new(move |_event: web_sys::Event| {
+        let success_callback = Closure::wrap(Box::new(move |_event: Event| {
             let mut images_ref = images.borrow_mut();
             images_ref.insert(image_id.clone(), img_clone.clone());
         }) as Box<dyn FnMut(_)>);
         
-        let error_callback = Closure::wrap(Box::new(|_event: web_sys::Event| {
+        let error_callback = Closure::wrap(Box::new(|_event: Event| {
             web_sys::console::error_1(&"Failed to load image".into());
         }) as Box<dyn FnMut(_)>);
         
@@ -348,7 +346,7 @@ impl DrawingContext for CanvasContext {
         
         for (position, color) in stops {
             gradient.add_color_stop(
-                position,
+                position as f64,
                 &color
             ).map_err(|e| format!("Failed to add color stop: {:?}", e))?;
         }
@@ -371,7 +369,7 @@ impl DrawingContext for CanvasContext {
         
         for (position, color) in stops {
             gradient.add_color_stop(
-                position,
+                position as f64,
                 &color
             ).map_err(|e| format!("Failed to add color stop: {:?}", e))?;
         }
@@ -458,21 +456,19 @@ impl DrawingContext for CanvasContext {
     fn clip_rounded_rect(&self, x: f32, y: f32, width: f32, height: f32, radius: f32) -> Result<(), String> {
         self.begin_path()?;
         
-        self.move_to(x + radius, y)?;
+        let r = radius.min(width / 2.0).min(height / 2.0);
         
-        self.line_to(x + width - radius, y)?;
-        self.arc(x + width - radius, y + radius, radius, -0.5 * std::f32::consts::PI, 0.0, false)?;
-        
-        self.line_to(x + width, y + height - radius)?;
-        self.arc(x + width - radius, y + height - radius, radius, 0.0, 0.5 * std::f32::consts::PI, false)?;
-        
-        self.line_to(x + radius, y + height)?;
-        self.arc(x + radius, y + height - radius, radius, 0.5 * std::f32::consts::PI, std::f32::consts::PI, false)?;
-        
-        self.line_to(x, y + radius)?;
-        self.arc(x + radius, y + radius, radius, std::f32::consts::PI, 1.5 * std::f32::consts::PI, false)?;
-        
+        self.move_to(x + r, y)?;
+        self.line_to(x + width - r, y)?;
+        self.arc(x + width - r, y + r, r, -0.5 * std::f32::consts::PI, 0.0, false)?;
+        self.line_to(x + width, y + height - r)?;
+        self.arc(x + width - r, y + height - r, r, 0.0, 0.5 * std::f32::consts::PI, false)?;
+        self.line_to(x + r, y + height)?;
+        self.arc(x + r, y + height - r, r, 0.5 * std::f32::consts::PI, std::f32::consts::PI, false)?;
+        self.line_to(x, y + r)?;
+        self.arc(x + r, y + r, r, std::f32::consts::PI, 1.5 * std::f32::consts::PI, false)?;
         self.close_path()?;
+        
         self.clip()?;
         
         Ok(())
@@ -483,35 +479,59 @@ impl DrawingContext for CanvasContext {
     }
     
     fn apply_filter(&self, filter: &str) -> Result<(), String> {
-        Err("Canvas API doesn't support CSS filters directly".to_string())
+        // Canvas API doesn't support CSS filters directly, but we can use filter property
+        // through style attribute on the canvas element
+        let canvas_style = self.canvas.style();
+        canvas_style.set_property("filter", filter)
+            .map_err(|e| format!("Failed to set filter: {:?}", e))?;
+        Ok(())
     }
     
     fn clear_filter(&self) -> Result<(), String> {
+        let canvas_style = self.canvas.style();
+        canvas_style.set_property("filter", "none")
+            .map_err(|e| format!("Failed to clear filter: {:?}", e))?;
         Ok(())
     }
 }
 
+#[wasm_bindgen]
+pub struct CanvasRenderer {
+    context: CanvasContext,
+}
+
+#[wasm_bindgen]
 impl CanvasRenderer {
-    pub fn new(canvas_id: &str) -> Result<Self, String> {
-        let context = CanvasContext::new(canvas_id)?;
+    #[wasm_bindgen(constructor)]
+    pub fn new(canvas_id: &str) -> Result<CanvasRenderer, JsValue> {
+        let context = CanvasContext::new(canvas_id)
+            .map_err(|e| JsValue::from_str(&e))?;
+        
         Ok(Self { context })
     }
-    
-    pub fn get_context(&self) -> &CanvasContext {
-        &self.context
-    }
-    
-    pub fn clear_canvas(&self) -> Result<(), String> {
+
+    #[wasm_bindgen]
+    pub fn clear_canvas(&self) -> Result<(), JsValue> {
         let (width, height) = self.context.get_dimensions();
         self.context.clear(0.0, 0.0, width, height)
+            .map_err(|e| JsValue::from_str(&e))
     }
-    
-    pub fn load_image(&self, image_id: &str, url: &str) -> Result<(), String> {
+
+    #[wasm_bindgen]
+    pub fn load_image(&self, image_id: &str, url: &str) -> Result<(), JsValue> {
         self.context.load_image(image_id, url)
+            .map_err(|e| JsValue::from_str(&e))
     }
-    
+
+    #[wasm_bindgen]
     pub fn is_image_loaded(&self, image_id: &str) -> bool {
         self.context.is_image_loaded(image_id)
+    }
+    
+    // Internal method for Rust-side code, not exposed to JavaScript
+    #[wasm_bindgen(skip)]
+    pub fn get_context(&self) -> CanvasContext {
+        &self.context
     }
 }
 

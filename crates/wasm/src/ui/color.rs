@@ -7,14 +7,17 @@ use milost_ui::shared::color::{Color, ColorScheme, color_schemes};
 #[wasm_bindgen]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum ColorJs {
+    // Basic colors
     White,
     Black,
     
+    // Primary colors
     Red,
     Green,
     Blue,
     Yellow,
     
+    // Secondary colors
     Orange,
     Purple,
     Pink,
@@ -22,10 +25,12 @@ pub enum ColorJs {
     Indigo,
     Cyan,
     
+    // Gray shades
     Gray,
     LightGray,
     DarkGray,
     
+    // Material colors
     Primary,
     Secondary,
     Accent,
@@ -38,20 +43,24 @@ pub enum ColorJs {
     OnSurface,
     OnError,
     
+    // Semantic colors
     Success,
     Warning,
     Info,
     Danger,
     
+    // Social media colors
     Twitter,
     Facebook,
     LinkedIn,
     Instagram,
     
+    // Common UI colors
     Link,
     Disabled,
     Placeholder,
     
+    // Advanced colors
     Transparent,
     Custom,
     CustomWithAlpha,
@@ -153,14 +162,14 @@ impl ColorBuilder {
         match self.color.contrasting_text_color() {
             Color::White => ColorJs::White,
             Color::Black => ColorJs::Black,
-            _ => ColorJs::Black,
+            _ => ColorJs::Black, // Fallback
         }
     }
 
     #[wasm_bindgen(method)]
     pub fn lighten(&mut self, amount: f32) -> Self {
         self.color = self.color.lighten(amount);
-        self.clone()
+        self
     }
 
     #[wasm_bindgen(method)]

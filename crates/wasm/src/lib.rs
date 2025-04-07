@@ -5,7 +5,7 @@ mod str;
 mod vec;
 mod option;
 mod result;
-mod ui;
+// mod ui;
 mod primitives;
 mod error;
 mod iter;
@@ -30,12 +30,13 @@ mod smart_pointers;
 mod sync_primitives;
 mod computed;
 
+
 pub use str::*;
 pub use vec::*;
 pub use primitives::*;
 pub use option::*;
 pub use result::*;
-pub use ui::*;
+// pub use ui::*;
 pub use error::*;
 pub use iter::*;
 pub use functional::*;

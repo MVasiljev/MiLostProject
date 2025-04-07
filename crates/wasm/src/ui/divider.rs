@@ -137,6 +137,7 @@ impl DividerBuilder {
     }
 }
 
+// Predefined color scheme functions
 #[wasm_bindgen]
 pub fn light_divider() -> Result<JsValue, JsValue> {
     let divider_props = milost_ui::components::divider::divider_color_schemes::light();

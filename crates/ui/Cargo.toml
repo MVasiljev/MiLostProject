@@ -7,4 +7,4 @@ edition = "2021"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 image = { version = "0.25.6", features = ["png", "jpeg", "gif", "bmp", "ico", "hdr", "pnm", "tga"] }
-uuid = { version = "1.16.0", features = ["v4", "serde"] }
+# uuid = { version = "1.16.0", features = ["v4", "serde"] }
