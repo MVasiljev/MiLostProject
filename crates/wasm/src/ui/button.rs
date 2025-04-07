@@ -1,9 +1,11 @@
+use milost_ui::styles::SpreadMethod;
+use milost_ui::GradientType;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 use milost_ui::{
     ButtonProps, 
     UIComponent, 
-    EventHandler, 
+    ButtonEventHandler, 
     ButtonStyle, 
     ButtonSize, 
     ButtonState,
@@ -17,7 +19,8 @@ use milost_ui::{
     GradientStop,
     EdgeInsets,
     Alignment,
-    EventType
+    EventType,
+    Color
 };
 
 #[wasm_bindgen]
@@ -37,11 +40,78 @@ impl ButtonBuilder {
     // Basic properties
     #[wasm_bindgen(method)]
     pub fn on_tap(mut self, handler_id: &str) -> Self {
-        self.props.on_tap = Some(EventHandler {
-            event_type: EventType::Tap,
-            handler_id: handler_id.to_string(),
-            data: None,
-        });
+        self.props.event_handlers = Some(
+            self.props.event_handlers
+                .take()
+                .unwrap_or_else(|| ButtonEventHandler::new())
+                .with_tap_handler(handler_id)
+        );
+        self
+    }
+
+    #[wasm_bindgen(method)]
+    pub fn on_double_tap(mut self, handler_id: &str) -> Self {
+        self.props.event_handlers = Some(
+            self.props.event_handlers
+                .take()
+                .unwrap_or_else(|| ButtonEventHandler::new())
+                .with_double_tap_handler(handler_id)
+        );
+        self
+    }
+
+    #[wasm_bindgen(method)]
+    pub fn on_long_press(mut self, handler_id: &str) -> Self {
+        self.props.event_handlers = Some(
+            self.props.event_handlers
+                .take()
+                .unwrap_or_else(|| ButtonEventHandler::new())
+                .with_long_press_handler(handler_id)
+        );
+        self
+    }
+
+    #[wasm_bindgen(method)]
+    pub fn on_hover_enter(mut self, handler_id: &str) -> Self {
+        self.props.event_handlers = Some(
+            self.props.event_handlers
+                .take()
+                .unwrap_or_else(|| ButtonEventHandler::new())
+                .with_hover_enter_handler(handler_id)
+        );
+        self
+    }
+
+    #[wasm_bindgen(method)]
+    pub fn on_hover_exit(mut self, handler_id: &str) -> Self {
+        self.props.event_handlers = Some(
+            self.props.event_handlers
+                .take()
+                .unwrap_or_else(|| ButtonEventHandler::new())
+                .with_hover_exit_handler(handler_id)
+        );
+        self
+    }
+
+    #[wasm_bindgen(method)]
+    pub fn on_focus(mut self, handler_id: &str) -> Self {
+        self.props.event_handlers = Some(
+            self.props.event_handlers
+                .take()
+                .unwrap_or_else(|| ButtonEventHandler::new())
+                .with_focus_handler(handler_id)
+        );
+        self
+    }
+
+    #[wasm_bindgen(method)]
+    pub fn on_blur(mut self, handler_id: &str) -> Self {
+        self.props.event_handlers = Some(
+            self.props.event_handlers
+                .take()
+                .unwrap_or_else(|| ButtonEventHandler::new())
+                .with_blur_handler(handler_id)
+        );
         self
     }
 
@@ -69,19 +139,19 @@ impl ButtonBuilder {
     // Visual properties
     #[wasm_bindgen(method)]
     pub fn background_color(mut self, color: &str) -> Self {
-        self.props.background_color = Some(color.to_string());
+        self.props.background_color = Some(Color::from_hex(color));
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn text_color(mut self, color: &str) -> Self {
-        self.props.text_color = Some(color.to_string());
+        self.props.text_color = Some(Color::from_hex(color));
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn border_color(mut self, color: &str) -> Self {
-        self.props.border_color = Some(color.to_string());
+        self.props.border_color = Some(Color::from_hex(color));
         self
     }
 
@@ -134,7 +204,7 @@ impl ButtonBuilder {
 
     #[wasm_bindgen(method)]
     pub fn shadow(mut self, color: &str, offset_x: f32, offset_y: f32, radius: f32) -> Self {
-        self.props.shadow_color = Some(color.to_string());
+        self.props.shadow_color = Some(Color::from_hex(color));
         self.props.shadow_offset = Some((offset_x, offset_y));
         self.props.shadow_radius = Some(radius);
         self
@@ -144,7 +214,7 @@ impl ButtonBuilder {
     #[wasm_bindgen(method)]
     pub fn border(mut self, width: f32, style: &str, color: &str) -> Self {
         self.props.border_width = Some(width);
-        self.props.border_color = Some(color.to_string());
+        self.props.border_color = Some(Color::from_hex(color));
         self.props.border_style = match style {
             "Solid" => Some(BorderStyle::Solid),
             "Dashed" => Some(BorderStyle::Dashed),
@@ -289,7 +359,7 @@ impl ButtonBuilder {
 
     #[wasm_bindgen(method)]
     pub fn loading_indicator_color(mut self, color: &str) -> Self {
-        self.props.loading_indicator_color = Some(color.to_string());
+        self.props.loading_indicator_color = Some(Color::from_hex(color));
         self
     }
 
@@ -306,65 +376,59 @@ impl ButtonBuilder {
     }
 
     // Enhancement: Advanced event handlers
-    #[wasm_bindgen(method)]
-    pub fn on_double_tap(mut self, handler_id: &str) -> Self {
-        self.props.on_double_tap = Some(EventHandler {
-            event_type: EventType::DoubleTap,
-            handler_id: handler_id.to_string(),
-            data: None,
-        });
-        self
-    }
+    // #[wasm_bindgen(method)]
+    // pub fn on_double_tap(mut self, handler_id: &str) -> Self {
+    //     self.props.on_double_tap = Some(ButtonEventHandler {
+    //         event_type: EventType::DoubleTap,
+    //         handler_id: handler_id.to_string(),
+    //     });
+    //     self
+    // }
 
-    #[wasm_bindgen(method)]
-    pub fn on_long_press(mut self, handler_id: &str) -> Self {
-        self.props.on_long_press = Some(EventHandler {
-            event_type: EventType::LongPress,
-            handler_id: handler_id.to_string(),
-            data: None,
-        });
-        self
-    }
+    // #[wasm_bindgen(method)]
+    // pub fn on_long_press(mut self, handler_id: &str) -> Self {
+    //     self.props.on_long_press = Some(ButtonEventHandler {
+    //         event_type: EventType::LongPress,
+    //         handler_id: handler_id.to_string(),
+    //     });
+    //     self
+    // }
 
-    #[wasm_bindgen(method)]
-    pub fn on_hover_enter(mut self, handler_id: &str) -> Self {
-        self.props.on_hover_enter = Some(EventHandler {
-            event_type: EventType::HoverEnter,
-            handler_id: handler_id.to_string(),
-            data: None,
-        });
-        self
-    }
+    // #[wasm_bindgen(method)]
+    // pub fn on_hover_enter(mut self, handler_id: &str) -> Self {
+    //     self.props.on_hover_enter = Some(ButtonEventHandler {
+    //         event_type: EventType::HoverEnter,
+    //         handler_id: handler_id.to_string(),
+    //     });
+    //     self
+    // }
 
-    #[wasm_bindgen(method)]
-    pub fn on_hover_exit(mut self, handler_id: &str) -> Self {
-        self.props.on_hover_exit = Some(EventHandler {
-            event_type: EventType::HoverExit,
-            handler_id: handler_id.to_string(),
-            data: None,
-        });
-        self
-    }
+    // #[wasm_bindgen(method)]
+    // pub fn on_hover_exit(mut self, handler_id: &str) -> Self {
+    //     self.props.on_hover_exit = Some(ButtonEventHandler {
+    //         event_type: EventType::HoverExit,
+    //         handler_id: handler_id.to_string(),
+    //     });
+    //     self
+    // }
 
-    #[wasm_bindgen(method)]
-    pub fn on_focus(mut self, handler_id: &str) -> Self {
-        self.props.on_focus = Some(EventHandler {
-            event_type: EventType::Focus,
-            handler_id: handler_id.to_string(),
-            data: None,
-        });
-        self
-    }
+    // #[wasm_bindgen(method)]
+    // pub fn on_focus(mut self, handler_id: &str) -> Self {
+    //     self.props.on_focus = Some(ButtonEventHandler {
+    //         event_type: EventType::Focus,
+    //         handler_id: handler_id.to_string(),
+    //     });
+    //     self
+    // }
 
-    #[wasm_bindgen(method)]
-    pub fn on_blur(mut self, handler_id: &str) -> Self {
-        self.props.on_blur = Some(EventHandler {
-            event_type: EventType::Blur,
-            handler_id: handler_id.to_string(),
-            data: None,
-        });
-        self
-    }
+    // #[wasm_bindgen(method)]
+    // pub fn on_blur(mut self, handler_id: &str) -> Self {
+    //     self.props.on_blur = Some(ButtonEventHandler {
+    //         event_type: EventType::Blur,
+    //         handler_id: handler_id.to_string(),
+    //     });
+    //     self
+    // }
 
     // Enhancement: Accessibility
     #[wasm_bindgen(method)]
@@ -406,7 +470,7 @@ impl ButtonBuilder {
 
     #[wasm_bindgen(method)]
     pub fn press_color_change(mut self, color: &str) -> Self {
-        self.props.press_color_change = Some(color.to_string());
+        self.props.press_color_change = Some(Color::from_hex(color));
         self
     }
 
@@ -425,7 +489,11 @@ impl ButtonBuilder {
                 stops: Vec::new(),
                 start_point: (0.0, 0.0),
                 end_point: (1.0, 0.0),
-                is_radial: false,
+                gradient_type: GradientType::Linear,
+                angle: None,
+                spread_method: None,
+                name: None,
+                custom_props: None,
             });
         }
         
@@ -434,6 +502,7 @@ impl ButtonBuilder {
             gradient.stops.push(GradientStop {
                 color: color.to_string(),
                 position,
+                name: None,
             });
         }
         
@@ -448,7 +517,11 @@ impl ButtonBuilder {
                 stops: Vec::new(),
                 start_point: (x, y),
                 end_point: (1.0, 0.0),
-                is_radial: false,
+                gradient_type: GradientType::Linear,
+                angle: None,
+                spread_method: None,
+                name: None,
+                custom_props: None,
             });
         } else if let Some(ref mut gradient) = self.props.gradient {
             gradient.start_point = (x, y);
@@ -465,7 +538,11 @@ impl ButtonBuilder {
                 stops: Vec::new(),
                 start_point: (0.0, 0.0),
                 end_point: (x, y),
-                is_radial: false,
+                gradient_type: GradientType::Linear,
+                angle: None,
+                spread_method: None,
+                name: None,
+                custom_props: None,
             });
         } else if let Some(ref mut gradient) = self.props.gradient {
             gradient.end_point = (x, y);
@@ -475,22 +552,132 @@ impl ButtonBuilder {
     }
 
     #[wasm_bindgen(method)]
-    pub fn gradient_is_radial(mut self, is_radial: bool) -> Self {
+    pub fn gradient_type(mut self, gradient_type: &str) -> Self {
         // Initialize gradient if not already present
         if self.props.gradient.is_none() {
             self.props.gradient = Some(Gradient {
                 stops: Vec::new(),
                 start_point: (0.0, 0.0),
                 end_point: (1.0, 0.0),
-                is_radial,
+                gradient_type: GradientType::Linear,
+                angle: None,
+                spread_method: None,
+                name: None,
+                custom_props: None,
             });
-        } else if let Some(ref mut gradient) = self.props.gradient {
-            gradient.is_radial = is_radial;
+        }
+        
+        // Set gradient type
+        if let Some(ref mut gradient) = self.props.gradient {
+            gradient.gradient_type = match gradient_type {
+                "Linear" => GradientType::Linear,
+                "Radial" => GradientType::Radial,
+                "Conic" => GradientType::Conic,
+                "Repeating" => GradientType::Repeating,
+                _ => gradient.gradient_type,
+            };
         }
         
         self
     }
-    
+
+    #[wasm_bindgen(method)]
+    pub fn gradient_angle(mut self, angle: f32) -> Self {
+        // Initialize gradient if not already present
+        if self.props.gradient.is_none() {
+            self.props.gradient = Some(Gradient {
+                stops: Vec::new(),
+                start_point: (0.0, 0.0),
+                end_point: (1.0, 0.0),
+                gradient_type: GradientType::Linear,
+                angle: Some(angle),
+                spread_method: None,
+                name: None,
+                custom_props: None,
+            });
+        } else if let Some(ref mut gradient) = self.props.gradient {
+            gradient.angle = Some(angle);
+        }
+        
+        self
+    }
+
+    #[wasm_bindgen(method)]
+    pub fn gradient_spread_method(mut self, spread_method: &str) -> Self {
+        // Initialize gradient if not already present
+        if self.props.gradient.is_none() {
+            self.props.gradient = Some(Gradient {
+                stops: Vec::new(),
+                start_point: (0.0, 0.0),
+                end_point: (1.0, 0.0),
+                gradient_type: GradientType::Linear,
+                angle: None,
+                spread_method: Some(SpreadMethod::Pad),
+                name: None,
+                custom_props: None,
+            });
+        }
+        
+        // Set spread method
+        if let Some(ref mut gradient) = self.props.gradient {
+            gradient.spread_method = match spread_method {
+                "Pad" => Some(SpreadMethod::Pad),
+                "Reflect" => Some(SpreadMethod::Reflect),
+                "Repeat" => Some(SpreadMethod::Repeat),
+                _ => gradient.spread_method,
+            };
+        }
+        
+        self
+    }
+
+    #[wasm_bindgen(method)]
+    pub fn gradient_name(mut self, name: &str) -> Self {
+        // Initialize gradient if not already present
+        if self.props.gradient.is_none() {
+            self.props.gradient = Some(Gradient {
+                stops: Vec::new(),
+                start_point: (0.0, 0.0),
+                end_point: (1.0, 0.0),
+                gradient_type: GradientType::Linear,
+                angle: None,
+                spread_method: None,
+                name: Some(name.to_string()),
+                custom_props: None,
+            });
+        } else if let Some(ref mut gradient) = self.props.gradient {
+            gradient.name = Some(name.to_string());
+        }
+        
+        self
+    }
+
+    #[wasm_bindgen(method)]
+    pub fn gradient_custom_prop(mut self, key: &str, value: &str) -> Self {
+        // Initialize gradient if not already present
+        if self.props.gradient.is_none() {
+            self.props.gradient = Some(Gradient {
+                stops: Vec::new(),
+                start_point: (0.0, 0.0),
+                end_point: (1.0, 0.0),
+                gradient_type: GradientType::Linear,
+                angle: None,
+                spread_method: None,
+                name: None,
+                custom_props: Some(std::collections::HashMap::new()),
+            });
+        }
+        
+        // Add custom prop
+        if let Some(ref mut gradient) = self.props.gradient {
+            let props = gradient.custom_props.get_or_insert_with(|| std::collections::HashMap::new());
+            props.insert(key.to_string(), value.to_string());
+        }
+        
+        self
+    }
+
+    // Final build method
     #[wasm_bindgen(method)]
     pub fn build(&self) -> Result<JsValue, JsValue> {
         let component = UIComponent::Button(self.props.clone());
