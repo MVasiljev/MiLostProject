@@ -8,8 +8,7 @@ pub struct HStackRenderer;
 impl<T: DrawingContext> ComponentRenderer<T> for HStackRenderer {
     fn render(&self, node: &RenderNode, context: &T, frame: Rect) -> Result<(), String> {
         BaseRenderer::draw_background_and_borders(context, node, frame)?;
-        
-        
+               
         Ok(())
     }
 }

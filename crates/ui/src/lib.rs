@@ -1,4 +1,3 @@
-// src/lib.rs
 pub mod shared;
 pub mod render;
 pub mod layout;

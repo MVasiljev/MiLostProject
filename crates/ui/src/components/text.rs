@@ -1,10 +1,8 @@
 use serde::{Serialize, Deserialize};
 use crate::{Color, FontStyle};
-// Import shared enum types
 use crate::shared::styles::{TextAlign, TextTransform};
 use crate::shared::font::{FontWeight, FontSlant, FontWidth};
 
-/// Text decoration options
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum TextDecoration {
     None,
@@ -13,7 +11,6 @@ pub enum TextDecoration {
     LineThrough,
 }
 
-/// Text overflow behavior
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum TextOverflow {
     Clip,
@@ -21,7 +18,6 @@ pub enum TextOverflow {
     Fade,
 }
 
-/// Defines shadow properties for text
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct TextShadow {
     pub color: Color,
@@ -30,15 +26,12 @@ pub struct TextShadow {
     pub blur_radius: f32,
 }
 
-/// Comprehensive properties for Text component
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TextProps {
-    // Basic properties
     pub content: String,
     pub font_style: Option<FontStyle>,
     pub color: Option<Color>,
     
-    // Typography properties
     pub font_size: Option<f32>,
     pub font_family: Option<String>,
     pub font_weight: Option<FontWeight>,
@@ -46,46 +39,39 @@ pub struct TextProps {
     pub letter_spacing: Option<f32>,
     pub word_spacing: Option<f32>,
     
-    // Text appearance
     pub italic: Option<bool>,
     pub text_align: Option<TextAlign>,
     pub text_decoration: Option<TextDecoration>,
     pub decoration_color: Option<Color>,
-    pub decoration_style: Option<String>, // solid, dashed, dotted, etc.
+    pub decoration_style: Option<String>,
     pub decoration_thickness: Option<f32>,
     
-    // Text transformations
     pub text_transform: Option<TextTransform>,
     
-    // Text constraints
     pub max_lines: Option<u32>,
     pub min_font_size: Option<f32>,
     pub max_font_size: Option<f32>,
     pub truncation_mode: Option<TextOverflow>,
     pub soft_wrap: Option<bool>,
     
-    // Visual effects
     pub background_color: Option<Color>,
     pub shadow: Option<TextShadow>,
     pub opacity: Option<f32>,
     
-    // Accessibility
     pub semantic_label: Option<String>,
     pub exclude_from_semantics: Option<bool>,
     
-    // Layout
     pub padding: Option<f32>,
     pub width: Option<f32>,
     pub height: Option<f32>,
     pub fixed_size: Option<bool>,
     pub selectable: Option<bool>,
     
-    // Advanced options
     pub locale: Option<String>,
-    pub text_direction: Option<String>, // ltr, rtl
+    pub text_direction: Option<String>,
     pub text_scaling_factor: Option<f32>,
-    pub underline: Option<bool>,     // Legacy, use text_decoration
-    pub strikethrough: Option<bool>, // Legacy, use text_decoration
+    pub underline: Option<bool>,
+    pub strikethrough: Option<bool>,
 }
 
 impl Default for TextProps {
@@ -131,7 +117,6 @@ impl Default for TextProps {
     }
 }
 
-// Builder implementation for TextProps
 impl TextProps {
     pub fn new(content: impl Into<String>) -> Self {
         TextProps {

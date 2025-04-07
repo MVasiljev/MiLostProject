@@ -5,45 +5,28 @@ use super::layout_utils::parse_edge_insets;
 use super::types::{Rect, Size};
 use std::collections::HashMap;
 
-/// Represents the direction of the flex layout
 pub enum FlexDirection {
-    /// Items are arranged horizontally (row)
     Horizontal,
-    /// Items are arranged vertically (column)
     Vertical,
 }
 
-/// Main axis alignment options
 pub enum MainAxisAlignment {
-    /// Items are packed toward the start
     Start,
-    /// Items are packed toward the end
     End,
-    /// Items are centered along the line
     Center,
-    /// Items are evenly distributed with equal space between them
     SpaceBetween,
-    /// Items are evenly distributed with equal space around them
     SpaceAround,
-    /// Items are evenly distributed with equal space between and around them
     SpaceEvenly,
 }
 
-/// Cross axis alignment options
 pub enum CrossAxisAlignment {
-    /// Items are stretched to fill the container
     Stretch,
-    /// Items are placed at the start of the cross axis
     Start,
-    /// Items are placed at the end of the cross axis
     End,
-    /// Items are centered in the cross axis
     Center,
-    /// Items are aligned such that their baselines align
     Baseline,
 }
 
-/// Converts a string alignment to MainAxisAlignment
 fn parse_main_axis_alignment(alignment: &str) -> MainAxisAlignment {
     match alignment.to_lowercase().as_str() {
         "start" | "leading" => MainAxisAlignment::Start,
@@ -56,7 +39,6 @@ fn parse_main_axis_alignment(alignment: &str) -> MainAxisAlignment {
     }
 }
 
-/// Converts a string alignment to CrossAxisAlignment
 fn parse_cross_axis_alignment(alignment: &str, direction: &FlexDirection) -> CrossAxisAlignment {
     match direction {
         FlexDirection::Horizontal => {
@@ -81,7 +63,6 @@ fn parse_cross_axis_alignment(alignment: &str, direction: &FlexDirection) -> Cro
     }
 }
 
-/// Main measuring function for flex layouts
 pub fn measure_flex(
     node: &RenderNode, 
     available_size: Size, 
@@ -157,7 +138,6 @@ pub fn measure_flex(
     )
 }
 
-/// Main positioning function for flex layouts
 pub fn position_flex_children(
     node: &RenderNode, 
     frame: Rect, 
@@ -179,7 +159,6 @@ pub fn position_flex_children(
     
     let is_horizontal = matches!(direction, FlexDirection::Horizontal);
     
-    // Get proper alignment for main and cross axes
     let alignment_str = node.get_prop("alignment").map_or(
         if is_horizontal { "center" } else { "leading" },
         |v| v.as_string().map_or(
@@ -222,7 +201,6 @@ pub fn position_flex_children(
         }
     }
     
-    // Calculate spacing
     let mut total_spacing = 0.0;
     if equal_spacing && node.children.len() > 1 {
         let items_count = node.children.len() - 1;
@@ -243,21 +221,18 @@ pub fn position_flex_children(
         total_spacing = spacing * (node.children.len() - 1) as f32;
     }
     
-    // Available space for flex items
     let available_flex_main = if is_horizontal {
         (content_frame.width - total_fixed_main - total_spacing).max(0.0)
     } else {
         (content_frame.height - total_fixed_main - total_spacing).max(0.0)
     };
     
-    // Calculate item positions based on main axis alignment
     let equal_space = if equal_spacing && node.children.len() > 1 {
         total_spacing / (node.children.len() - 1) as f32
     } else {
         spacing
     };
     
-    // Calculate main axis starting position based on alignment
     let main_axis_start = match main_axis_alignment {
         MainAxisAlignment::Start => if is_horizontal { content_frame.x } else { content_frame.y },
         MainAxisAlignment::End => {
@@ -287,16 +262,13 @@ pub fn position_flex_children(
                 if is_horizontal { content_frame.x } else { content_frame.y }
             } else {
                 if is_horizontal { content_frame.x } else { content_frame.y }
-                // Spacing is handled differently for SpaceBetween
             }
         },
         MainAxisAlignment::SpaceAround | MainAxisAlignment::SpaceEvenly => {
             if is_horizontal { content_frame.x } else { content_frame.y }
-            // Spacing is handled differently for SpaceAround and SpaceEvenly
         }
     };
     
-    // Recalculate spacing for special distribution modes
     let (item_spacing, edge_spacing) = match main_axis_alignment {
         MainAxisAlignment::SpaceBetween => {
             if node.children.len() <= 1 {
@@ -336,7 +308,6 @@ pub fn position_flex_children(
         _ => (equal_space, 0.0),
     };
     
-    // Position each child
     let mut main_offset = main_axis_start + edge_spacing;
     
     for (i, child) in node.children.iter().enumerate() {
@@ -354,14 +325,12 @@ pub fn position_flex_children(
                 child_layout.content_size.width
             };
             
-            // Apply flex grow if applicable
             if let Some((_, flex_grow)) = flex_items.iter().find(|(idx, _)| *idx == i) {
                 if total_flex_grow > 0.0 {
                     child_main = (available_flex_main * flex_grow / total_flex_grow).max(0.0);
                 }
             }
             
-            // Calculate cross axis position based on alignment
             let cross_pos = match cross_axis_alignment {
                 CrossAxisAlignment::Start => {
                     if is_horizontal { content_frame.y } else { content_frame.x }
@@ -388,8 +357,6 @@ pub fn position_flex_children(
                     }
                 },
                 CrossAxisAlignment::Baseline => {
-                    // Baseline alignment would require more information about text baselines
-                    // For now, we default to center alignment
                     if is_horizontal {
                         content_frame.y + (content_frame.height - child_cross) / 2.0
                     } else {
@@ -398,7 +365,6 @@ pub fn position_flex_children(
                 }
             };
             
-            // Create child frame
             let child_frame = if is_horizontal {
                 Rect::new(
                     main_offset,
@@ -423,10 +389,8 @@ pub fn position_flex_children(
                 )
             };
             
-            // Position the child
             engine.position_node(child, child_frame);
             
-            // Update main offset for next child
             main_offset += child_main + item_spacing;
         }
     }

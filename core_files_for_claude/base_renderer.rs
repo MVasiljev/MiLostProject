@@ -4,20 +4,26 @@ use crate::layout::Rect;
 use crate::shared::color::Color;
 use crate::shared::edge_insets::EdgeInsets;
 
+/// Handles rendering of common component aspects
 pub struct BaseRenderer;
 
 impl BaseRenderer {
+    /// Draw background, border, and shadow for a component
     pub fn draw_background_and_borders<T: DrawingContext>(
         context: &T,
         node: &RenderNode,
         frame: Rect
     ) -> Result<(), String> {
+        // Apply shadow if defined
         let shadow_applied = Self::apply_shadow(context, node, frame)?;
         
+        // Draw background
         Self::draw_background(context, node, frame)?;
         
+        // Draw border
         Self::draw_border(context, node, frame)?;
         
+        // Clear shadow if it was applied
         if shadow_applied {
             context.clear_shadow()?;
         }
@@ -25,6 +31,7 @@ impl BaseRenderer {
         Ok(())
     }
     
+    /// Apply shadow to a component
     pub fn apply_shadow<T: DrawingContext>(
         context: &T,
         node: &RenderNode,
@@ -44,6 +51,7 @@ impl BaseRenderer {
         }
     }
     
+    /// Draw the background of a component
     pub fn draw_background<T: DrawingContext>(
         context: &T,
         node: &RenderNode,
@@ -60,7 +68,9 @@ impl BaseRenderer {
                 context.rect(frame.x, frame.y, frame.width, frame.height)?;
             }
             
+            // Check for gradient
             if let Some(gradient_type) = node.get_prop_string("gradient_type") {
+                // Use Self instead of self since this is a static method
                 Self::apply_gradient(context, node, frame, &gradient_type)?;
             } else {
                 context.set_fill_color(&background)?;
@@ -72,6 +82,7 @@ impl BaseRenderer {
         Ok(())
     }
     
+    /// Draw the border of a component
     pub fn draw_border<T: DrawingContext>(
         context: &T,
         node: &RenderNode,
@@ -96,13 +107,20 @@ impl BaseRenderer {
                 context.set_stroke_color(&border_color)?;
                 context.set_line_width(border_width)?;
                 
+                // Check for dash pattern
                 if let Some(border_style) = node.get_prop_string("border_style") {
                     match border_style.to_lowercase().as_str() {
                         "dashed" => {
+                            // Set dash pattern (5px dash, 3px gap)
+                            // This would need proper DrawingContext support
+                            // context.set_line_dash(&[5.0, 3.0])?;
                         },
                         "dotted" => {
+                            // Set dot pattern (1px dash, 2px gap)
+                            // This would need proper DrawingContext support
+                            // context.set_line_dash(&[1.0, 2.0])?;
                         },
-                        _ => {}
+                        _ => {} // Solid or none
                     }
                 }
                 
@@ -113,6 +131,7 @@ impl BaseRenderer {
         Ok(())
     }
     
+    /// Draw a rounded rectangle
     pub fn draw_rounded_rect<T: DrawingContext>(
         context: &T,
         x: f32,
@@ -136,6 +155,7 @@ impl BaseRenderer {
         Ok(())
     }
     
+    /// Apply a gradient to the context
     pub fn apply_gradient<T: DrawingContext>(
         context: &T,
         node: &RenderNode,
@@ -150,6 +170,7 @@ impl BaseRenderer {
             return Ok(());
         }
         
+        // Collect gradient stops
         let mut stops = Vec::with_capacity(stop_count);
         
         for i in 0..stop_count {
@@ -167,6 +188,7 @@ impl BaseRenderer {
             return Ok(());
         }
         
+        // Create gradient based on type
         let gradient_id = match gradient_type.to_lowercase().as_str() {
             "linear" => {
                 let start_x = node.get_prop_f32("gradient_start_x").unwrap_or(frame.x);
@@ -185,6 +207,7 @@ impl BaseRenderer {
                 context.create_radial_gradient(center_x, center_y, 0.0, center_x, center_y, radius, stops)?
             },
             _ => {
+                // Unsupported gradient type, use linear as fallback
                 let start_x = frame.x;
                 let start_y = frame.y;
                 let end_x = frame.x + frame.width;
@@ -199,6 +222,7 @@ impl BaseRenderer {
         Ok(())
     }
     
+    /// Parse edge insets from a node
     pub fn parse_edge_insets(node: &RenderNode) -> EdgeInsets {
         if let Some(insets_str) = node.get_prop_string("edge_insets") {
             if let Some(insets) = crate::shared::edge_insets::parse_edge_insets(&insets_str) {
@@ -213,17 +237,23 @@ impl BaseRenderer {
         }
     }
     
+    /// Parse color from a node property
     pub fn parse_color(value: &str) -> String {
+        // For now, just return the value as-is
+        // In a more complete implementation, this would handle color names, etc.
         value.to_string()
     }
 }
 
+/// Basic renderer implementation for container components
 pub struct BaseContainerRenderer;
 
 impl<T: DrawingContext> ComponentRenderer<T> for BaseContainerRenderer {
     fn render(&self, node: &RenderNode, context: &T, frame: Rect) -> Result<(), String> {
+        // Draw background, border, and shadow
         BaseRenderer::draw_background_and_borders(context, node, frame)?;
         
+        // Children are rendered by the main renderer
         
         Ok(())
     }

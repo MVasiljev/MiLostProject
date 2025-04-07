@@ -38,11 +38,9 @@ impl From<ZStackAlignment> for Alignment {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ZStackProps {
-    // Original properties
     pub alignment: Option<ZStackAlignment>,
     pub children: Vec<UIComponent>,
     
-    // Enhanced properties
     pub edge_insets: Option<EdgeInsets>,
     pub background: Option<Color>,
     pub min_width: Option<f32>,
@@ -74,7 +72,6 @@ impl Default for ZStackProps {
     }
 }
 
-// Implement builder pattern for ZStack
 impl ZStackProps {
     pub fn new() -> Self {
         Self::default()

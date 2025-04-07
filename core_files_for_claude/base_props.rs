@@ -4,13 +4,19 @@ use crate::EdgeInsets;
 use std::fmt;
 use serde::{Serialize, Deserialize};
 
+/// BaseComponentProps provides a set of common properties shared by all UI components.
+/// This structure centralizes the definition of properties that apply to most or all
+/// component types, promoting consistency and reducing code duplication.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct BaseComponentProps {
+    // Identification
     pub id: Option<String>,
     
+    // Visual properties
     pub background: Option<Color>,
     pub opacity: Option<f32>,
     
+    // Layout properties
     pub padding: Option<f32>,
     pub edge_insets: Option<EdgeInsets>,
     pub width: Option<f32>,
@@ -20,27 +26,33 @@ pub struct BaseComponentProps {
     pub min_height: Option<f32>,
     pub max_height: Option<f32>,
     
+    // Border properties
     pub border_width: Option<f32>,
     pub border_color: Option<Color>,
     pub border_radius: Option<f32>,
     pub border_style: Option<BorderStyle>,
     
+    // Shadow properties
     pub shadow_radius: Option<f32>,
     pub shadow_color: Option<Color>,
     pub shadow_offset_x: Option<f32>,
     pub shadow_offset_y: Option<f32>,
     
+    // Advanced visual properties
     pub gradient: Option<Gradient>,
     pub clip_to_bounds: Option<bool>,
     pub shadow_effect: Option<ShadowEffect>,
     
+    // Interaction properties
     pub enabled: Option<bool>,
     pub focusable: Option<bool>,
     
+    // Accessibility properties
     pub accessibility_label: Option<String>,
     pub accessibility_hint: Option<String>,
     pub is_accessibility_element: Option<bool>,
     
+    // Animation properties
     pub animation_duration: Option<f32>,
     pub transition_properties: Option<Vec<String>>,
 }
@@ -82,95 +94,116 @@ impl Default for BaseComponentProps {
 }
 
 impl BaseComponentProps {
+    /// Create a new instance with default values
     pub fn new() -> Self {
         Self::default()
     }
     
+    /// Create a new instance with a specific ID
     pub fn with_id(id: &str) -> Self {
         let mut props = Self::default();
         props.id = Some(id.to_string());
         props
     }
     
+    // Builder methods for visual properties
     
+    /// Set the background color
     pub fn with_background(mut self, color: Color) -> Self {
         self.background = Some(color);
         self
     }
     
+    /// Set the opacity (0.0 - 1.0)
     pub fn with_opacity(mut self, opacity: f32) -> Self {
         self.opacity = Some(opacity.max(0.0).min(1.0));
         self
     }
     
+    // Builder methods for layout properties
     
+    /// Set uniform padding on all sides
     pub fn with_padding(mut self, padding: f32) -> Self {
         self.padding = Some(padding);
         self
     }
     
+    /// Set detailed edge insets (top, right, bottom, left)
     pub fn with_edge_insets(mut self, insets: EdgeInsets) -> Self {
         self.edge_insets = Some(insets);
         self
     }
     
+    /// Set the fixed width
     pub fn with_width(mut self, width: f32) -> Self {
         self.width = Some(width);
         self
     }
     
+    /// Set the fixed height
     pub fn with_height(mut self, height: f32) -> Self {
         self.height = Some(height);
         self
     }
     
+    /// Set both width and height
     pub fn with_size(mut self, width: f32, height: f32) -> Self {
         self.width = Some(width);
         self.height = Some(height);
         self
     }
     
+    /// Set the minimum width
     pub fn with_min_width(mut self, min_width: f32) -> Self {
         self.min_width = Some(min_width);
         self
     }
     
+    /// Set the maximum width
     pub fn with_max_width(mut self, max_width: f32) -> Self {
         self.max_width = Some(max_width);
         self
     }
     
+    /// Set the minimum height
     pub fn with_min_height(mut self, min_height: f32) -> Self {
         self.min_height = Some(min_height);
         self
     }
     
+    /// Set the maximum height
     pub fn with_max_height(mut self, max_height: f32) -> Self {
         self.max_height = Some(max_height);
         self
     }
     
+    // Builder methods for border properties
     
+    /// Set the border width
     pub fn with_border_width(mut self, width: f32) -> Self {
         self.border_width = Some(width);
         self
     }
     
+    /// Set the border color
     pub fn with_border_color(mut self, color: Color) -> Self {
         self.border_color = Some(color);
         self
     }
     
+    /// Set the border radius (for rounded corners)
     pub fn with_border_radius(mut self, radius: f32) -> Self {
         self.border_radius = Some(radius);
         self
     }
     
+    /// Set the border style
     pub fn with_border_style(mut self, style: BorderStyle) -> Self {
         self.border_style = Some(style);
         self
     }
     
+    /// Set all border properties at once
     pub fn with_border(mut self, width: f32, color: Color, radius: f32, style: BorderStyle) -> Self {
         self.border_width = Some(width);
         self.border_color = Some(color);
@@ -179,23 +212,28 @@ impl BaseComponentProps {
         self
     }
     
+    // Builder methods for shadow properties
     
+    /// Set the shadow radius (blur)
     pub fn with_shadow_radius(mut self, radius: f32) -> Self {
         self.shadow_radius = Some(radius);
         self
     }
     
+    /// Set the shadow color
     pub fn with_shadow_color(mut self, color: Color) -> Self {
         self.shadow_color = Some(color);
         self
     }
     
+    /// Set the shadow offset (x and y)
     pub fn with_shadow_offset(mut self, offset_x: f32, offset_y: f32) -> Self {
         self.shadow_offset_x = Some(offset_x);
         self.shadow_offset_y = Some(offset_y);
         self
     }
     
+    /// Set all shadow properties at once
     pub fn with_shadow(mut self, radius: f32, color: Color, offset_x: f32, offset_y: f32) -> Self {
         self.shadow_radius = Some(radius);
         self.shadow_color = Some(color);
@@ -204,49 +242,61 @@ impl BaseComponentProps {
         self
     }
     
+    /// Set a complex shadow effect
     pub fn with_shadow_effect(mut self, effect: ShadowEffect) -> Self {
         self.shadow_effect = Some(effect);
         self
     }
     
+    // Builder methods for advanced visual properties
     
+    /// Set a gradient
     pub fn with_gradient(mut self, gradient: Gradient) -> Self {
         self.gradient = Some(gradient);
         self
     }
     
+    /// Set whether content should be clipped to bounds
     pub fn with_clip_to_bounds(mut self, clip: bool) -> Self {
         self.clip_to_bounds = Some(clip);
         self
     }
     
+    // Builder methods for interaction properties
     
+    /// Set whether the component is enabled
     pub fn with_enabled(mut self, enabled: bool) -> Self {
         self.enabled = Some(enabled);
         self
     }
     
+    /// Set whether the component can receive focus
     pub fn with_focusable(mut self, focusable: bool) -> Self {
         self.focusable = Some(focusable);
         self
     }
     
+    // Builder methods for accessibility properties
     
+    /// Set the accessibility label
     pub fn with_accessibility_label(mut self, label: &str) -> Self {
         self.accessibility_label = Some(label.to_string());
         self
     }
     
+    /// Set the accessibility hint
     pub fn with_accessibility_hint(mut self, hint: &str) -> Self {
         self.accessibility_hint = Some(hint.to_string());
         self
     }
     
+    /// Set whether this is an accessibility element
     pub fn with_is_accessibility_element(mut self, is_element: bool) -> Self {
         self.is_accessibility_element = Some(is_element);
         self
     }
     
+    /// Set all accessibility properties at once
     pub fn with_accessibility(mut self, label: &str, hint: &str, is_element: bool) -> Self {
         self.accessibility_label = Some(label.to_string());
         self.accessibility_hint = Some(hint.to_string());
@@ -254,17 +304,21 @@ impl BaseComponentProps {
         self
     }
     
+    // Builder methods for animation properties
     
+    /// Set the animation duration
     pub fn with_animation_duration(mut self, duration: f32) -> Self {
         self.animation_duration = Some(duration);
         self
     }
     
+    /// Set the properties that should animate during transitions
     pub fn with_transition_properties(mut self, properties: Vec<String>) -> Self {
         self.transition_properties = Some(properties);
         self
     }
     
+    /// Add a property to animate during transitions
     pub fn add_transition_property(mut self, property: &str) -> Self {
         let mut props = self.transition_properties.unwrap_or_default();
         props.push(property.to_string());
@@ -272,9 +326,11 @@ impl BaseComponentProps {
         self
     }
     
+    /// Merge with another BaseComponentProps, with other properties taking precedence
     pub fn merge(self, other: &BaseComponentProps) -> Self {
         let mut result = self;
         
+        // For each property in other, update result if Some
         if let Some(id) = &other.id { result.id = Some(id.clone()); }
         if let Some(background) = &other.background { result.background = Some(background.clone()); }
         if let Some(opacity) = &other.opacity { result.opacity = Some(*opacity); }
@@ -317,6 +373,7 @@ impl fmt::Display for BaseComponentProps {
             write!(f, "id: {}, ", id)?;
         }
         
+        // Only include a few important properties in the display representation
         if let Some(background) = &self.background {
             write!(f, "background: {:?}, ", background)?;
         }
@@ -333,6 +390,7 @@ impl fmt::Display for BaseComponentProps {
     }
 }
 
+/// Helper functions for working with BaseComponentProps
 pub mod utils {
     use super::*;
     use crate::render::node::RenderNode;
@@ -341,7 +399,9 @@ pub mod utils {
     use crate::styles::SpreadMethod;
     use crate::GradientType;
     
+    /// Apply base properties to a render node
     pub fn apply_base_props(node: &mut RenderNode, base_props: &BaseComponentProps) {
+        // Helper function to set a property if it's Some
         fn set_if_some_property<T>(node: &mut RenderNode, key: &str, value: &Option<T>) 
             where
                 T: Clone + Into<Property>, property::Property: From<T>
@@ -351,9 +411,11 @@ pub mod utils {
                 }
             }
 
+        // Apply visual properties
         set_if_some_property(node, "background", &base_props.background);
         set_if_some_property(node, "opacity", &base_props.opacity);
         
+        // Apply layout properties
         set_if_some_property(node, "padding", &base_props.padding);
         set_if_some_property(node, "edge_insets", &base_props.edge_insets);
         set_if_some_property(node, "width", &base_props.width);
@@ -363,6 +425,7 @@ pub mod utils {
         set_if_some_property(node, "min_height", &base_props.min_height);
         set_if_some_property(node, "max_height", &base_props.max_height);
         
+        // Apply border properties
         set_if_some_property(node, "border_width", &base_props.border_width);
         set_if_some_property(node, "border_color", &base_props.border_color);
         set_if_some_property(node, "border_radius", &base_props.border_radius);
@@ -370,24 +433,32 @@ pub mod utils {
             node.set_prop("border_style", format!("{:?}", style));
         }
         
+        // Apply shadow properties
         set_if_some_property(node, "shadow_radius", &base_props.shadow_radius);
         set_if_some_property(node, "shadow_color", &base_props.shadow_color);
         set_if_some_property(node, "shadow_offset_x", &base_props.shadow_offset_x);
         set_if_some_property(node, "shadow_offset_y", &base_props.shadow_offset_y);
         
+        // Apply advanced visual properties
         set_if_some_property(node, "clip_to_bounds", &base_props.clip_to_bounds);
         
+        // Apply interaction properties
         set_if_some_property(node, "enabled", &base_props.enabled);
         set_if_some_property(node, "focusable", &base_props.focusable);
         
+        // Apply accessibility properties
         set_if_some_property(node, "accessibility_label", &base_props.accessibility_label);
         set_if_some_property(node, "accessibility_hint", &base_props.accessibility_hint);
         set_if_some_property(node, "is_accessibility_element", &base_props.is_accessibility_element);
         
+        // Apply animation properties
         set_if_some_property(node, "animation_duration", &base_props.animation_duration);
         
+        // Handle complex properties
 
+        // Gradient
         if let Some(gradient) = &base_props.gradient {
+            // Set gradient type based on the GradientType enum
             let gradient_type_str = match gradient.gradient_type {
                 GradientType::Linear => "linear",
                 GradientType::Radial => "radial",
@@ -396,6 +467,7 @@ pub mod utils {
             };
             node.set_prop("gradient_type", gradient_type_str);
             
+            // Set gradient stops
             node.set_prop("gradient_stop_count", gradient.stops.len().to_string());
             for (i, stop) in gradient.stops.iter().enumerate() {
                 node.set_prop(&format!("gradient_stop_{}_color", i), stop.color.clone());
@@ -405,11 +477,13 @@ pub mod utils {
                 }
             }
             
+            // Set gradient endpoints
             node.set_prop("gradient_start_x", gradient.start_point.0.to_string());
             node.set_prop("gradient_start_y", gradient.start_point.1.to_string());
             node.set_prop("gradient_end_x", gradient.end_point.0.to_string());
             node.set_prop("gradient_end_y", gradient.end_point.1.to_string());
             
+            // Set optional properties
             if let Some(angle) = gradient.angle {
                 node.set_prop("gradient_angle", angle.to_string());
             }
@@ -434,6 +508,7 @@ pub mod utils {
             }
         }
         
+        // Shadow effect
         if let Some(effect) = &base_props.shadow_effect {
             node.set_prop("shadow_effect_color", effect.color.clone());
             node.set_prop("shadow_effect_offset_x", effect.offset.0.to_string());
@@ -461,6 +536,7 @@ pub mod utils {
             }
         }
         
+        // Transition properties
         if let Some(transition_props) = &base_props.transition_properties {
             node.set_prop("transition_property_count", transition_props.len().to_string());
             
@@ -470,13 +546,16 @@ pub mod utils {
         }
     }
     
+    /// Extract base properties from a PropertyBag
     pub fn extract_base_props(properties: &PropertyBag) -> BaseComponentProps {
         let mut base_props = BaseComponentProps::new();
         
+        // Helper function to extract and convert properties
         let extract = |properties: &PropertyBag, key: &str| -> Option<Property> {
             properties.get(key).cloned()
         };
         
+        // Extract visual properties
         if let Some(Property::String(id)) = extract(properties, "id") {
             base_props.id = Some(id);
         }
@@ -489,6 +568,7 @@ pub mod utils {
             base_props.opacity = Some(opacity);
         }
         
+        // Extract layout properties
         if let Some(Property::Number(padding)) = extract(properties, "padding") {
             base_props.padding = Some(padding);
         }

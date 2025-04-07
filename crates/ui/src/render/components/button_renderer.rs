@@ -26,7 +26,6 @@ impl<T: DrawingContext> ComponentRenderer<T> for ButtonRenderer {
         
         let corner_radius = node.get_prop_f32(keys::BORDER_RADIUS).unwrap_or(4.0);
         
-        // Determine colors based on style and disabled state
         let (mut bg_color, mut text_color, mut border_color, mut border_width): (String, String, String, f32) = if disabled {
             ("#cccccc".to_string(), "#666666".to_string(), "#bbbbbb".to_string(), 0.0)
         } else {
@@ -40,7 +39,6 @@ impl<T: DrawingContext> ComponentRenderer<T> for ButtonRenderer {
             }
         };
         
-        // Override colors if explicitly set
         if let Some(custom_bg) = node.get_prop_as_string(keys::BACKGROUND) {
             bg_color = parse_color(&custom_bg);
         }
@@ -57,7 +55,6 @@ impl<T: DrawingContext> ComponentRenderer<T> for ButtonRenderer {
             border_width = custom_border_width;
         }
         
-        // Apply shadow
         let shadow_applied = apply_shadow(
             context,
             node.get_prop_as_string(keys::SHADOW_COLOR).as_deref(),
@@ -66,15 +63,12 @@ impl<T: DrawingContext> ComponentRenderer<T> for ButtonRenderer {
             node.get_prop_f32(keys::SHADOW_RADIUS)
         )?;
         
-        // Draw background path
         context.begin_path()?;
         draw_rounded_rect(context, frame.x, frame.y, frame.width, frame.height, corner_radius)?;
         
-        // Fill background
         context.set_fill_color(&bg_color)?;
         context.fill()?;
         
-        // Draw border if needed
         if border_width > 0.0 {
             context.begin_path()?;
             draw_rounded_rect(context, frame.x, frame.y, frame.width, frame.height, corner_radius)?;
@@ -83,10 +77,8 @@ impl<T: DrawingContext> ComponentRenderer<T> for ButtonRenderer {
             context.stroke()?;
         }
         
-        // Clear shadow for text rendering
         clear_shadow(context, shadow_applied)?;
         
-        // Text rendering
         let font_size = node.get_prop_f32(keys::FONT_SIZE).unwrap_or(16.0);
         let font_weight = node.get_prop_as_string(keys::FONT_WEIGHT).unwrap_or_else(|| "normal".to_string());
         let font = format!("{} {}px sans-serif", font_weight, font_size);
@@ -112,12 +104,10 @@ impl<T: DrawingContext> ComponentRenderer<T> for ButtonRenderer {
                 text_x - (label.len() as f32 * font_size * 0.3) - indicator_size
             };
             
-            // Draw loading spinner
             context.save_drawing_state()?;
             context.set_stroke_color(&indicator_color)?;
             context.set_line_width(indicator_size / 8.0)?;
             
-            // Draw spinner circle
             context.begin_path()?;
             context.arc(
                 indicator_x, 
@@ -129,7 +119,6 @@ impl<T: DrawingContext> ComponentRenderer<T> for ButtonRenderer {
             )?;
             context.stroke()?;
             
-            // Draw spinner animation indicator using system time
             let now = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map(|d| d.as_secs_f64())
@@ -169,7 +158,6 @@ impl<T: DrawingContext> ComponentRenderer<T> for ButtonRenderer {
                     (ix, to)
                 };
                 
-                // Simple circle icon rendering
                 context.begin_path()?;
                 context.arc(icon_x, text_y, icon_size / 2.0, 0.0, 2.0 * PI, false)?;
                 context.fill()?;
@@ -180,7 +168,6 @@ impl<T: DrawingContext> ComponentRenderer<T> for ButtonRenderer {
             }
         }
         
-        // Reset text settings to defaults
         context.set_text_align("left")?;
         context.set_text_baseline("alphabetic")?;
         
