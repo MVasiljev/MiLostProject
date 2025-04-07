@@ -1,25 +1,15 @@
+// src/render/component.rs
 use crate::UIComponent;
 use crate::render::node::RenderNode;
-use crate::render::transformers::*;
-use crate::events::EventType;
+use crate::components::registry::transform_component;
 
 pub fn render(component: &UIComponent) -> RenderNode {
-    match component {
-        UIComponent::Text(props) => transform_text(props),
-        UIComponent::Button(props) => transform_button(props),
-        UIComponent::VStack(props) => transform_vstack(props),
-        UIComponent::HStack(props) => transform_hstack(props),
-        UIComponent::ZStack(props) => transform_zstack(props),
-        UIComponent::Image(props) => transform_image(props),
-        UIComponent::Scroll(props) => transform_scroll(props),
-        UIComponent::Spacer(props) => transform_spacer(props),
-        UIComponent::Divider(props) => transform_divider(props),
-    }
+    transform_component(component)
 }
 
 pub mod event_helpers {
     use super::*;
-    use crate::render::node::EventHandler;
+    use crate::{events::EventType, render::node::EventHandler};
 
     pub fn create_event_handler(event_type: EventType, handler_id: &str) -> EventHandler {
         EventHandler {

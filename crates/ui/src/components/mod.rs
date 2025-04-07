@@ -1,3 +1,4 @@
+pub mod base_props;
 pub mod text;
 pub mod button;
 pub mod stack;
@@ -7,6 +8,7 @@ pub mod image;
 pub mod scroll;
 pub mod spacer;
 pub mod divider;
+pub mod registry;
 
 pub use text::TextProps;
 pub use button::{ButtonProps, ButtonStyle, ButtonSize, ButtonState};
@@ -18,5 +20,4 @@ pub use scroll::{ScrollProps, ScrollDirection};
 pub use spacer::SpacerProps;
 pub use divider::{DividerProps, DividerStyle};
 pub use shared::*;
-
 use crate::shared;

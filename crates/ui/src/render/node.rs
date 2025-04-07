@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use crate::events::{EventType, ButtonEventHandler};
+use crate::render::property::{Property, PropertyBag};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventHandler {
@@ -43,7 +44,7 @@ impl Default for NodeEventHandlers {
 pub struct RenderNode {
     pub id: String,
     pub type_name: String,
-    pub resolved_props: HashMap<String, String>,
+    pub properties: PropertyBag,
     pub children: Vec<RenderNode>,
     pub event_handlers: Vec<EventHandler>,
     #[serde(default)]
@@ -55,7 +56,7 @@ impl RenderNode {
         Self {
             id: id.to_string(),
             type_name: type_name.to_string(),
-            resolved_props: HashMap::new(),
+            properties: PropertyBag::new(),
             children: Vec::new(),
             event_handlers: Vec::new(),
             node_events: NodeEventHandlers::default(),
@@ -163,17 +164,34 @@ impl RenderNode {
         self
     }
     
-    pub fn set_prop(&mut self, key: &str, value: String) -> &mut Self {
-        self.resolved_props.insert(key.to_string(), value);
+    
+    pub fn set_prop<T: Into<Property>>(&mut self, key: &str, value: T) -> &mut Self {
+        self.properties.set(key, value);
         self
     }
     
-    pub fn get_prop(&self, key: &str) -> Option<&String> {
-        self.resolved_props.get(key)
+    pub fn get_prop(&self, key: &str) -> Option<&Property> {
+        self.properties.get(key)
+    }
+    
+    pub fn get_prop_string(&self, key: &str) -> Option<&String> {
+        self.properties.get_string(key)
     }
     
     pub fn get_prop_f32(&self, key: &str) -> Option<f32> {
-        self.get_prop(key).and_then(|val| val.parse::<f32>().ok())
+        self.properties.get_number(key)
+    }
+    
+    pub fn get_prop_bool(&self, key: &str) -> Option<bool> {
+        self.properties.get_boolean(key)
+    }
+    
+    pub fn get_prop_as_string(&self, key: &str) -> Option<String> {
+        self.properties.get_as_string(key)
+    }
+    
+    pub fn get_prop_compat(&self, key: &str) -> Option<String> {
+        self.properties.get_as_string(key)
     }
     
     pub fn has_children(&self) -> bool {
@@ -218,5 +236,46 @@ impl RenderNode {
         }
         
         None
+    }
+    
+    pub fn from_legacy(id: &str, type_name: &str, resolved_props: HashMap<String, String>, 
+                      children: Vec<RenderNode>, event_handlers: Vec<EventHandler>,
+                      node_events: NodeEventHandlers) -> Self {
+        let properties = PropertyBag::from_string_map(&resolved_props);
+        
+        Self {
+            id: id.to_string(),
+            type_name: type_name.to_string(),
+            properties,
+            children,
+            event_handlers,
+            node_events,
+        }
+    }
+    
+    pub fn to_legacy_props(&self) -> HashMap<String, String> {
+        self.properties.to_string_map()
+    }
+}
+
+#[deprecated(since = "1.0.0", note = "Use the new property system instead")]
+pub mod legacy {
+    use super::*;
+    
+    pub fn create_node_with_string_props(id: &str, type_name: &str, 
+                                         props: HashMap<String, String>,
+                                         children: Vec<RenderNode>) -> RenderNode {
+        RenderNode::from_legacy(
+            id, 
+            type_name, 
+            props, 
+            children, 
+            Vec::new(), 
+            NodeEventHandlers::default()
+        )
+    }
+    
+    pub fn get_prop_string(node: &RenderNode, key: &str) -> Option<String> {
+        node.get_prop_as_string(key)
     }
 }

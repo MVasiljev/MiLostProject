@@ -92,40 +92,6 @@ impl Point {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
-pub struct EdgeInsets {
-    pub top: f32,
-    pub right: f32,
-    pub bottom: f32,
-    pub left: f32,
-}
-
-impl EdgeInsets {
-    pub fn new(top: f32, right: f32, bottom: f32, left: f32) -> Self {
-        Self { top, right, bottom, left }
-    }
-    
-    pub fn all(value: f32) -> Self {
-        Self::new(value, value, value, value)
-    }
-    
-    pub fn symmetric(horizontal: f32, vertical: f32) -> Self {
-        Self::new(vertical, horizontal, vertical, horizontal)
-    }
-    
-    pub fn horizontal(value: f32) -> Self {
-        Self::new(0.0, value, 0.0, value)
-    }
-    
-    pub fn vertical(value: f32) -> Self {
-        Self::new(value, 0.0, value, 0.0)
-    }
-    
-    pub fn zero() -> Self {
-        Self::all(0.0)
-    }
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum Alignment {
     TopLeading,
     Top,

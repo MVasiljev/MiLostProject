@@ -1,38 +1,33 @@
 use crate::render::node::RenderNode;
-use super::types::{EdgeInsets};
+use crate::shared::edge_insets::{EdgeInsets, parse_edge_insets as parse_insets_from_string};
 
+/// Extract edge insets from a render node
 pub fn parse_edge_insets(node: &RenderNode) -> EdgeInsets {
-    if let Some(insets_str) = node.get_prop("edge_insets") {
-        if let Some(parts) = insets_str.split(',').collect::<Vec<&str>>().get(0..4) {
-            if parts.len() == 4 {
-                if let (Ok(top), Ok(right), Ok(bottom), Ok(left)) = (
-                    parts[0].parse::<f32>(),
-                    parts[1].parse::<f32>(),
-                    parts[2].parse::<f32>(),
-                    parts[3].parse::<f32>()
-                ) {
-                    return EdgeInsets::new(top, right, bottom, left);
-                }
+    // First try to get directly from strongly typed property
+    if let Some(property) = node.get_prop("edge_insets") {
+        if let Some(insets) = property.as_edge_insets() {
+            return *insets;
+        }
+        
+        // Try to parse from string representation
+        if let Some(insets_str) = property.as_string() {
+            if let Some(insets) = parse_insets_from_string(insets_str) {
+                return insets;
             }
         }
     }
     
+    // Check for direct string property (backward compatibility)
+    if let Some(insets_str) = node.get_prop_string("edge_insets") {
+        if let Some(insets) = parse_insets_from_string(insets_str) {
+            return insets;
+        }
+    }
+    
+    // Try padding as a fallback
     if let Some(padding) = node.get_prop_f32("padding") {
         EdgeInsets::all(padding)
     } else {
         EdgeInsets::zero()
-    }
-}
-
-pub fn parse_edge_insets_from_string(insets_str: &str) -> Option<EdgeInsets> {
-    let parts: Vec<&str> = insets_str.split(',').collect();
-    if parts.len() == 4 {
-        let top = parts[0].parse::<f32>().ok()?;
-        let right = parts[1].parse::<f32>().ok()?;
-        let bottom = parts[2].parse::<f32>().ok()?;
-        let left = parts[3].parse::<f32>().ok()?;
-        Some(EdgeInsets::new(top, right, bottom, left))
-    } else {
-        None
     }
 }
