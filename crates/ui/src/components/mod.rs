@@ -21,3 +21,4 @@ pub use spacer::SpacerProps;
 pub use divider::{DividerProps, DividerStyle};
 pub use shared::*;
 use crate::shared;
+pub use base_props::utils::{extract_base_props, apply_base_props};

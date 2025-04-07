@@ -1,25 +1,25 @@
-use milost_ui::stack::LayoutPriority;
+use milost_ui::stack::{
+    LayoutPriority, 
+    VStackAlignment, 
+    HStackAlignment, 
+    Gradient
+};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
-use milost_ui::{Color, UIComponent, VStackProps, HStackProps, VStackAlignment, HStackAlignment, EdgeInsets};
+use serde_json;
+use web_sys::console;
+
+use milost_ui::{
+    Color, 
+    UIComponent, 
+    VStackProps, 
+    HStackProps, 
+    EdgeInsets
+};
 
 #[wasm_bindgen]
 pub struct VStackBuilder {
-    spacing: Option<f32>,
-    padding: Option<f32>,
-    background: Option<Color>,
-    alignment: Option<VStackAlignment>,
-    edge_insets: Option<EdgeInsets>,
-    min_width: Option<f32>,
-    ideal_width: Option<f32>,
-    max_width: Option<f32>,
-    min_height: Option<f32>,
-    ideal_height: Option<f32>,
-    max_height: Option<f32>,
-    clip_to_bounds: Option<bool>,
-    layout_priority: Option<LayoutPriority>,
-    equal_spacing: Option<bool>,
-    children: Vec<UIComponent>,
+    props: VStackProps,
 }
 
 #[wasm_bindgen]
@@ -27,55 +27,40 @@ impl VStackBuilder {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         Self {
-            spacing: None,
-            padding: None,
-            background: None,
-            alignment: None,
-            edge_insets: None,
-            min_width: None,
-            ideal_width: None,
-            max_width: None,
-            min_height: None,
-            ideal_height: None,
-            max_height: None,
-            clip_to_bounds: None,
-            layout_priority: None,
-            equal_spacing: None,
-            children: Vec::new(),
+            props: VStackProps::default(),
         }
     }
 
     #[wasm_bindgen(method)]
     pub fn spacing(mut self, spacing: f32) -> Self {
-        self.spacing = Some(spacing);
+        self.props.spacing = Some(spacing);
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn padding(mut self, padding: f32) -> Self {
-        self.padding = Some(padding);
+        self.props.padding = Some(padding);
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn background(mut self, color_str: &str) -> Self {
-        self.background = match color_str {
-            "White" => Some(Color::White),
-            "Blue" => Some(Color::Blue),
-            "Black" => Some(Color::Black),
-            "Gray" => Some(Color::Gray),
-            "Red" => Some(Color::Red),
-            "Yellow" => Some(Color::Yellow),
-            "Green" => Some(Color::Green),
-            _ => None,
+        self.props.background = match color_str.to_lowercase().as_str() {
+            "white" | "#ffffff" => Some(Color::White),
+            "blue" | "#0000ff" => Some(Color::Blue),
+            "black" | "#000000" => Some(Color::Black),
+            "gray" | "#808080" => Some(Color::Gray),
+            "red" | "#ff0000" => Some(Color::Red),
+            "yellow" | "#ffff00" => Some(Color::Yellow),
+            "green" | "#00ff00" => Some(Color::Green),
+            _ => Color::from_hex(color_str).ok(),
         };
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn alignment(mut self, alignment_str: &str) -> Self {
-        // Only accept valid VStack alignments
-        self.alignment = match alignment_str.to_lowercase().as_str() {
+        self.props.alignment = match alignment_str.to_lowercase().as_str() {
             "leading" => Some(VStackAlignment::Leading),
             "trailing" => Some(VStackAlignment::Trailing),
             "center" => Some(VStackAlignment::Center),
@@ -86,55 +71,43 @@ impl VStackBuilder {
 
     #[wasm_bindgen(method)]
     pub fn edge_insets(mut self, top: f32, right: f32, bottom: f32, left: f32) -> Self {
-        self.edge_insets = Some(EdgeInsets::new(top, right, bottom, left));
+        self.props.edge_insets = Some(EdgeInsets::new(top, right, bottom, left));
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn min_width(mut self, width: f32) -> Self {
-        self.min_width = Some(width);
-        self
-    }
-
-    #[wasm_bindgen(method)]
-    pub fn ideal_width(mut self, width: f32) -> Self {
-        self.ideal_width = Some(width);
+        self.props.min_width = Some(width);
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn max_width(mut self, width: f32) -> Self {
-        self.max_width = Some(width);
+        self.props.max_width = Some(width);
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn min_height(mut self, height: f32) -> Self {
-        self.min_height = Some(height);
-        self
-    }
-
-    #[wasm_bindgen(method)]
-    pub fn ideal_height(mut self, height: f32) -> Self {
-        self.ideal_height = Some(height);
+        self.props.min_height = Some(height);
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn max_height(mut self, height: f32) -> Self {
-        self.max_height = Some(height);
+        self.props.max_height = Some(height);
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn clip_to_bounds(mut self, clip: bool) -> Self {
-        self.clip_to_bounds = Some(clip);
+        self.props.clip_to_bounds = Some(clip);
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn layout_priority(mut self, priority: f32) -> Self {
-        self.layout_priority = Some(match priority {
+        self.props.layout_priority = Some(match priority {
             0.0 => LayoutPriority::Low,
             1.0 => LayoutPriority::Medium,
             2.0 => LayoutPriority::High,
@@ -145,7 +118,64 @@ impl VStackBuilder {
 
     #[wasm_bindgen(method)]
     pub fn equal_spacing(mut self, value: bool) -> Self {
-        self.equal_spacing = Some(value);
+        self.props.equal_spacing = Some(value);
+        self
+    }
+
+    #[wasm_bindgen(method)]
+    pub fn shadow(mut self, radius: f32, color: &str, offset_x: f32, offset_y: f32) -> Self {
+        let shadow_color = match color.to_lowercase().as_str() {
+            "primary" => Color::Primary,
+            "secondary" => Color::Secondary,
+            _ => Color::from_hex(color).unwrap_or(Color::Black),
+        };
+
+        self.props.shadow_radius = Some(radius);
+        self.props.shadow_color = Some(shadow_color);
+        self.props.shadow_offset = Some((offset_x, offset_y));
+        self
+    }
+
+    #[wasm_bindgen(method)]
+    pub fn gradient(mut self, colors: Vec<JsValue>, is_radial: bool) -> Self {
+        let parsed_colors: Result<Vec<Color>, _> = colors
+            .iter()
+            .map(|color_val| {
+                color_val
+                    .as_string()
+                    .and_then(|s| Color::from_hex(&s).ok())
+                    .ok_or_else(|| "Invalid color".to_string())
+            })
+            .collect();
+
+        if let Ok(gradient_colors) = parsed_colors {
+            let gradient = Gradient {
+                colors: gradient_colors,
+                positions: (0..gradient_colors.len())
+                    .map(|i| i as f32 / (gradient_colors.len() - 1) as f32)
+                    .collect(),
+                start_point: (0.0, 0.0),
+                end_point: (1.0, 1.0),
+                is_radial,
+            };
+
+            self.props.gradient = Some(gradient);
+        }
+
+        self
+    }
+
+    #[wasm_bindgen(method)]
+    pub fn border(mut self, width: f32, color: &str, radius: Option<f32>) -> Self {
+        let border_color = match color.to_lowercase().as_str() {
+            "primary" => Color::Primary,
+            "secondary" => Color::Secondary,
+            _ => Color::from_hex(color).unwrap_or(Color::Black),
+        };
+
+        self.props.border_width = Some(width);
+        self.props.border_color = Some(border_color);
+        self.props.border_radius = radius;
         self
     }
 
@@ -154,10 +184,10 @@ impl VStackBuilder {
         if let Some(component_str) = component_js.as_string() {
             match serde_json::from_str::<UIComponent>(&component_str) {
                 Ok(component) => {
-                    self.children.push(component);
+                    self.props.children.push(component);
                 }
                 Err(e) => {
-                    web_sys::console::log_1(&format!("JSON parse error: {}", e).into());
+                    console::error_1(&format!("JSON parse error: {}", e).into());
                 }
             }
         }
@@ -166,30 +196,9 @@ impl VStackBuilder {
 
     #[wasm_bindgen(method)]
     pub fn build(&self) -> Result<JsValue, JsValue> {
-        // Make sure all fields are properly initialized
-        let stack_props = VStackProps {
-            // Original properties
-            spacing: self.spacing,
-            padding: self.padding,
-            background: self.background.clone(),
-            children: self.children.clone(),
-            
-            // Enhanced properties
-            alignment: self.alignment.clone(),
-            edge_insets: self.edge_insets.clone(),
-            min_width: self.min_width,
-            ideal_width: self.ideal_width,
-            max_width: self.max_width,
-            min_height: self.min_height,
-            ideal_height: self.ideal_height,
-            max_height: self.max_height,
-            clip_to_bounds: self.clip_to_bounds,
-            layout_priority: self.layout_priority.clone(),
-            equal_spacing: self.equal_spacing,
-        };
-    
+        let stack_props = self.props.clone();
         let component = UIComponent::VStack(stack_props);
-    
+
         serde_json::to_string(&component)
             .map(|s| JsValue::from_str(&s))
             .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
@@ -198,21 +207,7 @@ impl VStackBuilder {
 
 #[wasm_bindgen]
 pub struct HStackBuilder {
-    spacing: Option<f32>,
-    padding: Option<f32>,
-    background: Option<Color>,
-    alignment: Option<HStackAlignment>,
-    edge_insets: Option<EdgeInsets>,
-    min_width: Option<f32>,
-    ideal_width: Option<f32>,
-    max_width: Option<f32>,
-    min_height: Option<f32>,
-    ideal_height: Option<f32>,
-    max_height: Option<f32>,
-    clip_to_bounds: Option<bool>,
-    layout_priority: Option<LayoutPriority>,
-    equal_spacing: Option<bool>,
-    children: Vec<UIComponent>,
+    props: HStackProps,
 }
 
 #[wasm_bindgen]
@@ -220,60 +215,45 @@ impl HStackBuilder {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         Self {
-            spacing: None,
-            padding: None,
-            background: None,
-            alignment: None,
-            edge_insets: None,
-            min_width: None,
-            ideal_width: None,
-            max_width: None,
-            min_height: None,
-            ideal_height: None,
-            max_height: None,
-            clip_to_bounds: None,
-            layout_priority: None,
-            equal_spacing: None,
-            children: Vec::new(),
+            props: HStackProps::default(),
         }
     }
 
     #[wasm_bindgen(method)]
     pub fn spacing(mut self, spacing: f32) -> Self {
-        self.spacing = Some(spacing);
+        self.props.spacing = Some(spacing);
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn padding(mut self, padding: f32) -> Self {
-        self.padding = Some(padding);
+        self.props.padding = Some(padding);
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn background(mut self, color_str: &str) -> Self {
-        self.background = match color_str {
-            "White" => Some(Color::White),
-            "Blue" => Some(Color::Blue),
-            "Black" => Some(Color::Black),
-            "Gray" => Some(Color::Gray),
-            "Red" => Some(Color::Red),
-            "Yellow" => Some(Color::Yellow),
-            "Green" => Some(Color::Green),
-            _ => None,
+        self.props.background = match color_str.to_lowercase().as_str() {
+            "white" | "#ffffff" => Some(Color::White),
+            "blue" | "#0000ff" => Some(Color::Blue),
+            "black" | "#000000" => Some(Color::Black),
+            "gray" | "#808080" => Some(Color::Gray),
+            "red" | "#ff0000" => Some(Color::Red),
+            "yellow" | "#ffff00" => Some(Color::Yellow),
+            "green" | "#00ff00" => Some(Color::Green),
+            _ => Color::from_hex(color_str).ok(),
         };
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn alignment(mut self, alignment_str: &str) -> Self {
-        // Only accept valid HStack alignments
-        self.alignment = match alignment_str.to_lowercase().as_str() {
+        self.props.alignment = match alignment_str.to_lowercase().as_str() {
             "top" => Some(HStackAlignment::Top),
             "center" => Some(HStackAlignment::Center),
             "bottom" => Some(HStackAlignment::Bottom),
-            "firsttextbaseline" => Some(HStackAlignment::FirstTextBaseline),
-            "lasttextbaseline" => Some(HStackAlignment::LastTextBaseline),
+            "first_text_baseline" => Some(HStackAlignment::FirstTextBaseline),
+            "last_text_baseline" => Some(HStackAlignment::LastTextBaseline),
             _ => None,
         };
         self
@@ -281,55 +261,43 @@ impl HStackBuilder {
 
     #[wasm_bindgen(method)]
     pub fn edge_insets(mut self, top: f32, right: f32, bottom: f32, left: f32) -> Self {
-        self.edge_insets = Some(EdgeInsets::new(top, right, bottom, left));
+        self.props.edge_insets = Some(EdgeInsets::new(top, right, bottom, left));
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn min_width(mut self, width: f32) -> Self {
-        self.min_width = Some(width);
-        self
-    }
-
-    #[wasm_bindgen(method)]
-    pub fn ideal_width(mut self, width: f32) -> Self {
-        self.ideal_width = Some(width);
+        self.props.min_width = Some(width);
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn max_width(mut self, width: f32) -> Self {
-        self.max_width = Some(width);
+        self.props.max_width = Some(width);
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn min_height(mut self, height: f32) -> Self {
-        self.min_height = Some(height);
-        self
-    }
-
-    #[wasm_bindgen(method)]
-    pub fn ideal_height(mut self, height: f32) -> Self {
-        self.ideal_height = Some(height);
+        self.props.min_height = Some(height);
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn max_height(mut self, height: f32) -> Self {
-        self.max_height = Some(height);
+        self.props.max_height = Some(height);
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn clip_to_bounds(mut self, clip: bool) -> Self {
-        self.clip_to_bounds = Some(clip);
+        self.props.clip_to_bounds = Some(clip);
         self
     }
 
     #[wasm_bindgen(method)]
     pub fn layout_priority(mut self, priority: f32) -> Self {
-        self.layout_priority = Some(match priority {
+        self.props.layout_priority = Some(match priority {
             0.0 => LayoutPriority::Low,
             1.0 => LayoutPriority::Medium,
             2.0 => LayoutPriority::High,
@@ -340,7 +308,64 @@ impl HStackBuilder {
 
     #[wasm_bindgen(method)]
     pub fn equal_spacing(mut self, value: bool) -> Self {
-        self.equal_spacing = Some(value);
+        self.props.equal_spacing = Some(value);
+        self
+    }
+
+    #[wasm_bindgen(method)]
+    pub fn shadow(mut self, radius: f32, color: &str, offset_x: f32, offset_y: f32) -> Self {
+        let shadow_color = match color.to_lowercase().as_str() {
+            "primary" => Color::Primary,
+            "secondary" => Color::Secondary,
+            _ => Color::from_hex(color).unwrap_or(Color::Black),
+        };
+
+        self.props.shadow_radius = Some(radius);
+        self.props.shadow_color = Some(shadow_color);
+        self.props.shadow_offset = Some((offset_x, offset_y));
+        self
+    }
+
+    #[wasm_bindgen(method)]
+    pub fn gradient(mut self, colors: Vec<JsValue>, is_radial: bool) -> Self {
+        let parsed_colors: Result<Vec<Color>, _> = colors
+            .iter()
+            .map(|color_val| {
+                color_val
+                    .as_string()
+                    .and_then(|s| Color::from_hex(&s).ok())
+                    .ok_or_else(|| "Invalid color".to_string())
+            })
+            .collect();
+
+        if let Ok(gradient_colors) = parsed_colors {
+            let gradient = Gradient {
+                colors: gradient_colors,
+                positions: (0..gradient_colors.len())
+                    .map(|i| i as f32 / (gradient_colors.len() - 1) as f32)
+                    .collect(),
+                start_point: (0.0, 0.0),
+                end_point: (1.0, 1.0),
+                is_radial,
+            };
+
+            self.props.gradient = Some(gradient);
+        }
+
+        self
+    }
+
+    #[wasm_bindgen(method)]
+    pub fn border(mut self, width: f32, color: &str, radius: Option<f32>) -> Self {
+        let border_color = match color.to_lowercase().as_str() {
+            "primary" => Color::Primary,
+            "secondary" => Color::Secondary,
+            _ => Color::from_hex(color).unwrap_or(Color::Black),
+        };
+
+        self.props.border_width = Some(width);
+        self.props.border_color = Some(border_color);
+        self.props.border_radius = radius;
         self
     }
 
@@ -349,10 +374,10 @@ impl HStackBuilder {
         if let Some(component_str) = component_js.as_string() {
             match serde_json::from_str::<UIComponent>(&component_str) {
                 Ok(component) => {
-                    self.children.push(component);
+                    self.props.children.push(component);
                 }
                 Err(e) => {
-                    web_sys::console::log_1(&format!("JSON parse error: {}", e).into());
+                    console::error_1(&format!("JSON parse error: {}", e).into());
                 }
             }
         }
@@ -361,24 +386,7 @@ impl HStackBuilder {
 
     #[wasm_bindgen(method)]
     pub fn build(&self) -> Result<JsValue, JsValue> {
-        let stack_props = HStackProps {
-            spacing: self.spacing,
-            padding: self.padding,
-            background: self.background.clone(),
-            children: self.children.clone(),
-            alignment: self.alignment.clone(),
-            edge_insets: self.edge_insets.clone(),
-            min_width: self.min_width,
-            ideal_width: self.ideal_width,
-            max_width: self.max_width,
-            min_height: self.min_height,
-            ideal_height: self.ideal_height,
-            max_height: self.max_height,
-            clip_to_bounds: self.clip_to_bounds,
-            layout_priority: self.layout_priority.clone(),
-            equal_spacing: self.equal_spacing,
-        };
-
+        let stack_props = self.props.clone();
         let component = UIComponent::HStack(stack_props);
 
         serde_json::to_string(&component)
