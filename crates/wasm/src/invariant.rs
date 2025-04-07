@@ -16,7 +16,6 @@ impl Invariant {
     ) -> Result<Invariant, JsValue> {
         let error_message = error_msg.unwrap_or_else(|| "Invariant violated".to_string());
         
-        // Check the invariant before creating
         let check_result = invariant_fn.call1(&JsValue::null(), &value)?;
         if !check_result.as_bool().unwrap_or(false) {
             let error = Object::new();
@@ -42,10 +41,8 @@ impl Invariant {
         new_invariant_fn: &Function,
         error_msg: Option<String>,
     ) -> Result<Invariant, JsValue> {
-        // Apply the mapping function
         let new_value = map_fn.call1(&JsValue::null(), &self.value)?;
         
-        // Create a new invariant with the mapped value
         Invariant::new(new_value, new_invariant_fn.clone(), error_msg)
     }
 

@@ -97,7 +97,6 @@ impl ResultWrapper {
     }
 }
 
-// Changed function names to avoid conflicts
 #[wasm_bindgen(js_name = "createOkResultWrapper")]
 pub fn create_ok_result_wrapper(value: &JsValue) -> ResultWrapper {
     ResultWrapper::ok(value)
@@ -119,7 +118,6 @@ pub fn try_catch_wrapper(fn_call: &Function, error_handler: Option<Function>) ->
                 let handled_error = handler.call1(&JsValue::NULL, &js_error).unwrap_or(js_error);
                 ResultWrapper::err(&handled_error)
             } else {
-                // Default error handling
                 let error = js_sys::Error::new("Operation failed");
                 let _ = Reflect::set(&error, &JsValue::from_str("originalError"), &js_error);
                 ResultWrapper::err(&error.into())
