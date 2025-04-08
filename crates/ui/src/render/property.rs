@@ -3,8 +3,8 @@ use std::fmt;
 use serde::{Serialize, Deserialize};
 use crate::shared::color::Color;
 use crate::shared::edge_insets::EdgeInsets;
-use crate::styles::{Gradient, ShadowEffect, BorderStyle, TextAlign, TextTransform, Overflow};
-use crate::font::{FontWeight, FontSlant, FontWidth, FontFeatures};
+use crate::components::styles::{Gradient, ShadowEffect, BorderStyle, TextAlign, TextTransform, Overflow};
+use crate::components::font::{FontWeight, FontSlant, FontWidth, FontFeatures};
 
 pub mod keys {
     pub const THICKNESS: &str = "thickness";

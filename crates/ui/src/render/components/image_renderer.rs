@@ -2,7 +2,7 @@ use crate::render::renderer::{DrawingContext, ComponentRenderer};
 use crate::render::node::RenderNode;
 use crate::layout::Rect;
 use crate::render::property::keys;
-use crate::image::{ImageSource, ResizeMode, ContentMode};
+use crate::components::image::{ImageSource, ResizeMode, ContentMode};
 use super::shared::{
     draw_rounded_rect, 
     draw_background,

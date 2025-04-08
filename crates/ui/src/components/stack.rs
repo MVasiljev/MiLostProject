@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
-use crate::{Color, UIComponent, EdgeInsets};
+
+use super::{Color, EdgeInsets, UIComponent};
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum HStackAlignment {
@@ -202,6 +203,11 @@ impl VStackProps {
         self.border_radius = radius;
         self
     }
+    
+    pub(crate) fn add_children(mut self, items: Vec<UIComponent>) -> Self{
+        self.children = items;
+        self
+    }
 }
 
 impl HStackProps {
@@ -230,6 +236,11 @@ impl HStackProps {
         self.border_width = Some(width);
         self.border_color = Some(color);
         self.border_radius = radius;
+        self
+    }
+
+    pub(crate) fn add_children(mut self, items: Vec<UIComponent>) -> Self{
+        self.children = items;
         self
     }
 }

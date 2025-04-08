@@ -1,6 +1,5 @@
-use crate::zstack::{ZStackProps, ZStackAlignment};
+use crate::components::zstack::{ZStackProps, ZStackAlignment};
 use crate::render::node::RenderNode;
-use crate::UIComponent;
 use crate::components::base_props::utils::apply_base_props;
 use crate::components::base_props::BaseComponentProps;
 use super::utils::{generate_unique_id, set_optional_prop, set_edge_insets, add_children};

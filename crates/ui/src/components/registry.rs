@@ -2,7 +2,6 @@
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use crate::render::node::RenderNode;
-use crate::UIComponent;
 use crate::render::renderer::{ComponentRenderer, DrawingContext};
 
 pub type ComponentTransformerFn = Arc<dyn Fn(&UIComponent) -> RenderNode + Send + Sync>;
@@ -199,6 +198,8 @@ impl<T: DrawingContext> ComponentRendererRegistry<T> {
 }
 
 use std::sync::OnceLock;
+
+use super::UIComponent;
 
 static TRANSFORMER_REGISTRY: OnceLock<RwLock<ComponentTransformerRegistry>> = OnceLock::new();
 

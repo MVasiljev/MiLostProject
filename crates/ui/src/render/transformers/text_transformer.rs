@@ -1,4 +1,4 @@
-use crate::text::{TextProps, TextShadow};
+use crate::components::text::{TextProps, TextShadow};
 use crate::render::node::RenderNode;
 use crate::render::property::{Property, keys};
 use crate::components::base_props::{BaseComponentProps, utils::apply_base_props};

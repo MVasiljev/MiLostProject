@@ -1,7 +1,5 @@
-use crate::stack::{VStackProps, LayoutPriority, Gradient};
-use crate::VStackAlignment;
+use crate::components::stack::{VStackProps, LayoutPriority, VStackAlignment};
 use crate::render::node::RenderNode;
-use crate::UIComponent;
 use super::utils::{generate_unique_id, set_optional_prop, set_edge_insets, add_children};
 
 pub fn transform_vstack(props: &VStackProps) -> RenderNode {

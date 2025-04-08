@@ -1,13 +1,9 @@
-use crate::scroll::{
-    ScrollProps, 
-    ScrollDirection, 
-    ScrollIndicatorStyle, 
-    DecelerationRate
-};
-use crate::UIComponent;
-use crate::Color;
+
+use crate::components::scroll::{DecelerationRate, ScrollIndicatorStyle};
+use crate::components::{ScrollDirection, ScrollProps, UIComponent};
 use crate::shared::styles::BorderStyle;
 use crate::shared::edge_insets::EdgeInsets;
+use crate::shared::Color;
 
 pub struct ScrollIndicatorOptions {
     pub shows_indicators: Option<bool>,

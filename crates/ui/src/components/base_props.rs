@@ -1,8 +1,9 @@
 use crate::shared::color::Color;
-use crate::styles::{BorderStyle, ShadowEffect, Gradient};
-use crate::EdgeInsets;
+
 use std::fmt;
 use serde::{Serialize, Deserialize};
+
+use super::{BorderStyle, EdgeInsets, Gradient, ShadowEffect};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct BaseComponentProps {
@@ -338,8 +339,8 @@ pub mod utils {
     use crate::render::node::RenderNode;
     use crate::render::property;
     use crate::shared::properties::{Property, PropertyBag};
-    use crate::styles::SpreadMethod;
-    use crate::GradientType;
+    use crate::components::GradientType;
+    use crate::shared::styles::SpreadMethod;
     
     pub fn apply_base_props(node: &mut RenderNode, base_props: &BaseComponentProps) {
         fn set_if_some_property<T>(node: &mut RenderNode, key: &str, value: &Option<T>) 

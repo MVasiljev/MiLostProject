@@ -1,4 +1,4 @@
-use crate::scroll::ScrollProps;
+use crate::components::scroll::ScrollProps;
 use crate::render::node::RenderNode;
 use crate::components::base_props::{BaseComponentProps, utils::apply_base_props};
 use super::utils::{generate_unique_id, add_children, set_optional_prop};

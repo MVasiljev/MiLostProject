@@ -1,6 +1,7 @@
 use serde::{Serialize, Deserialize};
-use crate::{UIComponent, Color, EdgeInsets, Alignment};
-use crate::shared::styles::{Gradient, ShadowEffect, BorderStyle};
+use crate::{layout::Alignment, shared::styles::{BorderStyle, Gradient}};
+
+use super::{Color, EdgeInsets, UIComponent};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum ZStackAlignment {

@@ -1,11 +1,11 @@
-// pub mod shared;
-// pub mod render;
-// pub mod layout;
-// pub mod components;
-// pub mod events;
-// pub mod factories;
-// pub mod hooks;
-// pub mod themes;
+pub mod shared;
+pub mod render;
+pub mod layout;
+pub mod components;
+pub mod events;
+pub mod factories;
+pub mod hooks;
+pub mod themes;
 
 // pub use shared::{Gradient, GradientType, GradientStop};
 // pub use render::node::RenderNode;

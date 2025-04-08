@@ -1,20 +1,14 @@
-use crate::{
-    hooks::{ScrollAppearanceOptions, ScrollIndicatorOptions}, scroll::{ScrollDirection, ScrollProps}, Color, UIComponent
-};
-use crate::hooks::{
-    use_content_scrollable,
-    use_paged_scroll,
-    use_smooth_scroll,
-    use_scroll_indicators,
-    use_scroll_appearance
-};
+
+use crate::{components::{HStackProps, ScrollDirection, ScrollProps, UIComponent, VStackProps}, hooks::{
+    use_content_scrollable, use_paged_scroll, use_scroll_appearance, use_scroll_indicators, use_smooth_scroll, ScrollAppearanceOptions, ScrollIndicatorOptions
+}, shared::Color};
 
 pub fn create_vertical_scroll(items: Vec<UIComponent>) -> UIComponent {
     UIComponent::Scroll(
         ScrollProps::vertical()
             .add_child(
                 UIComponent::VStack(
-                    crate::stack::VStackProps::new()
+                    VStackProps::new()
                         .spacing(16.0)
                 )
             )
@@ -26,7 +20,7 @@ pub fn create_horizontal_scroll(items: Vec<UIComponent>) -> UIComponent {
         ScrollProps::horizontal()
             .add_child(
                 UIComponent::HStack(
-                    crate::stack::HStackProps::new()
+                    HStackProps::new()
                         .spacing(16.0)
                 )
             )
@@ -75,13 +69,13 @@ pub fn create_custom_scroll(
                 match direction {
                     ScrollDirection::Vertical => 
                         UIComponent::VStack(
-                            crate::stack::VStackProps::new()
+                            VStackProps::new()
                                 .spacing(16.0)
                                 .add_children(items)
                         ),
                     ScrollDirection::Horizontal => 
                         UIComponent::HStack(
-                            crate::stack::HStackProps::new()
+                            HStackProps::new()
                                 .spacing(16.0)
                                 .add_children(items)
                         ),
@@ -99,7 +93,7 @@ pub fn create_styled_scroll(
             ScrollProps::vertical()
                 .add_child(
                     UIComponent::VStack(
-                        crate::stack::VStackProps::new()
+                        VStackProps::new()
                             .spacing(16.0)
                             .add_children(items)
                     )

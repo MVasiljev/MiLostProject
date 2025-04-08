@@ -1,7 +1,7 @@
 use crate::render::renderer::DrawingContext;
 use crate::render::node::RenderNode;
 use crate::layout::Rect;
-use crate::{Color, Gradient, GradientType};
+use crate::shared::Color;
 use std::f32::consts::PI;
 
 pub fn parse_color(color: &str) -> String {

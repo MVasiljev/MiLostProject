@@ -1,7 +1,9 @@
-use crate::stack::{VStackProps, HStackProps, LayoutPriority};
-use crate::Color;
-use crate::EdgeInsets;
-use crate::{VStackAlignment, HStackAlignment};
+use crate::{components::{stack::LayoutPriority, HStackAlignment, HStackProps, VStackAlignment, VStackProps}, shared::{Color, EdgeInsets}};
+
+pub enum StackProps {
+    VStack(VStackProps),
+    HStack(HStackProps),
+}
 
 pub struct StackLayoutOptions {
     pub spacing: Option<f32>,
@@ -233,25 +235,23 @@ pub fn use_hstack_bottom_alignment() -> impl Fn(HStackProps) -> HStackProps {
     }
 }
 
-pub fn use_stack_priority(priority: LayoutPriority) -> impl Fn(VStackProps) -> VStackProps + Fn(HStackProps) -> HStackProps {
+pub fn use_stack_priority(priority: LayoutPriority) -> impl FnOnce(StackProps) -> StackProps {
     move |props| {
         match props {
-            VStackProps { .. } => {
-                let mut vstack_props = props;
+            StackProps::VStack(mut vstack_props) => {
                 vstack_props.layout_priority = Some(priority.clone());
-                vstack_props
+                StackProps::VStack(vstack_props)
             },
-            HStackProps { .. } => {
-                let mut hstack_props = props;
+            StackProps::HStack(mut hstack_props) => {
                 hstack_props.layout_priority = Some(priority.clone());
-                hstack_props
+                StackProps::HStack(hstack_props)
             }
         }
     }
 }
 
-pub fn use_stack_card_style() -> impl Fn(VStackProps) -> VStackProps + Fn(HStackProps) -> HStackProps {
-    |props| {
+pub fn use_stack_card_style() -> impl Fn(StackProps) -> StackProps {
+    move |props| {
         let styling = StackStylingOptions {
             background: Some(Color::White),
             border_width: Some(1.0),
@@ -263,13 +263,13 @@ pub fn use_stack_card_style() -> impl Fn(VStackProps) -> VStackProps + Fn(HStack
         };
         
         match props {
-            VStackProps { .. } => {
+            StackProps::VStack(vstack_props) => {
                 let vstack_styling = use_vstack_styling(styling);
-                vstack_styling(props)
+                StackProps::VStack(vstack_styling(vstack_props))
             },
-            HStackProps { .. } => {
+            StackProps::HStack(hstack_props) => {
                 let hstack_styling = use_hstack_styling(styling);
-                hstack_styling(props)
+                StackProps::HStack(hstack_styling(hstack_props))
             }
         }
     }

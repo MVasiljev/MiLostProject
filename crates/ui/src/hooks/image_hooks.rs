@@ -1,7 +1,6 @@
-use crate::image::{ImageProps, ResizeMode, ContentMode, ImageSource, ImageFilter};
-use crate::Color;
+use crate::components::image::{ImageProps, ResizeMode, ContentMode, ImageFilter};
 use crate::shared::styles::BorderStyle;
-use crate::shared::edge_insets::EdgeInsets;
+use crate::shared::Color;
 
 pub struct ImageStyleOptions {
     pub resize_mode: Option<ResizeMode>,

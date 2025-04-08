@@ -1,7 +1,8 @@
 use serde::{Serialize, Deserialize};
-use crate::{Color, UIComponent};
 use crate::shared::styles::BorderStyle;
 use crate::shared::edge_insets::EdgeInsets;
+
+use super::{Color, UIComponent};
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum ScrollDirection {

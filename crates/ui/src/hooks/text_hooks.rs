@@ -1,8 +1,4 @@
-use crate::text::{TextProps, TextShadow, TextDecoration, TextOverflow};
-use crate::shared::styles::{TextAlign, TextTransform, BorderStyle};
-use crate::shared::font::{FontWeight, FontSlant, FontWidth};
-use crate::shared::edge_insets::EdgeInsets;
-use crate::Color;
+use crate::{components::{text::{self, TextDecoration, TextOverflow}, TextProps}, shared::{BorderStyle, Color, EdgeInsets, FontSlant, FontWeight, TextAlign, TextTransform}};
 
 pub struct TextStyleOptions {
     pub font_size: Option<f32>,
@@ -240,9 +236,9 @@ pub fn use_centered_style() -> impl Fn(TextProps) -> TextProps {
     }
 }
 
-pub fn use_shadowed_style(color: Color, blur: f32) -> impl Fn(TextProps) -> TextProps {
+pub fn use_shadowed_style(color: Color, blur: f32) -> impl FnOnce(TextProps) -> TextProps {
     move |props| {
-        props.with_shadow(crate::text::TextShadow {
+        props.with_shadow(text::TextShadow {
             color,
             offset_x: 2.0,
             offset_y: 2.0,
@@ -250,6 +246,7 @@ pub fn use_shadowed_style(color: Color, blur: f32) -> impl Fn(TextProps) -> Text
         })
     }
 }
+
 
 pub fn use_title_style() -> impl Fn(TextProps) -> TextProps {
     |props| {
@@ -285,7 +282,7 @@ pub fn use_error_text() -> impl Fn(TextProps) -> TextProps {
     }
 }
 
-pub fn use_highlighted_text(background: Color) -> impl Fn(TextProps) -> TextProps {
+pub fn use_highlighted_text(background: Color) -> impl FnOnce(TextProps) -> TextProps {
     move |props| {
         props
             .with_background_color(background)

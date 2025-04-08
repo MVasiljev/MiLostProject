@@ -1,7 +1,5 @@
-use crate::stack::{HStackProps, LayoutPriority, Gradient};
-use crate::HStackAlignment;
+use crate::components::stack::{HStackProps, LayoutPriority, HStackAlignment};
 use crate::render::node::RenderNode;
-use crate::UIComponent;
 use super::utils::{generate_unique_id, set_optional_prop, set_edge_insets, add_children};
 
 pub fn transform_hstack(props: &HStackProps) -> RenderNode {

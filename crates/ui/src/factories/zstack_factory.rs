@@ -1,6 +1,7 @@
-use crate::{UIComponent, Color, EdgeInsets};
-use crate::zstack::{ZStackProps, ZStackAlignment};
+use crate::components::{TextProps, UIComponent};
+use crate::components::zstack::{ZStackProps, ZStackAlignment};
 use crate::hooks::{use_zstack_center_alignment, use_zstack_styling};
+use crate::shared::{Color, EdgeInsets, FontWidth};
 
 pub fn create_overlay_card(content: UIComponent, overlay: UIComponent) -> UIComponent {
     let center_alignment = use_zstack_center_alignment();
@@ -24,7 +25,7 @@ pub fn create_overlay_card(content: UIComponent, overlay: UIComponent) -> UIComp
 
 pub fn create_badge_icon(icon: UIComponent, badge_count: u32) -> UIComponent {
     let badge_text = UIComponent::Text(
-        crate::text::TextProps::new(badge_count.to_string())
+        TextProps::new(badge_count.to_string())
             .with_color(Color::White)
             .with_font_size(10.0)
             .with_background_color(Color::Red)
@@ -36,7 +37,7 @@ pub fn create_badge_icon(icon: UIComponent, badge_count: u32) -> UIComponent {
         ZStackProps::new()
             .with_children(vec![icon, badge_text])
             .with_alignment(ZStackAlignment::TopTrailing)
-            .with_padding(8.0)
+            .with_edge_insets(EdgeInsets::all(8.0))
     )
 }
 
@@ -46,12 +47,12 @@ pub fn create_card_with_banner(
     banner_color: Color
 ) -> UIComponent {
     let banner = UIComponent::Text(
-        crate::text::TextProps::new(banner_text)
+        TextProps::new(banner_text)
             .with_color(Color::White)
             .with_background_color(banner_color)
             .with_padding(4.0)
             .with_text_align(crate::shared::styles::TextAlign::Center)
-            .with_width(Some(150.0))
+            .with_font_width(FontWidth::Normal)
             .with_font_size(12.0)
             .with_font_weight(crate::shared::font::FontWeight::Bold)
     );
@@ -69,7 +70,7 @@ pub fn create_image_with_caption(
     caption: &str
 ) -> UIComponent {
     let caption_text = UIComponent::Text(
-        crate::text::TextProps::new(caption)
+        TextProps::new(caption)
             .with_color(Color::White)
             .with_background_color(Color::rgba(0, 0, 0, 0.5))
             .with_padding(8.0)

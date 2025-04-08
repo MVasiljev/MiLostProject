@@ -1,8 +1,9 @@
 use serde::{Serialize, Deserialize};
-use crate::{Color, FontStyle};
 use crate::shared::styles::{TextAlign, TextTransform, BorderStyle, ShadowEffect};
 use crate::shared::font::{FontWeight, FontSlant, FontWidth};
 use crate::shared::edge_insets::EdgeInsets;
+
+use super::{Color, FontStyle};
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum TextDecoration {

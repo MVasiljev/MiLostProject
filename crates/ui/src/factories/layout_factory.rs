@@ -1,14 +1,10 @@
-use crate::{UIComponent, Color, EdgeInsets};
-use crate::stack::{VStackProps, HStackProps, LayoutPriority};
-use crate::hooks::{
-    use_vstack_layout, use_hstack_layout,
-    use_vstack_styling, use_hstack_styling,
-    use_vstack_center_alignment, use_hstack_center_alignment,
-    use_stack_card_style, StackLayoutOptions, StackStylingOptions
-};
+
+use crate::{components::{HStackProps, UIComponent, VStackProps}, hooks::{
+    use_hstack_center_alignment, use_hstack_layout, use_hstack_styling, use_stack_card_style, use_vstack_center_alignment, use_vstack_layout, use_vstack_styling, StackLayoutOptions, StackStylingOptions
+}, shared::Color};
 
 pub fn create_card(children: Vec<UIComponent>) -> UIComponent {
-    let card_style = use_stack_card_style();
+    let card_style = use_vstack_card_style();
     let layout = use_vstack_layout(StackLayoutOptions {
         padding: Some(16.0),
         spacing: Some(8.0),
@@ -20,14 +16,32 @@ pub fn create_card(children: Vec<UIComponent>) -> UIComponent {
         equal_spacing: None,
         clip_to_bounds: None,
     });
-    
+
     let props = VStackProps::new();
     let props = card_style(props);
     let props = layout(props);
-    let props = props.with_children(children);
-    
+    let props = props.add_children(children);
+
     UIComponent::VStack(props)
 }
+
+pub fn use_vstack_card_style() -> impl Fn(VStackProps) -> VStackProps {
+    move |props| {
+        let styling = StackStylingOptions {
+            background: Some(Color::White),
+            border_width: Some(1.0),
+            border_color: Some(Color::from_hex("#e0e0e0")),
+            border_radius: Some(8.0),
+            shadow_radius: Some(4.0),
+            shadow_color: Some(Color::rgba(0, 0, 0, 0.1)),
+            shadow_offset: Some((0.0, 2.0)),
+        };
+
+        let apply = use_vstack_styling(styling);
+        apply(props)
+    }
+}
+
 
 pub fn create_row(children: Vec<UIComponent>) -> UIComponent {
     let layout = use_hstack_layout(StackLayoutOptions {
@@ -47,7 +61,7 @@ pub fn create_row(children: Vec<UIComponent>) -> UIComponent {
     let props = HStackProps::new();
     let props = layout(props);
     let props = alignment(props);
-    let props = props.with_children(children);
+    let props = props.add_children(children);
     
     UIComponent::HStack(props)
 }
@@ -70,7 +84,7 @@ pub fn create_column(children: Vec<UIComponent>) -> UIComponent {
     let props = VStackProps::new();
     let props = layout(props);
     let props = alignment(props);
-    let props = props.with_children(children);
+    let props = props.add_children(children);
     
     UIComponent::VStack(props)
 }
@@ -109,7 +123,7 @@ pub fn create_container(child: UIComponent, color: Color, padding: f32) -> UICom
     let props = VStackProps::new();
     let props = styling(props);
     let props = layout(props);
-    let props = props.with_children(vec![child]);
+    let props = props.add_children(vec![child]);
     
     UIComponent::VStack(props)
 }
@@ -140,7 +154,7 @@ pub fn create_toolbar(children: Vec<UIComponent>) -> UIComponent {
     let props = HStackProps::new();
     let props = styling(props);
     let props = layout(props);
-    let props = props.with_children(children);
+    let props = props.add_children(children);
     
     UIComponent::HStack(props)
 }
@@ -161,7 +175,7 @@ pub fn create_grid(rows: Vec<Vec<UIComponent>>) -> UIComponent {
         
         let props = HStackProps::new();
         let props = layout(props);
-        let props = props.with_children(row_items);
+        let props = props.add_children(row_items);
         
         UIComponent::HStack(props)
     }).collect();
@@ -180,7 +194,7 @@ pub fn create_grid(rows: Vec<Vec<UIComponent>>) -> UIComponent {
     
     let props = VStackProps::new();
     let props = layout(props);
-    let props = props.with_children(row_components);
+    let props = props.add_children(row_components);
     
     UIComponent::VStack(props)
 }

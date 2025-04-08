@@ -1,7 +1,8 @@
 use serde::{Serialize, Deserialize};
-use crate::Color;
 use crate::shared::styles::{BorderStyle, ShadowEffect};
 use crate::shared::edge_insets::EdgeInsets;
+
+use super::Color;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum ImageSource {
@@ -64,7 +65,6 @@ pub struct ImageProps {
     pub source: ImageSource,
     pub alt: Option<String>,
     
-    // Dimensions
     pub width: Option<f32>,
     pub height: Option<f32>,
     pub aspect_ratio: Option<f32>,
@@ -73,7 +73,6 @@ pub struct ImageProps {
     pub min_height: Option<f32>,
     pub max_height: Option<f32>,
     
-    // Appearance
     pub resize_mode: Option<ResizeMode>,
     pub content_mode: Option<ContentMode>,
     pub background_color: Option<Color>,
@@ -82,7 +81,6 @@ pub struct ImageProps {
     pub filters: Option<Vec<ImageFilter>>,
     pub blur_radius: Option<f32>,
     
-    // Border and Shadow
     pub corner_radius: Option<f32>,
     pub border_width: Option<f32>,
     pub border_color: Option<Color>,
@@ -92,28 +90,23 @@ pub struct ImageProps {
     pub shadow_offset: Option<(f32, f32)>,
     pub shadow_effect: Option<ShadowEffect>,
     
-    // Loading
     pub loading_placeholder: Option<String>,
     pub error_placeholder: Option<String>,
     pub is_loading: Option<bool>,
     pub has_error: Option<bool>,
     
-    // Layout and Behavior
     pub clip_to_bounds: Option<bool>,
     pub preserve_aspect_ratio: Option<bool>,
     pub padding: Option<f32>,
     pub edge_insets: Option<EdgeInsets>,
     
-    // Animation
     pub animation_duration: Option<f32>,
     pub is_animating: Option<bool>,
     
-    // Accessibility
     pub accessibility_label: Option<String>,
     pub accessibility_hint: Option<String>,
     pub is_accessibility_element: Option<bool>,
     
-    // Caching
     pub cache_policy: Option<String>,
 }
 

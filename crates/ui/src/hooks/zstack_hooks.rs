@@ -1,6 +1,4 @@
-use crate::zstack::{ZStackProps, ZStackAlignment};
-use crate::EdgeInsets;
-use crate::Color;
+use crate::{components::{zstack::ZStackAlignment, ZStackProps}, shared::{Color, EdgeInsets}};
 
 pub struct ZStackLayoutOptions {
     pub padding: Option<f32>,
@@ -14,10 +12,6 @@ pub struct ZStackLayoutOptions {
 pub fn use_zstack_layout(options: ZStackLayoutOptions) -> impl Fn(ZStackProps) -> ZStackProps {
     move |props| {
         let mut updated = props;
-        
-        if let Some(padding) = options.padding {
-            updated.padding = Some(padding);
-        }
         
         if let Some(edge_insets) = &options.edge_insets {
             updated.edge_insets = Some(edge_insets.clone());

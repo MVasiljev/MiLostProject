@@ -1,9 +1,8 @@
-use crate::{UIComponent, image::ImageProps, image::ImageSource};
-use crate::hooks::{
+use crate::{components::{ImageProps, ImageSource, UIComponent}, hooks::{
     use_avatar_image, 
     use_blurred_background, 
     use_rounded_image
-};
+}};
 
 pub fn create_remote_image(url: &str) -> UIComponent {
     UIComponent::Image(

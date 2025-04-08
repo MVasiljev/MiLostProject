@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
-use crate::{VStackProps, HStackProps, TextProps, ButtonProps, ZStackProps, ImageProps, ScrollProps, SpacerProps, DividerProps};
+
+use super::{ButtonProps, DividerProps, HStackProps, ImageProps, ScrollProps, SpacerProps, TextProps, VStackProps, ZStackProps};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "PascalCase")]

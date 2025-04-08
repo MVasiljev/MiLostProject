@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::fmt;
 use serde::{Serialize, Deserialize};
-use crate::{shared::color::Color, EdgeInsets};
+use crate::{shared::color::Color};
+
+use super::EdgeInsets;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Property {

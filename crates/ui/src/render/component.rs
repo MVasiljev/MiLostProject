@@ -1,5 +1,4 @@
-// src/render/component.rs
-use crate::UIComponent;
+use crate::components::UIComponent;
 use crate::render::node::RenderNode;
 use crate::components::registry::transform_component;
 

@@ -1,6 +1,7 @@
 use serde::{Serialize, Deserialize};
-use crate::Color;
-use crate::font::{FontDescriptor, TextStyle};
+use crate::components::font::FontDescriptor;
+
+use super::Color;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum DividerStyle {

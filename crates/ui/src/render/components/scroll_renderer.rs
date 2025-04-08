@@ -1,7 +1,6 @@
 use crate::render::renderer::{DrawingContext, ComponentRenderer};
 use crate::render::node::RenderNode;
 use crate::layout::Rect;
-use crate::Color;
 use super::shared::{
     draw_background, 
     draw_border, 

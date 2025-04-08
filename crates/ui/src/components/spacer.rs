@@ -1,7 +1,8 @@
 use serde::{Serialize, Deserialize};
-use crate::{UIComponent, Color};
-use crate::shared::styles::{BorderStyle};
+use crate::shared::styles::BorderStyle;
 use crate::shared::edge_insets::EdgeInsets;
+
+use super::{Color, UIComponent};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum SpacerStrategy {

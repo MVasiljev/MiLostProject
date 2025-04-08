@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::extract_base_props;
+use crate::components::extract_base_props;
 use crate::render::node::RenderNode;
 use crate::shared::properties::PropertyBag;
 use crate::layout::types::{Rect, Size};
