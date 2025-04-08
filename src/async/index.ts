@@ -1,8 +1,8 @@
-import { Vec } from '../types/vec.js';
-import { Str } from '../types/string.js';
-import { u32 } from '../types/primitives.js';
-import { AppError } from '../core/error.js';
-import { Result } from '../core/result.js';
+import { Vec } from "../types/vec.js";
+import { Str } from "../types/string.js";
+import { u32 } from "../types/primitives.js";
+import { AppError } from "../core/error.js";
+import { Result } from "../core/result.js";
 
 export class AsyncUtils {
   static readonly _type = "AsyncUtils";

@@ -1,6 +1,6 @@
 import { Option } from "../core/option";
-import { u32 } from "../types/primitives";
-import { Str } from "../types/string";
+import { u32 } from "./primitives";
+import { Str } from "./string";
 import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
 
 export class Vec<T> implements Iterable<T> {
