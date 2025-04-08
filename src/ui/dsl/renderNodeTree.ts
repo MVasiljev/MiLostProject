@@ -27,8 +27,6 @@ export async function renderNodeTree(
     await initWasm();
   }
 
-  const wasm = getWasmModule();
-
   const convertedNode =
     vnode instanceof BaseNodeBuilder ? convertBaseNodeToSpecific(vnode) : vnode;
 

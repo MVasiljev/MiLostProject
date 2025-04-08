@@ -1,8 +1,9 @@
+use milost_ui::{components::{ButtonProps, ButtonSize, ButtonStyle, UIComponent}, events::EventType, shared::{BorderStyle, Color, Gradient, GradientStop, GradientType, LoadingIndicatorType, TextAlign, TextTransform}};
 use wasm_bindgen::prelude::*;
 use serde::{Serialize, Deserialize};
-use milost_ui::{
-    Alignment, BorderStyle, ButtonProps, ButtonSize, ButtonState, ButtonStyle, Color, EdgeInsets, EventType, FontWeight, Gradient, GradientStop, LoadingIndicatorType, Overflow, TextAlign, TextTransform, UIComponent
-};
+
+use crate::text::FontWeight;
+
 
 /// WASM-friendly Button Builder to create flexible UI buttons
 #[wasm_bindgen]
