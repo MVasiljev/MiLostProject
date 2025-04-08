@@ -1,13 +1,4 @@
-import { ButtonBuilder } from "../ButtonBuilder";
-import { DividerBuilder } from "../DividerBuilder";
-import { HStackBuilder } from "../HStackBuilder";
-import { ImageBuilder } from "../ImageBuilder";
-import { EventBus } from "../rendering";
-import { SpacerBuilder } from "../SpacerBuilder";
-import { TextBuilder } from "../TextBuilder";
-import { VStackBuilder } from "../VStackBuilder";
-import { ZStackBuilder } from "../ZStackBuilder";
-
+import { initWasm, getWasmModule, isWasmInitialized } from "../../wasm/init.js";
 import { BaseNodeBuilder } from "./BaseNodeBuilder";
 import { ButtonNodeBuilder } from "./ButtonNodeBuilder";
 import { DividerNodeBuilder } from "./DividerNodeBuilder";
@@ -17,6 +8,7 @@ import { SpacerNodeBuilder } from "./SpacerNodeBuilder";
 import { TextNodeBuilder } from "./TextNodeBuilder";
 import { VStackNodeBuilder } from "./VStackNodeBuilder";
 import { ZStackNodeBuilder } from "./ZStackNodeBuilder";
+import { UI } from "../ui.js";
 
 type SpecificNodeBuilder =
   | ButtonNodeBuilder
@@ -28,27 +20,40 @@ type SpecificNodeBuilder =
   | SpacerNodeBuilder
   | DividerNodeBuilder;
 
-type BuiltComponent = any;
-
 export async function renderNodeTree(
   vnode: BaseNodeBuilder | SpecificNodeBuilder
-): Promise<BuiltComponent> {
+): Promise<UI> {
+  if (!isWasmInitialized()) {
+    await initWasm();
+  }
+
+  const wasm = getWasmModule();
+
   const convertedNode =
     vnode instanceof BaseNodeBuilder ? convertBaseNodeToSpecific(vnode) : vnode;
 
-  const builder = await createBuilderFromType(convertedNode);
+  try {
+    const builder = await createBuilderFromType(convertedNode);
 
-  if (convertedNode.children.length > 0 && "child" in builder) {
-    for (const child of convertedNode.children) {
-      const builtChild = await renderNodeTree(child);
-      if (builtChild) {
-        await builder.child(builtChild);
+    if (
+      convertedNode.children.length > 0 &&
+      builder &&
+      typeof builder.child === "function"
+    ) {
+      for (const child of convertedNode.children) {
+        const builtChild = await renderNodeTree(child);
+        if (builtChild) {
+          await builder.child(builtChild);
+        }
       }
     }
-  }
 
-  const built = await builder.build();
-  return built;
+    const built = await builder.build();
+    return built;
+  } catch (error) {
+    console.error(`Error rendering node type ${convertedNode.type}:`, error);
+    throw error;
+  }
 }
 
 function convertBaseNodeToSpecific(
@@ -56,311 +61,328 @@ function convertBaseNodeToSpecific(
 ): SpecificNodeBuilder {
   switch (baseNode.type) {
     case "VStack":
-      return new VStackNodeBuilder(baseNode.children)
-        .setProp("spacing", baseNode.props.spacing)
-        .setProp("padding", baseNode.props.padding)
-        .setProp("background", baseNode.props.background);
-
+      return createVStackNodeBuilder(baseNode);
     case "HStack":
-      return new HStackNodeBuilder(baseNode.children)
-        .setProp("spacing", baseNode.props.spacing)
-        .setProp("padding", baseNode.props.padding)
-        .setProp("background", baseNode.props.background);
-
+      return createHStackNodeBuilder(baseNode);
     case "ZStack":
-      return new ZStackNodeBuilder(baseNode.children);
-
+      return createZStackNodeBuilder(baseNode);
     case "Text":
-      return new TextNodeBuilder(baseNode.props.text || "")
-        .setProp("color", baseNode.props.color)
-        .setProp("fontStyle", baseNode.props.fontStyle);
-
+      return createTextNodeBuilder(baseNode);
     case "Button":
-      return new ButtonNodeBuilder(baseNode.props.label || "")
-        .setProp("style", baseNode.props.style)
-        .setProp("backgroundColor", baseNode.props.backgroundColor)
-        .setProp("textColor", baseNode.props.textColor)
-        .setProp("cornerRadius", baseNode.props.cornerRadius)
-        .setProp("padding", baseNode.props.padding)
-        .setProp("onTap", baseNode.props.onTap);
-
+      return createButtonNodeBuilder(baseNode);
     case "Spacer":
-      return new SpacerNodeBuilder().setProp(
-        "flexGrow",
-        baseNode.props.flexGrow
-      );
-
+      return createSpacerNodeBuilder(baseNode);
     case "Divider":
-      return new DividerNodeBuilder();
-
-    // In the convertBaseNodeToSpecific function in renderNodeTree.ts
+      return createDividerNodeBuilder(baseNode);
     case "Image":
-      // Create a new image builder
-      const imageBuilder = new ImageNodeBuilder(baseNode.props.src || "");
-
-      // Apply key image properties explicitly
-      if (baseNode.props.width !== undefined) {
-        imageBuilder.width(baseNode.props.width);
-      }
-
-      if (baseNode.props.height !== undefined) {
-        imageBuilder.height(baseNode.props.height);
-      }
-
-      if (baseNode.props.cornerRadius !== undefined) {
-        imageBuilder.cornerRadius(baseNode.props.cornerRadius);
-      }
-
-      if (baseNode.props.borderWidth !== undefined) {
-        imageBuilder.borderWidth(baseNode.props.borderWidth);
-      }
-
-      if (baseNode.props.borderColor !== undefined) {
-        imageBuilder.borderColor(baseNode.props.borderColor);
-      }
-
-      return imageBuilder;
-
+      return createImageNodeBuilder(baseNode);
     default:
       throw new Error(`Unknown node type: ${baseNode.type}`);
   }
 }
 
+function createVStackNodeBuilder(baseNode: BaseNodeBuilder): VStackNodeBuilder {
+  return new VStackNodeBuilder(baseNode.children)
+    .setProp("spacing", baseNode.props.spacing)
+    .setProp("padding", baseNode.props.padding)
+    .setProp("background", baseNode.props.background)
+    .setProp("alignment", baseNode.props.alignment)
+    .setProp("cornerRadius", baseNode.props.cornerRadius)
+    .setProp("edgeInsets", baseNode.props.edgeInsets)
+    .setProp("minWidth", baseNode.props.minWidth)
+    .setProp("maxWidth", baseNode.props.maxWidth)
+    .setProp("minHeight", baseNode.props.minHeight)
+    .setProp("maxHeight", baseNode.props.maxHeight)
+    .setProp("clipToBounds", baseNode.props.clipToBounds);
+}
+
+function createHStackNodeBuilder(baseNode: BaseNodeBuilder): HStackNodeBuilder {
+  return new HStackNodeBuilder(baseNode.children)
+    .setProp("spacing", baseNode.props.spacing)
+    .setProp("padding", baseNode.props.padding)
+    .setProp("background", baseNode.props.background)
+    .setProp("alignment", baseNode.props.alignment)
+    .setProp("cornerRadius", baseNode.props.cornerRadius)
+    .setProp("edgeInsets", baseNode.props.edgeInsets)
+    .setProp("minWidth", baseNode.props.minWidth)
+    .setProp("maxWidth", baseNode.props.maxWidth)
+    .setProp("minHeight", baseNode.props.minHeight)
+    .setProp("maxHeight", baseNode.props.maxHeight)
+    .setProp("clipToBounds", baseNode.props.clipToBounds);
+}
+
+function createZStackNodeBuilder(baseNode: BaseNodeBuilder): ZStackNodeBuilder {
+  return new ZStackNodeBuilder(baseNode.children)
+    .setProp("padding", baseNode.props.padding)
+    .setProp("background", baseNode.props.background)
+    .setProp("alignment", baseNode.props.alignment)
+    .setProp("cornerRadius", baseNode.props.cornerRadius)
+    .setProp("edgeInsets", baseNode.props.edgeInsets)
+    .setProp("minWidth", baseNode.props.minWidth)
+    .setProp("maxWidth", baseNode.props.maxWidth)
+    .setProp("minHeight", baseNode.props.minHeight)
+    .setProp("maxHeight", baseNode.props.maxHeight)
+    .setProp("clipToBounds", baseNode.props.clipToBounds);
+}
+
+function createTextNodeBuilder(baseNode: BaseNodeBuilder): TextNodeBuilder {
+  return new TextNodeBuilder(baseNode.props.text || "")
+    .setProp("color", baseNode.props.color)
+    .setProp("fontStyle", baseNode.props.fontStyle)
+    .setProp("fontSize", baseNode.props.fontSize)
+    .setProp("fontWeight", baseNode.props.fontWeight)
+    .setProp("textAlign", baseNode.props.textAlign)
+    .setProp("lineHeight", baseNode.props.lineHeight)
+    .setProp("letterSpacing", baseNode.props.letterSpacing)
+    .setProp("maxLines", baseNode.props.maxLines)
+    .setProp("overflow", baseNode.props.overflow);
+}
+
+function createButtonNodeBuilder(baseNode: BaseNodeBuilder): ButtonNodeBuilder {
+  const builder = new ButtonNodeBuilder(baseNode.props.label || "")
+    .setProp("style", baseNode.props.style)
+    .setProp("backgroundColor", baseNode.props.backgroundColor)
+    .setProp("textColor", baseNode.props.textColor)
+    .setProp("cornerRadius", baseNode.props.cornerRadius)
+    .setProp("padding", baseNode.props.padding)
+    .setProp("fontSize", baseNode.props.fontSize)
+    .setProp("fontWeight", baseNode.props.fontWeight)
+    .setProp("borderWidth", baseNode.props.borderWidth)
+    .setProp("borderColor", baseNode.props.borderColor)
+    .setProp("borderStyle", baseNode.props.borderStyle)
+    .setProp("onTap", baseNode.props.onTap)
+    .setProp("disabled", baseNode.props.disabled);
+
+  if (baseNode.props.gradientColors) {
+    builder.gradientColors(baseNode.props.gradientColors);
+  }
+
+  return builder;
+}
+
+function createSpacerNodeBuilder(baseNode: BaseNodeBuilder): SpacerNodeBuilder {
+  return new SpacerNodeBuilder()
+    .setProp("size", baseNode.props.size)
+    .setProp("minSize", baseNode.props.minSize)
+    .setProp("maxSize", baseNode.props.maxSize)
+    .setProp("flexGrow", baseNode.props.flexGrow);
+}
+
+function createDividerNodeBuilder(
+  baseNode: BaseNodeBuilder
+): DividerNodeBuilder {
+  return new DividerNodeBuilder()
+    .setProp("thickness", baseNode.props.thickness)
+    .setProp("color", baseNode.props.color)
+    .setProp("style", baseNode.props.style)
+    .setProp("padding", baseNode.props.padding)
+    .setProp("opacity", baseNode.props.opacity);
+}
+
+function createImageNodeBuilder(baseNode: BaseNodeBuilder): ImageNodeBuilder {
+  return new ImageNodeBuilder(baseNode.props.src || "")
+    .setProp("width", baseNode.props.width)
+    .setProp("height", baseNode.props.height)
+    .setProp("cornerRadius", baseNode.props.cornerRadius)
+    .setProp("resizeMode", baseNode.props.resizeMode)
+    .setProp("contentMode", baseNode.props.contentMode)
+    .setProp("borderWidth", baseNode.props.borderWidth)
+    .setProp("borderColor", baseNode.props.borderColor)
+    .setProp("opacity", baseNode.props.opacity)
+    .setProp("clipToBounds", baseNode.props.clipToBounds);
+}
+
 async function createBuilderFromType(vnode: SpecificNodeBuilder) {
+  const wasm = getWasmModule();
   const { type, props } = vnode;
 
-  switch (type) {
-    case "VStack": {
-      const builder = await VStackBuilder.create();
-      return applyProps(builder, props);
+  try {
+    switch (type) {
+      case "VStack": {
+        const builder =
+          typeof wasm.create_vertical_stack === "function"
+            ? wasm.create_vertical_stack()
+            : typeof wasm.VStackBuilder === "function"
+            ? wasm.VStackBuilder()
+            : null;
+
+        if (!builder) {
+          throw new Error("VStack builder not found in WASM module");
+        }
+
+        return await applyStackProps(builder, props);
+      }
+      case "HStack": {
+        const builder =
+          typeof wasm.create_horizontal_stack === "function"
+            ? wasm.create_horizontal_stack()
+            : typeof wasm.HStackBuilder === "function"
+            ? wasm.HStackBuilder()
+            : null;
+
+        if (!builder) {
+          throw new Error("HStack builder not found in WASM module");
+        }
+
+        return await applyStackProps(builder, props);
+      }
+      case "ZStack": {
+        const builder =
+          typeof wasm.create_zstack === "function"
+            ? wasm.create_zstack()
+            : typeof wasm.ZStackBuilder === "function"
+            ? wasm.ZStackBuilder()
+            : null;
+
+        if (!builder) {
+          throw new Error("ZStack builder not found in WASM module");
+        }
+
+        return await applyStackProps(builder, props);
+      }
+      case "Text": {
+        // Use TextBuilder with content parameter instead of constructor
+        const builder =
+          typeof wasm.TextBuilder === "function"
+            ? wasm.TextBuilder(props.text ?? "")
+            : null;
+
+        if (!builder) {
+          throw new Error("Text builder not found in WASM module");
+        }
+
+        return await applyTextProps(builder, props);
+      }
+      case "Button": {
+        // Use ButtonBuilder with label parameter instead of constructor
+        const builder =
+          typeof wasm.ButtonBuilder === "function"
+            ? wasm.ButtonBuilder(props.label ?? "")
+            : null;
+
+        if (!builder) {
+          throw new Error("Button builder not found in WASM module");
+        }
+
+        return await applyButtonProps(builder, props);
+      }
+      case "Spacer": {
+        const builder =
+          typeof wasm.SpacerBuilder === "function"
+            ? wasm.SpacerBuilder()
+            : typeof wasm.default_flexible_spacer === "function"
+            ? wasm.default_flexible_spacer(1)
+            : null;
+
+        if (!builder) {
+          throw new Error("Spacer builder not found in WASM module");
+        }
+
+        return await applySpacerProps(builder, props);
+      }
+      case "Divider": {
+        const builder =
+          typeof wasm.DividerBuilder === "function"
+            ? wasm.DividerBuilder()
+            : typeof wasm.light_divider === "function"
+            ? wasm.light_divider()
+            : null;
+
+        if (!builder) {
+          throw new Error("Divider builder not found in WASM module");
+        }
+
+        return await applyDividerProps(builder, props);
+      }
+      case "Image": {
+        // Use ImageBuilder with src parameter instead of constructor
+        const builder =
+          typeof wasm.ImageBuilder === "function"
+            ? wasm.ImageBuilder(props.src ?? "")
+            : null;
+
+        if (!builder) {
+          throw new Error("Image builder not found in WASM module");
+        }
+
+        return await applyImageProps(builder, props);
+      }
+      default:
+        throw new Error(`Unknown node type: ${type}`);
     }
-    case "HStack": {
-      const builder = await HStackBuilder.create();
-      return applyProps(builder, props);
-    }
-    case "ZStack": {
-      const builder = await ZStackBuilder.create();
-      return applyProps(builder, props);
-    }
-    case "Text": {
-      const builder = await TextBuilder.create(props.text ?? "");
-      return applyProps(builder, props);
-    }
-    case "Button": {
-      const builder = await ButtonBuilder.create(props.label ?? "");
-      console.log(
-        "Button builder after prop application:",
-        builder,
-        JSON.stringify(props)
-      );
-      return applyButtonProps(builder, props);
-    }
-    case "Spacer": {
-      const builder = await SpacerBuilder.create();
-      return applyProps(builder, props);
-    }
-    case "Divider": {
-      const builder = await DividerBuilder.create();
-      return applyProps(builder, props);
-    }
-    case "Image": {
-      const builder = await ImageBuilder.create(props.src ?? "");
-      return applyProps(builder, props);
-    }
-    default:
-      throw new Error(`Unknown node type: ${type}`);
+  } catch (error) {
+    console.error(`Error creating builder for ${type}:`, error);
+    throw error;
   }
 }
 
-function applyProps(builder: any, props: Record<string, any>) {
-  console.log("Applying props to builder:", props);
+async function applyStackProps(builder: any, props: Record<string, any>) {
+  return applyPropsToWasmBuilder(builder, props);
+}
 
-  if (
-    props.src &&
-    builder.constructor.name.includes("Image") &&
-    typeof builder.src === "function"
-  ) {
-    builder.src(props.src);
-    // Or alternatively if that's not the right method name:
-    // builder._builder = builder._builder.src(props.src);
+async function applyTextProps(builder: any, props: Record<string, any>) {
+  return applyPropsToWasmBuilder(builder, props);
+}
+
+async function applyButtonProps(builder: any, props: Record<string, any>) {
+  return applyPropsToWasmBuilder(builder, props);
+}
+
+async function applySpacerProps(builder: any, props: Record<string, any>) {
+  return applyPropsToWasmBuilder(builder, props);
+}
+
+async function applyDividerProps(builder: any, props: Record<string, any>) {
+  return applyPropsToWasmBuilder(builder, props);
+}
+
+async function applyImageProps(builder: any, props: Record<string, any>) {
+  return applyPropsToWasmBuilder(builder, props);
+}
+
+async function applyPropsToWasmBuilder(
+  builder: any,
+  props: Record<string, any>
+) {
+  // Return early if builder is null or invalid
+  if (!builder) {
+    console.error("Builder is null or invalid");
+    throw new Error("Builder is null or invalid");
   }
 
   for (const [key, value] of Object.entries(props)) {
     if (value === undefined) {
-      console.log(`Skipping undefined prop: ${key}`);
       continue;
     }
-
-    console.log(`Trying to apply prop: ${key} with value:`, value);
 
     try {
       if (key === "onTap" && typeof value === "function") {
         const handlerId = `btn_${Date.now()}_${Math.floor(
           Math.random() * 1000
         )}`;
-        const eventBus = EventBus.getInstance();
-        eventBus.register(handlerId, value);
         (window as any)[handlerId] = value;
 
-        if (typeof builder.onTap === "function") {
-          builder.onTap(handlerId);
+        if (typeof builder.on_tap === "function") {
+          builder = builder.on_tap(handlerId);
         }
         continue;
       }
 
-      if (typeof value === "string") {
-        const trimmedValue = value.trim();
-        if (trimmedValue === "") {
-          console.log(`Skipping empty string prop: ${key}`);
-          continue;
-        }
-      }
+      // Try different key formats
+      const camelKey = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+      const snakeKey = camelKey.replace(/([A-Z])/g, "_$1").toLowerCase();
 
       if (typeof builder[key] === "function") {
-        console.log(`Calling method: ${key}`);
-        builder[key](value);
-        continue;
+        builder = builder[key](value);
+      } else if (typeof builder[camelKey] === "function") {
+        builder = builder[camelKey](value);
+      } else if (typeof builder[snakeKey] === "function") {
+        builder = builder[snakeKey](value);
       }
-
-      const camelKey = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-      if (typeof builder[camelKey] === "function") {
-        console.log(`Calling camelCase method: ${camelKey}`);
-        builder[camelKey](value);
-        continue;
-      }
-
-      const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
-      if (typeof builder[snakeKey] === "function") {
-        console.log(`Calling snake_case method: ${snakeKey}`);
-        builder[snakeKey](value);
-        continue;
-      }
-
-      console.warn(`Could not find method to apply prop: ${key}`);
     } catch (error) {
       console.error(`Error applying prop ${key}:`, error);
     }
   }
 
   return builder;
-}
-
-function applyButtonProps(builder: any, props: Record<string, any>) {
-  const shadowProps: {
-    color?: string;
-    offsetX?: number;
-    offsetY?: number;
-    radius?: number;
-  } = {};
-  const borderProps: { width?: number; style?: string; color?: string } = {};
-  const pressOffsetProps: { x?: number; y?: number } = {};
-  const gradientStops: Array<{ color: string; position: number }> = [];
-  const gradientProps: {
-    startX?: number;
-    startY?: number;
-    endX?: number;
-    endY?: number;
-    isRadial?: boolean;
-  } = {};
-
-  for (const [key, value] of Object.entries(props)) {
-    if (key === "shadowColor") shadowProps.color = value;
-    else if (key === "shadowOffsetX") shadowProps.offsetX = value;
-    else if (key === "shadowOffsetY") shadowProps.offsetY = value;
-    else if (key === "shadowRadius") shadowProps.radius = value;
-    else if (key === "borderWidth") borderProps.width = value;
-    else if (key === "borderStyle") borderProps.style = value;
-    else if (key === "borderColor") borderProps.color = value;
-    else if (key === "pressOffsetX") pressOffsetProps.x = value;
-    else if (key === "pressOffsetY") pressOffsetProps.y = value;
-    else if (key.startsWith("gradientStop_")) {
-      gradientStops.push(value);
-    } else if (key === "gradientStartX") gradientProps.startX = value;
-    else if (key === "gradientStartY") gradientProps.startY = value;
-    else if (key === "gradientEndX") gradientProps.endX = value;
-    else if (key === "gradientEndY") gradientProps.endY = value;
-    else if (key === "gradientIsRadial") gradientProps.isRadial = value;
-  }
-
-  builder = applyProps(builder, props);
-
-  if (
-    shadowProps.color &&
-    shadowProps.offsetX !== undefined &&
-    shadowProps.offsetY !== undefined &&
-    shadowProps.radius !== undefined
-  ) {
-    builder.shadow(
-      shadowProps.color,
-      shadowProps.offsetX,
-      shadowProps.offsetY,
-      shadowProps.radius
-    );
-  }
-
-  if (
-    borderProps.width !== undefined &&
-    borderProps.style &&
-    borderProps.color
-  ) {
-    builder.border(borderProps.width, borderProps.style, borderProps.color);
-  }
-
-  if (pressOffsetProps.x !== undefined && pressOffsetProps.y !== undefined) {
-    builder.press_offset(pressOffsetProps.x, pressOffsetProps.y);
-  }
-
-  if (gradientStops.length > 0) {
-    for (const stop of gradientStops) {
-      builder.add_gradient_stop(stop.color, stop.position);
-    }
-
-    if (
-      gradientProps.startX !== undefined &&
-      gradientProps.startY !== undefined
-    ) {
-      builder.gradient_start_point(gradientProps.startX, gradientProps.startY);
-    }
-
-    if (gradientProps.endX !== undefined && gradientProps.endY !== undefined) {
-      builder.gradient_end_point(gradientProps.endX, gradientProps.endY);
-    }
-
-    if (gradientProps.isRadial !== undefined) {
-      builder.gradient_is_radial(gradientProps.isRadial);
-    }
-  }
-
-  return builder;
-}
-
-function camelToSnakeCase(str: string): string {
-  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
-}
-
-function registerEventHandler(handler: Function, eventName: string): string {
-  const handlerId = `handler_${eventName}_${Date.now()}_${Math.floor(
-    Math.random() * 1000
-  )}`;
-
-  if (typeof window !== "undefined") {
-    if (!(window as any).eventBus) {
-      (window as any).eventBus = {
-        handlers: {},
-        register(id: string, fn: Function) {
-          this.handlers[id] = fn;
-        },
-        trigger(id: string, data?: any) {
-          const handler = this.handlers[id];
-          if (handler) {
-            handler(data);
-          }
-        },
-      };
-    }
-
-    (window as any).eventBus.register(handlerId, handler);
-  }
-
-  return handlerId;
 }

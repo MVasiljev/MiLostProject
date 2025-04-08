@@ -1,4 +1,4 @@
-import { BaseNodeBuilder, EdgeInsets } from "./BaseNodeBuilder";
+import { BaseNodeBuilder } from "./BaseNodeBuilder";
 import { VStackNodeBuilder } from "./VStackNodeBuilder";
 import { HStackNodeBuilder } from "./HStackNodeBuilder";
 import { ZStackNodeBuilder } from "./ZStackNodeBuilder";
@@ -16,6 +16,7 @@ import { TextNodeBuilder } from "./TextNodeBuilder";
 import { ImageNodeBuilder, ResizeMode } from "./ImageNodeBuilder";
 import { SpacerNodeBuilder } from "./SpacerNodeBuilder";
 import { DividerNodeBuilder, DividerStyle } from "./DividerNodeBuilder";
+import { EdgeInsets } from "../core";
 
 export {
   ButtonStyle,
@@ -99,8 +100,7 @@ export function Text(text: string): TextNodeBuilder {
 }
 
 export function Button(label: string) {
-  const node = new ButtonNodeBuilder("Button");
-  node.setProp("label", label);
+  const node = new ButtonNodeBuilder(label);
   return node;
 }
 
@@ -303,81 +303,6 @@ export function LargeButton(
     .fontSize(18);
 }
 
-export function IconButton(
-  icon: string,
-  onTap?: string | Function
-): ButtonNodeBuilder {
-  const button = Button("")
-    .icon(icon)
-    .cornerRadius(20)
-    .fixedWidth(40)
-    .fixedHeight(40);
-
-  if (onTap) {
-    button.onTap(onTap);
-  }
-
-  return button;
-}
-
-export function LoadingButton(
-  label: string,
-  isLoading: boolean = false,
-  onTap?: string | Function
-): ButtonNodeBuilder {
-  const button = Button(label)
-    .loading(isLoading)
-    .loadingIndicatorType("spinner")
-    .loadingIndicatorColor("#FFFFFF")
-    .loadingIndicatorSize(16)
-    .hideTextWhileLoading(true);
-
-  if (onTap) {
-    button.onTap(onTap);
-  }
-
-  return button;
-}
-
-export function GradientButton(
-  label: string,
-  stops: Array<{ color: string; position: number }>,
-  onTap?: string | Function
-): ButtonNodeBuilder {
-  const button = Button(label).textColor("#FFFFFF").cornerRadius(8).padding(12);
-
-  stops.forEach((stop) => {
-    button.addGradientStop(stop.color, stop.position);
-  });
-
-  button.gradientStartPoint(0, 0);
-  button.gradientEndPoint(1, 0);
-
-  if (onTap) {
-    button.onTap(onTap);
-  }
-
-  return button;
-}
-
-export function AnimatedButton(
-  label: string,
-  onTap?: string | Function
-): ButtonNodeBuilder {
-  const button = Button(label)
-    .pressEffect(true)
-    .pressScale(0.95)
-    .animationDuration(0.1)
-    .cornerRadius(8)
-    .padding(12);
-
-  if (onTap) {
-    button.onTap(onTap);
-  }
-
-  return button;
-}
-
 export function insets(
   top: number,
   right: number,
@@ -435,7 +360,9 @@ export function BackgroundImage(
   src: string,
   overlay?: string
 ): ImageNodeBuilder {
-  return Image(src).resizeMode(ResizeMode.Cover).asBackground(overlay);
+  return Image(src)
+    .resizeMode(ResizeMode.Cover)
+    .background(overlay || "");
 }
 
 export function GradientImage(

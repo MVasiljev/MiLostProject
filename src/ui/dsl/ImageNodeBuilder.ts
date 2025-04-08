@@ -24,24 +24,6 @@ export enum ContentMode {
   BottomRight = "bottomRight",
 }
 
-export enum FilterType {
-  Blur = "blur",
-  Grayscale = "grayscale",
-  Sepia = "sepia",
-  Saturation = "saturation",
-  Brightness = "brightness",
-  Contrast = "contrast",
-  Hue = "hue",
-  Invert = "invert",
-}
-
-export enum CachePolicy {
-  Default = "default",
-  Reload = "reload",
-  ReturnCacheDataElseLoad = "returnCacheDataElseLoad",
-  ReturnCacheDataDontLoad = "returnCacheDataDontLoad",
-}
-
 export class ImageNodeBuilder extends BaseNodeBuilder {
   constructor(src: string) {
     super("Image");
@@ -140,30 +122,6 @@ export class ImageNodeBuilder extends BaseNodeBuilder {
     return this.setProp("filter_grayscale", intensity);
   }
 
-  sepia(intensity: number = 1.0): this {
-    return this.setProp("filter_sepia", intensity);
-  }
-
-  saturation(value: number): this {
-    return this.setProp("filter_saturation", value);
-  }
-
-  brightness(value: number): this {
-    return this.setProp("filter_brightness", value);
-  }
-
-  contrast(value: number): this {
-    return this.setProp("filter_contrast", value);
-  }
-
-  hueRotate(value: number): this {
-    return this.setProp("filter_hue", value);
-  }
-
-  invert(enabled: boolean = true): this {
-    return this.setProp("filter_invert", enabled);
-  }
-
   opacity(value: number): this {
     return this.setProp("opacity", value);
   }
@@ -182,63 +140,5 @@ export class ImageNodeBuilder extends BaseNodeBuilder {
 
   preserveAspectRatio(preserve: boolean = true): this {
     return this.setProp("preserveAspectRatio", preserve);
-  }
-
-  animation(duration: number, isAnimating: boolean = true): this {
-    this.setProp("animationDuration", duration);
-    this.setProp("isAnimating", isAnimating);
-    return this;
-  }
-
-  cachePolicy(policy: CachePolicy): this {
-    return this.setProp("cachePolicy", policy);
-  }
-
-  minWidth(value: number): this {
-    return this.setProp("minWidth", value);
-  }
-
-  maxWidth(value: number): this {
-    return this.setProp("maxWidth", value);
-  }
-
-  minHeight(value: number): this {
-    return this.setProp("minHeight", value);
-  }
-
-  maxHeight(value: number): this {
-    return this.setProp("maxHeight", value);
-  }
-
-  lazyLoad(enabled: boolean): this {
-    return this.setProp("lazyLoad", enabled);
-  }
-
-  fallbackSrc(src: string): this {
-    return this.setProp("fallbackSrc", src);
-  }
-
-  // Convenience helpers
-  asAvatar(size: number = 50, fallbackSrc?: string): this {
-    this.circular(size);
-    if (fallbackSrc) {
-      this.fallbackSrc(fallbackSrc);
-    }
-    return this;
-  }
-
-  asBackground(overlay?: string): this {
-    this.resizeMode(ResizeMode.Cover);
-    this.setProp("isBackground", true);
-    if (overlay) {
-      this.setProp("overlayColor", overlay);
-    }
-    return this;
-  }
-
-  withBadge(badgeText: string, badgeColor: string = "red"): this {
-    this.setProp("badgeText", badgeText);
-    this.setProp("badgeColor", badgeColor);
-    return this;
   }
 }

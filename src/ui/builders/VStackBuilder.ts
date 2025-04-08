@@ -1,38 +1,19 @@
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
-import type { ColorType } from "./types";
-import { TextBuilder } from "./TextBuilder";
-import { HStackBuilder } from "./HStackBuilder";
-import { ButtonBuilder } from "./ButtonBuilder";
-import { UI } from "./index.js";
+import { getWasmModule } from "../../wasm/init";
+import {
+  UIComponent,
+  Color,
+  StackAlignment,
+  LayoutPriority,
+  EdgeInsets,
+} from "../core";
+import { ColorType } from "../types";
+import { UI } from "../ui";
 
-export enum StackAlignment {
-  Leading = "leading",
-  Trailing = "trailing",
-  Center = "center",
-}
-
-export enum LayoutPriority {
-  Low = 0,
-  Medium = 1,
-  High = 2,
-}
-
-export interface EdgeInsetsOptions {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-}
-
-export class VStackBuilder {
-  private _builder: any;
+export class VStackBuilder extends UIComponent {
+  protected _builder: any;
 
   constructor() {
-    if (!isWasmInitialized()) {
-      throw new Error(
-        "WASM module not initialized. Please call initWasm() first."
-      );
-    }
+    super();
     const wasm = getWasmModule();
     this._builder = new wasm.VStackBuilder();
   }
@@ -48,7 +29,10 @@ export class VStackBuilder {
   }
 
   background(color: ColorType): VStackBuilder {
-    this._builder = this._builder.background(color);
+    const colorString =
+      typeof color === "string" ? color : new Color(color).toCssString();
+
+    this._builder = this._builder.background(colorString);
     return this;
   }
 
@@ -57,7 +41,7 @@ export class VStackBuilder {
     return this;
   }
 
-  edgeInsets(insets: EdgeInsetsOptions): VStackBuilder {
+  edgeInsets(insets: EdgeInsets): VStackBuilder {
     this._builder = this._builder.edge_insets(
       insets.top,
       insets.right,
@@ -112,36 +96,17 @@ export class VStackBuilder {
     return this;
   }
 
-  async child(
-    component: UI | TextBuilder | HStackBuilder | VStackBuilder | ButtonBuilder
-  ): Promise<VStackBuilder> {
+  async child(component: UIComponent | UI): Promise<VStackBuilder> {
     let json: string;
 
     if (component instanceof UI) {
-      // If it's already a UI object, just get its JSON
       json = component.toJSON();
     } else {
-      // Otherwise it's a builder, so convert it
-      json = await this.convertBuilderToJson(component);
+      json = await component.build().then((ui) => ui.toJSON());
     }
 
     this._builder = this._builder.child(json);
     return this;
-  }
-
-  private async convertBuilderToJson(builder: any): Promise<string> {
-    const wasmBuilder = builder._builder;
-    if (!wasmBuilder || !wasmBuilder.build) {
-      throw new Error("Invalid builder object");
-    }
-
-    try {
-      const result = wasmBuilder.build();
-      return result;
-    } catch (error) {
-      console.error("Error converting builder to JSON:", error);
-      throw error;
-    }
   }
 
   async build(): Promise<UI> {
@@ -155,9 +120,7 @@ export class VStackBuilder {
   }
 
   static async create(): Promise<VStackBuilder> {
-    if (!isWasmInitialized()) {
-      await initWasm();
-    }
+    await UIComponent.initialize();
     return new VStackBuilder();
   }
 }

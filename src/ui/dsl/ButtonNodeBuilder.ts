@@ -1,4 +1,4 @@
-import { BaseNodeBuilder, EdgeInsets } from "./BaseNodeBuilder";
+import { BaseNodeBuilder } from "./BaseNodeBuilder";
 
 export enum ButtonStyle {
   Primary = "Primary",
@@ -54,11 +54,6 @@ export enum Overflow {
   Hidden = "hidden",
   Scroll = "scroll",
   Ellipsis = "ellipsis",
-}
-
-export interface GradientStop {
-  color: string;
-  position: number;
 }
 
 export class ButtonNodeBuilder extends BaseNodeBuilder {
@@ -143,22 +138,6 @@ export class ButtonNodeBuilder extends BaseNodeBuilder {
     return this.setProp("borderColor", color);
   }
 
-  minWidth(value: number): this {
-    return this.setProp("minWidth", value);
-  }
-
-  maxWidth(value: number): this {
-    return this.setProp("maxWidth", value);
-  }
-
-  fixedWidth(value: number): this {
-    return this.setProp("fixedWidth", value);
-  }
-
-  fixedHeight(value: number): this {
-    return this.setProp("fixedHeight", value);
-  }
-
   icon(iconName: string, position: string = "leading"): this {
     this.setProp("icon", iconName);
     this.setProp("iconPosition", position);
@@ -169,62 +148,8 @@ export class ButtonNodeBuilder extends BaseNodeBuilder {
     return this.setProp("isLoading", isLoading);
   }
 
-  loadingIndicatorType(type: string): this {
-    return this.setProp("loadingIndicatorType", type);
-  }
-
-  loadingIndicatorColor(color: string): this {
-    return this.setProp("loadingIndicatorColor", color);
-  }
-
-  loadingIndicatorSize(size: number): this {
-    return this.setProp("loadingIndicatorSize", size);
-  }
-
-  hideTextWhileLoading(hide: boolean): this {
-    return this.setProp("hideTextWhileLoading", hide);
-  }
-
-  accessibilityLabel(label: string): this {
-    return this.setProp("accessibilityLabel", label);
-  }
-
-  accessibilityHint(hint: string): this {
-    return this.setProp("accessibilityHint", hint);
-  }
-
-  isAccessibilityElement(isElement: boolean): this {
-    return this.setProp("isAccessibilityElement", isElement);
-  }
-
-  animationDuration(duration: number): this {
-    return this.setProp("animationDuration", duration);
-  }
-
-  pressEffect(enabled: boolean): this {
-    return this.setProp("pressEffect", enabled);
-  }
-
-  pressScale(scale: number): this {
-    return this.setProp("pressScale", scale);
-  }
-
-  pressColorChange(color: string): this {
-    return this.setProp("pressColorChange", color);
-  }
-
-  pressOffset(offsetX: number, offsetY: number): this {
-    this.setProp("pressOffsetX", offsetX);
-    this.setProp("pressOffsetY", offsetY);
-    return this;
-  }
-
-  addGradientStop(color: string, position: number): this {
-    const stopCount = Object.keys(this.props).filter((k) =>
-      k.startsWith("gradientStop_")
-    ).length;
-    this.setProp(`gradientStop_${stopCount}`, { color, position });
-    return this;
+  disabled(isDisabled: boolean): this {
+    return this.setProp("disabled", isDisabled);
   }
 
   gradientStartPoint(x: number, y: number): this {
@@ -275,31 +200,7 @@ export class ButtonNodeBuilder extends BaseNodeBuilder {
     return this;
   }
 
-  onDoubleTap(handler: string | Function): this {
-    return this.setProp("onDoubleTap", handler);
-  }
-
-  onLongPress(handler: string | Function): this {
-    return this.setProp("onLongPress", handler);
-  }
-
-  onHoverEnter(handler: string | Function): this {
-    return this.setProp("onHoverEnter", handler);
-  }
-
-  onHoverExit(handler: string | Function): this {
-    return this.setProp("onHoverExit", handler);
-  }
-
-  onFocus(handler: string | Function): this {
-    return this.setProp("onFocus", handler);
-  }
-
-  onBlur(handler: string | Function): this {
-    return this.setProp("onBlur", handler);
-  }
-
-  disabled(isDisabled: boolean): this {
-    return this.setProp("disabled", isDisabled);
+  animationDuration(duration: number): this {
+    return this.setProp("animationDuration", duration);
   }
 }

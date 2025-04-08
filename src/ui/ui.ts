@@ -1,26 +1,23 @@
 import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
-import type { FontStyleType, ColorType } from "./types.js";
 
 export class UI {
   private readonly _json: string;
-  private readonly _wasm: boolean;
 
-  constructor(json: string, wasm: boolean) {
+  private constructor(json: string) {
     this._json = json;
-    this._wasm = wasm;
   }
 
   static async fromJSON(json: string): Promise<UI> {
     if (!isWasmInitialized()) {
       await initWasm();
     }
-    return new UI(json, true);
+    return new UI(json);
   }
 
   static async createText(
     content: string,
-    fontStyle: FontStyleType,
-    color: ColorType
+    fontStyle: string,
+    color: string
   ): Promise<UI> {
     if (!isWasmInitialized()) {
       await initWasm();
@@ -28,16 +25,7 @@ export class UI {
 
     const wasm = getWasmModule();
     const result = wasm.UIParser.create_text(content, fontStyle, color);
-    return new UI(result, true);
-  }
-
-  unwrap(): any {
-    try {
-      return JSON.parse(this._json);
-    } catch (err) {
-      console.error("Failed to parse WASM UI output:", err);
-      return null;
-    }
+    return new UI(result);
   }
 
   toJSON(): string {
@@ -45,6 +33,19 @@ export class UI {
   }
 
   toString(): string {
-    return JSON.stringify(this.unwrap(), null, 2);
+    try {
+      return JSON.stringify(JSON.parse(this._json), null, 2);
+    } catch {
+      return this._json;
+    }
+  }
+
+  unwrap(): any {
+    try {
+      return JSON.parse(this._json);
+    } catch (err) {
+      console.error("Failed to parse UI JSON:", err);
+      return null;
+    }
   }
 }

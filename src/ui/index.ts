@@ -1,56 +1,86 @@
-export { VStackBuilder } from "./VStackBuilder";
-export { ZStackBuilder } from "./ZStackBuilder";
-export { TextBuilder } from "./TextBuilder";
+import { initWasm } from "../wasm/init.js";
+
+export { UI } from "./ui.js";
+
+export { UIComponent } from "./core/UIComponent.js";
+export { Component } from "./core/Component.js";
+
+export {
+  Color,
+  ColorType,
+  ColorVariant,
+  RGBColor,
+  Colors,
+} from "./core/color/ColorSystem.js";
+
+export {
+  FontFamily,
+  FontDescriptor,
+  FontRegistry,
+  FontTheme,
+  FontPresets,
+  FontWeight,
+  FontStyle,
+  FontWidth,
+  FontSlant,
+  TextCapitalization,
+  TextBaseline,
+  TextStyle,
+} from "./core/font/FontSystem.js";
+
+export { VStackBuilder } from "./builders/VStackBuilder.js";
+
+export { HStackBuilder } from "./builders/HStackBuilder.js";
+
+export { ZStackBuilder } from "./builders/ZStackBuilder.js";
+
+export { TextBuilder, TextAlignment } from "./builders/TextBuilder.js";
+
 export {
   ButtonBuilder,
   ButtonStyle,
   ButtonSize,
-  TextTransform,
-  TextAlign,
-  FontWeight,
   BorderStyle,
-  Overflow,
-} from "./ButtonBuilder";
-export { DividerBuilder, DividerStyle } from "./DividerBuilder";
-export { HStackBuilder } from "./HStackBuilder";
-export { ImageBuilder, ResizeMode } from "./ImageBuilder";
-export { SpacerBuilder } from "./SpacerBuilder";
-export { ScrollBuilder, ScrollDirection } from "./ScrollBuilder";
-
-export { UI } from "./ui";
-export { ColorType } from "./types";
-
-export { renderComponent } from "./rendering/renderComponent";
-export * from "./rendering/MiLostRenderer";
+} from "./builders/ButtonBuilder.js";
 
 export {
-  VStack,
-  HStack,
-  ZStack,
-  Text,
-  Button,
-  Spacer,
-  Divider,
-  Image,
-  Card,
-  insets,
-  insetAll,
-  insetSymmetric,
-  insetHorizontal,
-  insetVertical,
-  CircleImage,
-  BackgroundImage,
-  Heading,
-  Subheading,
-  Caption,
-  HorizontalDivider,
-  DashedDivider,
-} from "./dsl/uiDsl";
+  ImageBuilder,
+  ResizeMode,
+  ContentMode,
+} from "./builders/ImageBuilder.js";
+
+export { SpacerBuilder } from "./builders/SpacerBuilder.js";
 
 export {
-  VStackAlignmentOptions,
-  HStackAlignmentOptions,
-  ZStackAlignmentOptions,
-} from "./dsl/uiDsl";
+  DividerBuilder,
+  DividerStyle,
+  LabelPosition,
+} from "./builders/DividerBuilder.js";
 
-export * from "./rendering";
+export { ScrollBuilder, ScrollDirection } from "./builders/ScrollBuilder.js";
+
+export { EdgeInsets, EdgeInsetsFactory } from "./core/layout/EdgeInsets.js";
+
+export {
+  StackAlignment,
+  HStackAlignment,
+  ZStackAlignment,
+} from "./core/layout/Alignment.js";
+
+export { LayoutPriority } from "./core/layout/LayoutPriority.js";
+
+export {
+  SizeConstraints,
+  LayoutOptions,
+  Size,
+  Position,
+  Rect,
+} from "./core/layout";
+
+export { renderComponent } from "./rendering/renderComponent.js";
+
+export { MiLost } from "./rendering/MiLostRenderer.js";
+
+export async function initialize(): Promise<void> {
+  await initWasm();
+}

@@ -1,12 +1,6 @@
-import { Task } from "../../concurrency/task.js";
-import { AppError } from "../../core/error.js";
-import { Ok, Err } from "../../core/result.js";
-import { Patterns } from "../../patterns/matching.js";
-import { u32 } from "../../types/primitives.js";
-import { Str } from "../../types/string.js";
 import { initWasm, getWasmModule, isWasmInitialized } from "../../wasm/init.js";
-import { renderNodeTree } from "../dsl/renderNodeTree.js";
-import type { UI } from "../ui.js";
+import { UI } from "../ui.js";
+import { EventBus } from "./eventSystem.js";
 
 export interface MiLostRendererOptions {
   component: UI | string;
@@ -55,62 +49,60 @@ export async function MiLost({
     );
 
     setupEventListeners(canvas, renderNode);
-
-    function renderWithMiLostTask(
-      component: UI,
-      mountPoint: HTMLElement,
-      width?: u32,
-      height?: u32
-    ): Task<void, AppError> {
-      return Task.new(async (_signal) => {
-        try {
-          await MiLost({
-            component,
-            mountPoint,
-            width,
-            height,
-          });
-
-          return Ok(undefined);
-        } catch (err) {
-          const message =
-            err instanceof Error
-              ? err.message
-              : typeof err === "string"
-              ? err
-              : "Unknown error";
-
-          return Err(
-            new AppError(Str.fromRaw(`MiLost render failed: ${message}`))
-          );
-        }
-      });
-    }
-
-    const resultTask = renderWithMiLostTask(
-      component as unknown as UI,
-      document.body
-    );
-
-    resultTask.run().then(async (result) => {
-      await Patterns.match(result, {
-        Ok: () => {
-          console.log("✅ MiLost successfully rendered.");
-        },
-        Err: (err) => {
-          console.error("❌ Rendering failed:", Str.fromRaw(err.message));
-        },
-      });
-    });
   } catch (err) {
     console.error("Failed to mount MiLost component:", err);
+  }
+}
+
+export function mountMiLostRenderer(
+  options: MiLostRendererOptions
+): Promise<void> {
+  return MiLost(options);
+}
+
+function setupEventListeners(canvas: HTMLCanvasElement, renderNode: any): void {
+  if (containsInteractiveElements(renderNode)) {
+    canvas.addEventListener("click", (event) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      const clickedNode = findNodeAtPoint(renderNode, x, y);
+      if (clickedNode && clickedNode.resolved_props.on_tap) {
+        handleNodeClick(clickedNode);
+      }
+    });
+
+    let longPressTimer: number | null = null;
+
+    canvas.addEventListener("mousedown", (event) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      longPressTimer = window.setTimeout(() => {
+        const node = findNodeAtPoint(renderNode, x, y);
+        if (node && node.resolved_props.on_long_press) {
+          const handlerId = node.resolved_props.on_long_press;
+          EventBus.getInstance().trigger(handlerId, { x, y });
+        }
+      }, 500);
+    });
+
+    canvas.addEventListener("mouseup", () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    });
   }
 }
 
 function containsInteractiveElements(node: any): boolean {
   if (
     node.type_name === "Button" ||
-    (node.resolved_props && node.resolved_props.on_tap)
+    (node.resolved_props &&
+      (node.resolved_props.on_tap || node.resolved_props.on_long_press))
   ) {
     return true;
   }
@@ -124,28 +116,11 @@ function containsInteractiveElements(node: any): boolean {
   return false;
 }
 
-function setupEventListeners(canvas: HTMLCanvasElement, renderNode: any): void {
-  const hasInteractiveElements = containsInteractiveElements(renderNode);
-
-  if (hasInteractiveElements) {
-    canvas.addEventListener("click", (event) => {
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-
-      const clickedNode = findNodeAtPoint(renderNode, x, y);
-      if (clickedNode && clickedNode.resolved_props.on_tap) {
-        handleNodeClick(clickedNode);
-      }
-    });
-  }
-}
-
 function findNodeAtPoint(node: any, x: number, y: number): any | null {
-  const nodeX = parseFloat(node.resolved_props.x || "0");
-  const nodeY = parseFloat(node.resolved_props.y || "0");
-  const nodeWidth = parseFloat(node.resolved_props.width || "0");
-  const nodeHeight = parseFloat(node.resolved_props.height || "0");
+  const nodeX = parseFloat(node.resolved_props?.x || "0");
+  const nodeY = parseFloat(node.resolved_props?.y || "0");
+  const nodeWidth = parseFloat(node.resolved_props?.width || "0");
+  const nodeHeight = parseFloat(node.resolved_props?.height || "0");
 
   const isInBounds =
     x >= nodeX &&
@@ -168,7 +143,11 @@ function findNodeAtPoint(node: any, x: number, y: number): any | null {
     }
   }
 
-  if (node.type_name === "Button" || node.resolved_props.on_tap) {
+  if (
+    node.type_name === "Button" ||
+    node.resolved_props?.on_tap ||
+    node.resolved_props?.on_long_press
+  ) {
     return node;
   }
 
@@ -177,18 +156,7 @@ function findNodeAtPoint(node: any, x: number, y: number): any | null {
 
 function handleNodeClick(node: any): void {
   if (node.resolved_props.on_tap) {
-    try {
-      const handlerName = node.resolved_props.on_tap;
-
-      const handler = (window as any)[handlerName];
-
-      if (typeof handler === "function") {
-        handler();
-      } else {
-        console.warn(`Handler function '${handlerName}' not found`);
-      }
-    } catch (err) {
-      console.error("Error executing click handler:", err);
-    }
+    const handlerId = node.resolved_props.on_tap;
+    EventBus.getInstance().trigger(handlerId, {});
   }
 }

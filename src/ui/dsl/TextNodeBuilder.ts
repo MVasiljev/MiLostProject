@@ -71,32 +71,4 @@ export class TextNodeBuilder extends BaseNodeBuilder {
   italic(enabled: boolean = true): this {
     return this.setProp("italic", enabled);
   }
-
-  accessibilityLabel(label: string): this {
-    return this.setProp("accessibilityLabel", label);
-  }
-
-  accessibilityHint(hint: string): this {
-    return this.setProp("accessibilityHint", hint);
-  }
-
-  isAccessibilityElement(isElement: boolean): this {
-    return this.setProp("isAccessibilityElement", isElement);
-  }
-
-  minWidth(value: number): this {
-    return this.setProp("minWidth", value);
-  }
-
-  maxWidth(value: number): this {
-    return this.setProp("maxWidth", value);
-  }
-
-  fixedWidth(value: number): this {
-    return this.setProp("fixedWidth", value);
-  }
-
-  fixedHeight(value: number): this {
-    return this.setProp("fixedHeight", value);
-  }
 }
