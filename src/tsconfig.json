@@ -5,8 +5,10 @@
     "declaration": true,
     "outDir": ".",
     "strict": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "types": ["jest", "node"],
+    "typeRoots": ["./node_modules/@types"]
   },
-  "include": ["**/*.ts"],
+  "include": ["**/*.ts", "**/*.d.ts"],
   "exclude": ["node_modules"]
 }

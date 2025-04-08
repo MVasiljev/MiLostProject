@@ -3,8 +3,6 @@ import { AppError } from "../core/error.js";
 import { Result, Ok, Err } from "../core/result.js";
 import { Option } from "../core/option.js";
 import { RcRefCell, Rc } from "../memory/smart_pointers.js";
-import { u32 } from "../types/primitives.js";
-import { HashMap } from "../types/hash_map.js";
 import { Vec } from "../types/vec.js";
 
 export type Listener = () => void;
