@@ -6,5 +6,4 @@ export {
   RegexActionBuilder,
 } from "./regex-conversation";
 export { RegexParser } from "./regex-parser";
-export * from "./integration";
 export * from "./utils";

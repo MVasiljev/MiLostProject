@@ -1,14 +1,17 @@
 use wasm_bindgen::prelude::*;
 use regex::escape;
 
+use crate::regex_builder::patterns::Pattern;
+
 use super::operators::Operator;
 use super::expressions::{Expr, ExprKind};
-use super::patterns::Pattern;
 
 #[wasm_bindgen]
 pub struct RegexBuilder {
     expressions: Vec<Expr>,
     current_op: Operator,
+    global_transformations: Vec<fn(String) -> String>,
+    conditions: Vec<fn(&str) -> bool>,
 }
 
 #[wasm_bindgen]
@@ -18,7 +21,53 @@ impl RegexBuilder {
         RegexBuilder {
             expressions: vec![],
             current_op: Operator::And,
+            global_transformations: vec![],
+            conditions: vec![],
         }
+    }
+
+    #[wasm_bindgen]
+    pub fn find_ip_address(mut self) -> RegexBuilder {
+        self.expressions.push(Expr {
+            kind: ExprKind::Pattern(Pattern::IpAddress.to_regex()),
+            op: self.current_op,
+            quantifier: None,
+            name: None,
+        });
+        self
+    }
+
+    #[wasm_bindgen]
+    pub fn find_phone_number(mut self) -> RegexBuilder {
+        self.expressions.push(Expr {
+            kind: ExprKind::Pattern(Pattern::PhoneNumber.to_regex()),
+            op: self.current_op,
+            quantifier: None,
+            name: None,
+        });
+        self
+    }
+
+    #[wasm_bindgen]
+    pub fn find_date(mut self) -> RegexBuilder {
+        self.expressions.push(Expr {
+            kind: ExprKind::Pattern(Pattern::Date.to_regex()),
+            op: self.current_op,
+            quantifier: None,
+            name: None,
+        });
+        self
+    }
+
+    #[wasm_bindgen]
+    pub fn find_time(mut self) -> RegexBuilder {
+        self.expressions.push(Expr {
+            kind: ExprKind::Pattern(Pattern::Time.to_regex()),
+            op: self.current_op,
+            quantifier: None,
+            name: None,
+        });
+        self
     }
 
     #[wasm_bindgen]
@@ -39,6 +88,7 @@ impl RegexBuilder {
             kind: ExprKind::Literal(escape(text)),
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
@@ -49,6 +99,7 @@ impl RegexBuilder {
             kind: ExprKind::Pattern(".*?".to_string()),
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
@@ -59,6 +110,7 @@ impl RegexBuilder {
             kind: ExprKind::Pattern(".+".to_string()),
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
@@ -71,6 +123,7 @@ impl RegexBuilder {
             kind: ExprKind::Pattern(pattern),
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
@@ -81,6 +134,7 @@ impl RegexBuilder {
             kind: ExprKind::Pattern("\\d+".to_string()),
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
@@ -91,6 +145,7 @@ impl RegexBuilder {
             kind: ExprKind::Pattern("[a-zA-Z]+".to_string()),
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
@@ -101,6 +156,7 @@ impl RegexBuilder {
             kind: ExprKind::Pattern("\\s+".to_string()),
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
@@ -111,66 +167,31 @@ impl RegexBuilder {
             kind: ExprKind::Pattern("\\s*".to_string()),
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
 
     #[wasm_bindgen]
     pub fn find_email(mut self) -> RegexBuilder {
+        let pattern = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}";
         self.expressions.push(Expr {
-            kind: ExprKind::Pattern(Pattern::Email.to_regex()),
+            kind: ExprKind::Pattern(pattern.to_string()),
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
 
     #[wasm_bindgen]
     pub fn find_url(mut self) -> RegexBuilder {
+        let pattern = r"https?://(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*)";
         self.expressions.push(Expr {
-            kind: ExprKind::Pattern(Pattern::Url.to_regex()),
+            kind: ExprKind::Pattern(pattern.to_string()),
             op: self.current_op,
             quantifier: None,
-        });
-        self
-    }
-
-    #[wasm_bindgen]
-    pub fn find_ip_address(mut self) -> RegexBuilder {
-        self.expressions.push(Expr {
-            kind: ExprKind::Pattern(Pattern::IpAddress.to_regex()),
-            op: self.current_op,
-            quantifier: None,
-        });
-        self
-    }
-
-    #[wasm_bindgen]
-    pub fn find_phone_number(mut self) -> RegexBuilder {
-        self.expressions.push(Expr {
-            kind: ExprKind::Pattern(Pattern::PhoneNumber.to_regex()),
-            op: self.current_op,
-            quantifier: None,
-        });
-        self
-    }
-
-    #[wasm_bindgen]
-    pub fn find_date(mut self) -> RegexBuilder {
-        self.expressions.push(Expr {
-            kind: ExprKind::Pattern(Pattern::Date.to_regex()),
-            op: self.current_op,
-            quantifier: None,
-        });
-        self
-    }
-
-    #[wasm_bindgen]
-    pub fn find_time(mut self) -> RegexBuilder {
-        self.expressions.push(Expr {
-            kind: ExprKind::Pattern(Pattern::Time.to_regex()),
-            op: self.current_op,
-            quantifier: None,
+            name: None,
         });
         self
     }
@@ -182,6 +203,7 @@ impl RegexBuilder {
             kind: ExprKind::Pattern(pattern),
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
@@ -193,6 +215,7 @@ impl RegexBuilder {
             kind: ExprKind::Pattern(pattern),
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
@@ -204,6 +227,7 @@ impl RegexBuilder {
             kind: ExprKind::Pattern(pattern),
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
@@ -215,6 +239,7 @@ impl RegexBuilder {
             kind: ExprKind::Pattern(pattern),
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
@@ -225,6 +250,7 @@ impl RegexBuilder {
             kind: ExprKind::StartCapture,
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
@@ -235,6 +261,7 @@ impl RegexBuilder {
             kind: ExprKind::EndCapture,
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
@@ -245,6 +272,7 @@ impl RegexBuilder {
             kind: ExprKind::StartGroup,
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
@@ -255,6 +283,7 @@ impl RegexBuilder {
             kind: ExprKind::EndGroup,
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
@@ -313,9 +342,10 @@ impl RegexBuilder {
     #[wasm_bindgen(js_name = findJsonObject)]
     pub fn find_json_object(mut self) -> RegexBuilder {
         self.expressions.push(Expr {
-            kind: ExprKind::Pattern(Pattern::JsonObject.to_regex()),
+            kind: ExprKind::Pattern(r"\{(?:[^{}]|(?R))*\}".to_string()),
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
@@ -323,9 +353,10 @@ impl RegexBuilder {
     #[wasm_bindgen(js_name = findJsonArray)]
     pub fn find_json_array(mut self) -> RegexBuilder {
         self.expressions.push(Expr {
-            kind: ExprKind::Pattern(Pattern::JsonArray.to_regex()),
+            kind: ExprKind::Pattern(r"\[(?:[^\[\]]|(?R))*\]".to_string()),
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }
@@ -333,19 +364,10 @@ impl RegexBuilder {
     #[wasm_bindgen(js_name = findJsonString)]
     pub fn find_json_string(mut self) -> RegexBuilder {
         self.expressions.push(Expr {
-            kind: ExprKind::Pattern(Pattern::JsonString.to_regex()),
+            kind: ExprKind::Pattern(r#""([^"]*)""#.to_string()),
             op: self.current_op,
             quantifier: None,
-        });
-        self
-    }
-
-    #[wasm_bindgen(js_name = findJsonKey)]
-    pub fn find_json_key(mut self) -> RegexBuilder {
-        self.expressions.push(Expr {
-            kind: ExprKind::Pattern(Pattern::JsonKey.to_regex()),
-            op: self.current_op,
-            quantifier: None,
+            name: None,
         });
         self
     }
@@ -353,9 +375,10 @@ impl RegexBuilder {
     #[wasm_bindgen(js_name = findJsonNumber)]
     pub fn find_json_number(mut self) -> RegexBuilder {
         self.expressions.push(Expr {
-            kind: ExprKind::Pattern(Pattern::JsonNumber.to_regex()),
+            kind: ExprKind::Pattern(r"(-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)".to_string()),
             op: self.current_op,
             quantifier: None,
+            name: None,
         });
         self
     }

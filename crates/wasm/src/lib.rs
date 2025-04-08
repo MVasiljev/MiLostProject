@@ -30,6 +30,12 @@ mod smart_pointers;
 mod sync_primitives;
 mod computed;
 mod regex_builder;
+mod algorithms;
+mod compression;
+mod crypto;
+mod image;
+mod math;
+mod text;
 
 
 pub use str::*;

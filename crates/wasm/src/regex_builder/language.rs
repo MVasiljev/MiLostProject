@@ -58,30 +58,6 @@ impl RegexLanguage {
     }
 
     #[wasm_bindgen]
-    pub fn an_ip_address(mut self) -> RegexLanguage {
-        self.builder = self.builder.find_ip_address();
-        self
-    }
-
-    #[wasm_bindgen]
-    pub fn a_phone_number(mut self) -> RegexLanguage {
-        self.builder = self.builder.find_phone_number();
-        self
-    }
-
-    #[wasm_bindgen]
-    pub fn a_date(mut self) -> RegexLanguage {
-        self.builder = self.builder.find_date();
-        self
-    }
-
-    #[wasm_bindgen]
-    pub fn a_time(mut self) -> RegexLanguage {
-        self.builder = self.builder.find_time();
-        self
-    }
-
-    #[wasm_bindgen]
     pub fn with_email_in(mut self, field: &str) -> RegexLanguage {
         self.builder = self.builder.find_object_with_email(field);
         self
@@ -160,12 +136,6 @@ impl RegexLanguage {
     }
 
     #[wasm_bindgen]
-    pub fn json_key(mut self) -> RegexLanguage {
-        self.builder = self.builder.find_json_key();
-        self
-    }
-
-    #[wasm_bindgen]
     pub fn that_repeats_zero_or_more(mut self) -> RegexLanguage {
         self.builder = self.builder.repeat_zero_or_more();
         self
@@ -201,5 +171,29 @@ impl RegexLanguage {
     #[wasm_bindgen(js_name = extractMatches)]
     pub fn extract_matches(&self, text: &str) -> Result<JsValue, JsValue> {
         self.builder.extract_matches(text)
+    }
+
+    #[wasm_bindgen]
+    pub fn an_ip_address(mut self) -> RegexLanguage {
+        self.builder = self.builder.find_ip_address();
+        self
+    }
+
+    #[wasm_bindgen]
+    pub fn a_phone_number(mut self) -> RegexLanguage {
+        self.builder = self.builder.find_phone_number();
+        self
+    }
+
+    #[wasm_bindgen]
+    pub fn a_date(mut self) -> RegexLanguage {
+        self.builder = self.builder.find_date();
+        self
+    }
+
+    #[wasm_bindgen]
+    pub fn a_time(mut self) -> RegexLanguage {
+        self.builder = self.builder.find_time();
+        self
     }
 }

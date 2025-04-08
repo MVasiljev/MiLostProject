@@ -9,6 +9,9 @@ pub enum ExprKind {
     StartGroup,
     EndGroup,
     Empty,
+    Transform(Box<Expr>, fn(String) -> String),
+    Conditional(Box<Expr>, fn(&str) -> bool),
+    Replacement(Box<Expr>, String),
 }
 
 #[derive(Clone)]
@@ -16,6 +19,7 @@ pub struct Expr {
     pub kind: ExprKind,
     pub op: Operator,
     pub quantifier: Option<String>,
+    pub name: Option<String>, 
 }
 
 impl Expr {
@@ -32,12 +36,35 @@ impl Expr {
             ExprKind::StartGroup => "(?:".to_string(),
             ExprKind::EndGroup => ")".to_string(),
             ExprKind::Empty => "".to_string(),
+            ExprKind::Transform(expr, _) => expr.to_regex(),
+            ExprKind::Conditional(expr, _) => expr.to_regex(),
+            ExprKind::Replacement(expr, _) => expr.to_regex(),
+        };
+
+        let base = if let Some(name) = &self.name {
+            format!("(?P<{}>{})", name, base)
+        } else {
+            base
         };
 
         if let Some(quant) = &self.quantifier {
             format!("{}{}", base, quant)
         } else {
             base
+        }
+    }
+
+    pub fn apply_transform(&self, text: &str) -> String {
+        match &self.kind {
+            ExprKind::Transform(_, transformer) => transformer(text.to_string()),
+            _ => text.to_string(),
+        }
+    }
+
+    pub fn check_condition(&self, text: &str) -> bool {
+        match &self.kind {
+            ExprKind::Conditional(_, condition) => condition(text),
+            _ => true,
         }
     }
 }
