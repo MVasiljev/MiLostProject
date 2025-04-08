@@ -2,7 +2,11 @@ import { Str } from "../types/string.js";
 import { AppError } from "../core/error.js";
 import { Option } from "../core/option.js";
 import { u32 } from "../types/primitives.js";
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import {
+  ensureWasmInitialized,
+  getWasmModule,
+  isWasmInitialized,
+} from "../wasm/init.js";
 
 export class ChannelError extends AppError {
   constructor(message: Str) {
@@ -47,6 +51,19 @@ export class Sender<T> {
 
     await this._channel.send(value);
   }
+
+  async trySend(value: T): Promise<boolean> {
+    if (this._useWasm) {
+      try {
+        return await this._inner.trySend(value);
+      } catch (err) {
+        console.warn(`WASM channel trySend failed, using JS fallback: ${err}`);
+      }
+    }
+
+    return this._channel.trySend(value);
+  }
+
   close(): void {
     if (this._useWasm) {
       try {
@@ -121,6 +138,24 @@ export class Receiver<T> {
     return this._channel.receive();
   }
 
+  tryReceive(): Option<T> {
+    if (this._useWasm) {
+      try {
+        const result = this._inner.tryReceive();
+        if (result && typeof result === "object" && "isSome" in result) {
+          if (result.isSome) {
+            return Option.Some(result.value as T);
+          }
+        }
+        return Option.None();
+      } catch (err) {
+        console.warn(`WASM tryReceive failed, using JS fallback: ${err}`);
+      }
+    }
+
+    return this._channel.tryReceive();
+  }
+
   get closed(): boolean {
     if (this._useWasm) {
       try {
@@ -150,6 +185,7 @@ class Channel<T> {
   private _capacity: number;
   private _senders: ((value: unknown) => void)[] = [];
   private _receivers: ((value: unknown) => void)[] = [];
+  private _innerLock: boolean = false;
   private _inner: any;
   private _useWasm: boolean;
 
@@ -165,15 +201,7 @@ class Channel<T> {
   }
 
   static async init(): Promise<void> {
-    if (!isWasmInitialized()) {
-      try {
-        await initWasm();
-      } catch (error) {
-        console.warn(
-          `WASM module not available, using JS implementation: ${error}`
-        );
-      }
-    }
+    await ensureWasmInitialized();
   }
 
   async send(value: T): Promise<void> {
@@ -182,7 +210,7 @@ class Channel<T> {
     }
 
     if (this._queue.length >= this._capacity) {
-      await new Promise((resolve, reject) => {
+      await new Promise<void>((resolve, reject) => {
         const checkClosed = () => {
           if (this._closed) {
             reject(
@@ -199,17 +227,50 @@ class Channel<T> {
           if (error) {
             reject(error);
           } else if (!checkClosed()) {
-            resolve(null);
+            resolve();
           }
         });
       });
     }
 
-    this._queue.push(value);
+    while (this._innerLock) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
 
-    if (this._receivers.length > 0) {
-      const resolve = this._receivers.shift()!;
-      resolve(null);
+    this._innerLock = true;
+    try {
+      this._queue.push(value);
+
+      if (this._receivers.length > 0) {
+        const resolve = this._receivers.shift()!;
+        resolve(null);
+      }
+    } finally {
+      this._innerLock = false;
+    }
+  }
+
+  trySend(value: T): boolean {
+    if (this._closed || this._queue.length >= this._capacity) {
+      return false;
+    }
+
+    if (this._innerLock) {
+      return false;
+    }
+
+    this._innerLock = true;
+    try {
+      this._queue.push(value);
+
+      if (this._receivers.length > 0) {
+        const resolve = this._receivers.shift()!;
+        resolve(null);
+      }
+
+      return true;
+    } finally {
+      this._innerLock = false;
     }
   }
 
@@ -224,32 +285,76 @@ class Channel<T> {
       });
     }
 
+    while (this._innerLock) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    this._innerLock = true;
+    try {
+      if (this._queue.length === 0) {
+        return Option.None();
+      }
+
+      const value = this._queue.shift()!;
+
+      if (this._senders.length > 0) {
+        const resolve = this._senders.shift()!;
+        resolve(null);
+      }
+
+      return Option.Some(value);
+    } finally {
+      this._innerLock = false;
+    }
+  }
+
+  tryReceive(): Option<T> {
     if (this._queue.length === 0) {
       return Option.None();
     }
 
-    const value = this._queue.shift()!;
-
-    if (this._senders.length > 0) {
-      const resolve = this._senders.shift()!;
-      resolve(null);
+    if (this._innerLock) {
+      return Option.None();
     }
 
-    return Option.Some(value);
+    this._innerLock = true;
+    try {
+      if (this._queue.length === 0) {
+        return Option.None();
+      }
+
+      const value = this._queue.shift()!;
+
+      if (this._senders.length > 0) {
+        const resolve = this._senders.shift()!;
+        resolve(null);
+      }
+
+      return Option.Some(value);
+    } finally {
+      this._innerLock = false;
+    }
   }
 
   close(): void {
     this._closed = true;
 
-    for (const resolve of this._senders) {
-      resolve(new ChannelError(Str.fromRaw("Cannot send on closed channel")));
-    }
-    this._senders = [];
+    while (this._innerLock) {}
 
-    for (const resolve of this._receivers) {
-      resolve(null);
+    this._innerLock = true;
+    try {
+      for (const resolve of this._senders) {
+        resolve(new ChannelError(Str.fromRaw("Cannot send on closed channel")));
+      }
+      this._senders = [];
+
+      for (const resolve of this._receivers) {
+        resolve(null);
+      }
+      this._receivers = [];
+    } finally {
+      this._innerLock = false;
     }
-    this._receivers = [];
   }
 
   get closed(): boolean {
