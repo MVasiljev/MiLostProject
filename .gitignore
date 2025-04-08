@@ -5,9 +5,10 @@
 /.DS_Store
 /.classpath
 /.project
-/node_modules
 /dist
 /build
 /example
-./node_modules
 /test
+/node_modules/
+src/node_modules/
+src/**/node_modules/
