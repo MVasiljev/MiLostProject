@@ -51,5 +51,6 @@ export { RefMut, Ref } from "./borrow";
 export * from "./ui/dsl";
 export * from "./ui/dsl/uiDsl.js";
 export * from "./ui/dsl/renderNodeTree.js";
+export * from "./regex";
 
 initWasm().catch(console.error);

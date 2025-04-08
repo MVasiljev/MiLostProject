@@ -507,6 +507,66 @@ impl CanvasRenderer {
         Ok(())
     }
     
+    pub fn get_dimensions(&self) -> (f32, f32) {
+        (self.context.width, self.context.height)
+    }
+    pub fn get_height(&self) -> f32 {
+        self.context.height
+    }
+    pub fn get_width(&self) -> f32 {
+        self.context.width
+    }
+    pub fn get_width_by_dpi(&self) -> f32 {
+        self.context.width * self.context.dpi_scale
+    }
+    pub fn get_height_by_dpi(&self) -> f32 {
+        self.context.height * self.context.dpi_scale
+    }
+    pub fn get_id_by_dpi(&self) -> String {
+        format!("{}-dpi-{}", self.context.id, self.context.dpi_scale)
+    }
+    pub fn get_id_by_dpi_scale(&self) -> String {
+        format!("{}-dpi-{}", self.context.id, self.context.dpi_scale)
+    }
+    pub fn get_id_by_dpi_scale_and_width(&self) -> String {
+        format!("{}-dpi-{}-width-{}", self.context.id, self.context.dpi_scale, self.context.width)
+    }
+    pub fn get_id_by_dpi_scale_and_height(&self) -> String {
+        format!("{}-dpi-{}-height-{}", self.context.id, self.context.dpi_scale, self.context.height)
+    }
+    pub fn get_id(&self) -> String {
+        self.context.id.clone()
+    }
+    pub fn set_dimensions(&mut self, width: f32, height: f32) {
+        self.context.width = width;
+        self.context.height = height;
+    }
+    pub fn set_dpi_scale(&mut self, dpi_scale: f32) {
+        self.context.dpi_scale = dpi_scale;
+    }
+    pub fn get_dpi_scale(&self) -> f32 {
+        self.context.dpi_scale
+    }
+    pub fn get_fill_color(&self) -> Option<Color> {
+        self.context.current_fill_color.clone()
+    }
+    pub fn get_stroke_color(&self) -> Option<Color> {
+        self.context.current_stroke_color.clone()
+    }
+    pub fn get_line_width(&self) -> f32 {
+        self.context.current_line_width
+    }
+    pub fn get_font(&self) -> String {
+        self.context.current_font.clone()
+    }
+    pub fn get_text_align(&self) -> String {
+        self.context.current_text_align.clone()
+    }
+    pub fn get_text_baseline(&self) -> String {
+        self.context.current_text_baseline.clone()
+    }
+    
+    
     pub fn is_image_loaded(&self, image_id: &str) -> bool {
         self.context.images.borrow().contains_key(image_id)
     }

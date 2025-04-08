@@ -5,7 +5,7 @@ mod str;
 mod vec;
 mod option;
 mod result;
-mod ui;
+// mod ui;
 mod primitives;
 mod error;
 mod iter;
@@ -29,6 +29,7 @@ mod common;
 mod smart_pointers;
 mod sync_primitives;
 mod computed;
+mod regex_builder;
 
 
 pub use str::*;
@@ -36,7 +37,7 @@ pub use vec::*;
 pub use primitives::*;
 pub use option::*;
 pub use result::*;
-pub use ui::*;
+// pub use ui::*;
 pub use error::*;
 pub use iter::*;
 pub use functional::*;
@@ -58,5 +59,6 @@ pub use hash_set::*;
 pub use common::*;
 pub use smart_pointers::*;
 pub use sync_primitives::*;
+pub use regex_builder::*;
 // pub use branding::*;
 

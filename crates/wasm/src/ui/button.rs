@@ -1,269 +1,63 @@
-use milost_ui::{components::{ButtonProps, ButtonSize, ButtonStyle, UIComponent}, events::EventType, shared::{BorderStyle, Color, Gradient, GradientStop, GradientType, LoadingIndicatorType, TextAlign, TextTransform}};
+use milost_ui::components::UIComponent;
 use wasm_bindgen::prelude::*;
 use serde::{Serialize, Deserialize};
+use milost_ui::components::button::ButtonEventHandler as MilostButtonEventHandler;
 
-use crate::text::FontWeight;
+use milost_ui::{
+    components::{ButtonProps, ButtonStyle}, 
+    events::EventType, 
+    shared::{
+        Color, Gradient, 
+        GradientStop, GradientType, 
+        LoadingIndicatorType, 
+        TextAlign, 
+        TextTransform
+    }
+};
 
+// Button Hooks
+mod button_hooks {
+    use super::*;
 
-/// WASM-friendly Button Builder to create flexible UI buttons
-#[wasm_bindgen]
-pub struct ButtonBuilder {
-    props: ButtonProps,
-}
+    // Event handler hook for buttons
+    pub fn use_button_event_handler(
+        event_type: EventType, 
+        handler_id: Option<String>
+    ) -> Option<ButtonEventHandler> {
+        handler_id.map(|id| ButtonEventHandler {
+            event_type,
+            handler_id: id,
+        })
+    }
 
-#[wasm_bindgen]
-impl ButtonBuilder {
-    /// Create a new button with a given label
-    #[wasm_bindgen(constructor)]
-    pub fn new(label: &str) -> Self {
-        Self {
-            props: ButtonProps::new(label.to_string()),
+    // Style configuration hook
+    pub fn use_button_style(
+        base_style: Option<ButtonStyleVariant>,
+        custom_colors: Option<(Color, Color)>
+    ) -> ButtonStyleConfig {
+        ButtonStyleConfig {
+            base_style,
+            custom_colors,
         }
     }
 
-    /// Set the tap event handler
-    #[wasm_bindgen(method)]
-    pub fn on_tap(mut self, handler_id: &str) -> Self {
-        self.props.on_tap = Some(ButtonEventHandler {
-            event_type: EventType::Tap,
-            handler_id: handler_id.to_string(),
-        });
-        self
-    }
-
-    /// Configure button style
-    #[wasm_bindgen(method)]
-    pub fn style(mut self, style_str: &str) -> Self {
-        self.props.style = match style_str {
-            "Primary" => Some(ButtonStyle::Primary),
-            "Secondary" => Some(ButtonStyle::Secondary),
-            "Danger" => Some(ButtonStyle::Danger),
-            "Success" => Some(ButtonStyle::Success),
-            "Outline" => Some(ButtonStyle::Outline),
-            "Text" => Some(ButtonStyle::Text),
-            "Custom" => Some(ButtonStyle::Custom),
-            _ => None,
-        };
-        self
-    }
-
-    /// Set button size
-    #[wasm_bindgen(method)]
-    pub fn size(mut self, size_str: &str) -> Self {
-        self.props.size = match size_str {
-            "Small" => Some(ButtonSize::Small),
-            "Medium" => Some(ButtonSize::Medium),
-            "Large" => Some(ButtonSize::Large),
-            "Custom" => Some(ButtonSize::Custom),
-            _ => None,
-        };
-        self
-    }
-
-    /// Set background color
-    #[wasm_bindgen(method)]
-    pub fn background_color(mut self, color_hex: &str) -> Self {
-        self.props.background_color = Some(Color::from_hex(color_hex));
-        self
-    }
-
-    /// Set text color
-    #[wasm_bindgen(method)]
-    pub fn text_color(mut self, color_hex: &str) -> Self {
-        self.props.text_color = Some(Color::from_hex(color_hex));
-        self
-    }
-
-    /// Set border color and width
-    #[wasm_bindgen(method)]
-    pub fn border(mut self, width: f32, color_hex: &str, style_str: &str) -> Self {
-        self.props.border_width = Some(width);
-        self.props.border_color = Some(Color::from_hex(color_hex));
-        self.props.border_style = match style_str {
-            "Solid" => Some(BorderStyle::Solid),
-            "Dashed" => Some(BorderStyle::Dashed),
-            "Dotted" => Some(BorderStyle::Dotted),
-            "None" => Some(BorderStyle::None),
-            _ => None,
-        };
-        self
-    }
-
-    /// Set corner radius
-    #[wasm_bindgen(method)]
-    pub fn corner_radius(mut self, radius: f32) -> Self {
-        self.props.corner_radius = Some(radius);
-        self
-    }
-
-    /// Set padding
-    #[wasm_bindgen(method)]
-    pub fn padding(mut self, pad: f32) -> Self {
-        self.props.padding = Some(pad);
-        self
-    }
-
-    /// Add an icon
-    #[wasm_bindgen(method)]
-    pub fn icon(mut self, icon: &str, position: Option<String>) -> Self {
-        self.props.icon = Some(icon.to_string());
-        if let Some(pos) = position {
-            self.props.icon_position = Some(pos);
+    // Loading state hook
+    pub fn use_loading_state(
+        is_loading: bool,
+        indicator_type: Option<LoadingIndicatorType>,
+        indicator_color: Option<Color>
+    ) -> LoadingConfig {
+        LoadingConfig {
+            is_loading,
+            indicator_type,
+            indicator_color,
         }
-        self
-    }
-
-    /// Set text styling
-    #[wasm_bindgen(method)]
-    pub fn text_style(
-        mut self, 
-        transform: Option<&str>,
-        align: Option<&str>,
-        weight: Option<&str>,
-        size: Option<f32>,
-        letter_spacing: Option<f32>
-    ) -> Self {
-        // Text transform
-        self.props.text_transform = transform.map(|t| match t {
-            "none" => TextTransform::None,
-            "uppercase" => TextTransform::Uppercase,
-            "lowercase" => TextTransform::Lowercase,
-            "capitalize" => TextTransform::Capitalize,
-            _ => TextTransform::None,
-        });
-
-        // Text alignment
-        self.props.text_align = align.map(|a| match a {
-            "left" => TextAlign::Left,
-            "center" => TextAlign::Center,
-            "right" => TextAlign::Right,
-            _ => TextAlign::Left,
-        });
-
-        // Font weight
-        self.props.font_weight = weight.map(|w| match w {
-            "thin" => FontWeight::Thin,
-            "extraLight" => FontWeight::ExtraLight,
-            "light" => FontWeight::Light,
-            "regular" => FontWeight::Regular,
-            "medium" => FontWeight::Medium,
-            "semiBold" => FontWeight::SemiBold,
-            "bold" => FontWeight::Bold,
-            "extraBold" => FontWeight::ExtraBold,
-            "black" => FontWeight::Black,
-            _ => FontWeight::Regular,
-        });
-
-        // Additional text styling
-        self.props.font_size = size;
-        self.props.letter_spacing = letter_spacing;
-
-        self
-    }
-
-    /// Set loading state
-    #[wasm_bindgen(method)]
-    pub fn loading(
-        mut self, 
-        is_loading: bool, 
-        indicator_type: Option<&str>,
-        indicator_color: Option<&str>,
-        indicator_size: Option<f32>
-    ) -> Self {
-        self.props.is_loading = Some(is_loading);
-        
-        // Loading indicator type
-        self.props.loading_indicator_type = indicator_type.map(|t| match t {
-            "spinner" => LoadingIndicatorType::Spinner,
-            "dotPulse" => LoadingIndicatorType::DotPulse,
-            "barPulse" => LoadingIndicatorType::BarPulse,
-            "custom" => LoadingIndicatorType::Custom,
-            _ => LoadingIndicatorType::Spinner,
-        });
-
-        // Loading indicator color
-        if let Some(color) = indicator_color {
-            self.props.loading_indicator_color = Some(Color::from_hex(color));
-        }
-
-        // Loading indicator size
-        self.props.loading_indicator_size = indicator_size;
-
-        self
-    }
-
-    /// Set accessibility properties
-    #[wasm_bindgen(method)]
-    pub fn accessibility(
-        mut self, 
-        label: Option<&str>, 
-        hint: Option<&str>, 
-        is_element: Option<bool>
-    ) -> Self {
-        if let Some(l) = label {
-            self.props.accessibility_label = Some(l.to_string());
-        }
-        if let Some(h) = hint {
-            self.props.accessibility_hint = Some(h.to_string());
-        }
-        if let Some(is_acc_elem) = is_element {
-            self.props.is_accessibility_element = Some(is_acc_elem);
-        }
-        self
-    }
-
-    /// Add gradient stops
-    #[wasm_bindgen(method)]
-    pub fn add_gradient_stop(mut self, color: &str, position: f32) -> Self {
-        // Initialize gradient if not already present
-        if self.props.gradient.is_none() {
-            self.props.gradient = Some(Gradient {
-                stops: Vec::new(),
-                start_point: (0.0, 0.0),
-                end_point: (1.0, 0.0),
-                gradient_type: GradientType::Linear,
-                angle: None,
-                spread_method: None,
-                name: None,
-                custom_props: None,
-            });
-        }
-        
-        // Add the stop
-        if let Some(ref mut gradient) = self.props.gradient {
-            gradient.stops.push(GradientStop {
-                color: color.to_string(),
-                position,
-                name: None,
-            });
-        }
-        
-        self
-    }
-
-    /// Build the button
-    #[wasm_bindgen(method)]
-    pub fn build(&self) -> Result<JsValue, JsValue> {
-        let component = UIComponent::Button(self.props.clone());
-
-        serde_json::to_string(&component)
-            .map(|s| JsValue::from_str(&s))
-            .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
     }
 }
 
-// Companion structs and enums for WASM compatibility
-#[wasm_bindgen]
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ButtonEventHandler {
-    pub event_type: EventType,
-    pub handler_id: String,
-}
-
-/// Represents the possible button styles
-#[wasm_bindgen]
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum ButtonStyleEnum {
+// Button Style Variants
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum ButtonStyleVariant {
     Primary,
     Secondary,
     Danger,
@@ -273,23 +67,218 @@ pub enum ButtonStyleEnum {
     Custom,
 }
 
-/// Represents the possible button sizes
-#[wasm_bindgen]
+// Style Configuration Structure
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum ButtonSizeEnum {
-    Small,
-    Medium,
-    Large,
-    Custom,
+pub struct ButtonStyleConfig {
+    base_style: Option<ButtonStyleVariant>,
+    custom_colors: Option<(Color, Color)>,
 }
 
-/// Represents the possible button states
-#[wasm_bindgen]
+// Loading Configuration Structure
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum ButtonStateEnum {
-    Normal,
-    Pressed,
-    Focused,
-    Hovered,
-    Disabled,
+pub struct LoadingConfig {
+    is_loading: bool,
+    indicator_type: Option<LoadingIndicatorType>,
+    indicator_color: Option<Color>,
+}
+// Button Event Handler for WASM Compatibility
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ButtonEventHandler {
+    pub event_type: EventType,
+    pub handler_id: String,
+}
+
+impl From<ButtonEventHandler> for MilostButtonEventHandler {
+    fn from(handler: ButtonEventHandler) -> Self {
+        MilostButtonEventHandler {
+            event_type: handler.event_type,
+            handler_id: handler.handler_id,
+        }
+    }
+}
+
+// Buttons Component Types
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum ButtonComponentType {
+    Regular,
+    Icon,
+    Gradient,
+    Loading,
+}
+
+// Button Builder with Enhanced Configuration
+#[wasm_bindgen]
+pub struct ButtonBuilder {
+    props: ButtonProps,
+}
+
+#[wasm_bindgen]
+impl ButtonBuilder {
+    #[wasm_bindgen(constructor)]
+    pub fn new(label: &str) -> Self {
+        Self {
+            props: ButtonProps::new(label.to_string()),
+        }
+    }
+
+    // Event Handling Methods
+    #[wasm_bindgen(method)]
+    pub fn on_tap(mut self, handler_id: &str) -> Self {
+        let event_handler = button_hooks::use_button_event_handler(
+            EventType::Tap, 
+            Some(handler_id.to_string())
+        );
+        if let Some(handler) = event_handler {
+            let converted_handler = handler.into();
+            self.props.on_tap = Some(converted_handler);
+        }
+        self
+    }
+
+    // Styling Methods
+    #[wasm_bindgen(method)]
+    pub fn style(mut self, style_str: &str) -> Self {
+        let style_variant = match style_str {
+            "Primary" => Some(ButtonStyleVariant::Primary),
+            "Secondary" => Some(ButtonStyleVariant::Secondary),
+            "Danger" => Some(ButtonStyleVariant::Danger),
+            "Success" => Some(ButtonStyleVariant::Success),
+            "Outline" => Some(ButtonStyleVariant::Outline),
+            "Text" => Some(ButtonStyleVariant::Text),
+            "Custom" => Some(ButtonStyleVariant::Custom),
+            _ => None,
+        };
+
+        let style_config = button_hooks::use_button_style(
+            style_variant, 
+            None
+        );
+
+        // Map style variant to button style
+        self.props.style = style_config.base_style.map(|s| match s {
+            ButtonStyleVariant::Primary => ButtonStyle::Primary,
+            ButtonStyleVariant::Secondary => ButtonStyle::Secondary,
+            ButtonStyleVariant::Danger => ButtonStyle::Danger,
+            ButtonStyleVariant::Success => ButtonStyle::Success,
+            ButtonStyleVariant::Outline => ButtonStyle::Outline,
+            ButtonStyleVariant::Text => ButtonStyle::Text,
+            ButtonStyleVariant::Custom => ButtonStyle::Custom,
+        });
+
+        self
+    }
+
+    // Gradient Method
+    #[wasm_bindgen(method)]
+    pub fn gradient(mut self, colors: Vec<JsValue>) -> Self {
+        let parsed_colors: Vec<Color> = colors
+            .iter()
+            .filter_map(|color_val| 
+                color_val.as_string()
+                    .and_then(|hex| Some(Color::from_hex(&hex))))
+            .collect();
+
+        if !parsed_colors.is_empty() {
+            let gradient = Gradient {
+                stops: parsed_colors
+                    .iter()
+                    .enumerate()
+                    .map(|(i, color)| GradientStop {
+                        color: color.to_css_string(),
+                        position: i as f32 / (parsed_colors.len() - 1) as f32,
+                        name: None,
+                    })
+                    .collect(),
+                start_point: (0.0, 0.0),
+                end_point: (1.0, 0.0),
+                gradient_type: GradientType::Linear,
+                angle: None,
+                spread_method: None,
+                name: None,
+                custom_props: None,
+            };
+
+            self.props.gradient = Some(gradient);
+        }
+
+        self
+    }
+
+    // Loading State Method
+    #[wasm_bindgen(method)]
+    pub fn loading(mut self, is_loading: bool, indicator_type: Option<String>) -> Self {
+        let loading_config = button_hooks::use_loading_state(
+            is_loading, 
+            indicator_type.as_deref().map(|t| match t {
+                "spinner" => LoadingIndicatorType::Spinner,
+                "dotPulse" => LoadingIndicatorType::DotPulse,
+                "barPulse" => LoadingIndicatorType::BarPulse,
+                "custom" => LoadingIndicatorType::Custom,
+                _ => LoadingIndicatorType::Spinner,
+            }),
+            None
+        );
+
+        self.props.is_loading = Some(loading_config.is_loading);
+        self.props.loading_indicator_type = loading_config.indicator_type;
+
+        self
+    }
+
+    // Text Styling Method
+    #[wasm_bindgen(method)]
+    pub fn text_style(
+        mut self, 
+        transform: Option<String>,
+        align: Option<String>,
+        weight: Option<String>
+    ) -> Self {
+        self.props.text_transform = transform.as_deref().map(|t| match t {
+            "uppercase" => TextTransform::Uppercase,
+            "lowercase" => TextTransform::Lowercase,
+            "capitalize" => TextTransform::Capitalize,
+            _ => TextTransform::None,
+        });
+
+        self.props.text_align = align.as_deref().map(|a| match a {
+            "left" => TextAlign::Left,
+            "center" => TextAlign::Center,
+            "right" => TextAlign::Right,
+            _ => TextAlign::Center,
+        });
+
+        self
+    }
+
+    // Build Method
+    #[wasm_bindgen(method)]
+    pub fn build(&self) -> Result<JsValue, JsValue> {
+        let component = UIComponent::Button(self.props.clone());
+
+        JsValue::from_serde(&component)
+            .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
+    }
+}
+
+// Factory Functions for Common Button Patterns
+#[wasm_bindgen]
+pub fn create_primary_button(label: &str, handler_id: &str) -> Result<JsValue, JsValue> {
+    ButtonBuilder::new(label)
+        .style("Primary")
+        .on_tap(handler_id)
+        .build()
+}
+
+#[wasm_bindgen]
+pub fn create_loading_button(label: &str, is_loading: bool) -> Result<JsValue, JsValue> {
+    ButtonBuilder::new(label)
+        .loading(is_loading, Some("spinner".to_string()))
+        .build()
+}
+
+#[wasm_bindgen]
+pub fn create_gradient_button(label: &str, colors: Vec<JsValue>) -> Result<JsValue, JsValue> {
+    ButtonBuilder::new(label)
+        .gradient(colors)
+        .build()
 }

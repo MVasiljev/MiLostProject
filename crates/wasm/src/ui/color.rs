@@ -167,21 +167,21 @@ impl ColorBuilder {
     }
 
     #[wasm_bindgen(method)]
-    pub fn lighten(&mut self, amount: f32) -> Self {
+    pub fn lighten(mut self, amount: f32) -> Self {
         self.color = self.color.lighten(amount);
         self
     }
 
     #[wasm_bindgen(method)]
-    pub fn darken(&mut self, amount: f32) -> Self {
+    pub fn darken(mut self, amount: f32) -> Self {
         self.color = self.color.darken(amount);
-        self.clone()
+        self
     }
 
     #[wasm_bindgen(method)]
-    pub fn with_opacity(&mut self, opacity: f32) -> Self {
+    pub fn with_opacity(mut self, opacity: f32) -> Self {
         self.color = self.color.with_opacity(opacity);
-        self.clone()
+        self
     }
 }
 

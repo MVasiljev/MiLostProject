@@ -1,12 +1,11 @@
+use milost_ui::components::registry::transform_component;
+use milost_ui::components::UIComponent;
+use milost_ui::layout::{LayoutEngine, Size};
+use milost_ui::render::canvas_renderer::CanvasRenderer;
+use milost_ui::render::RenderNode;
 use wasm_bindgen::prelude::*;
 use std::cell::RefCell;
 use std::rc::Rc;
-
-use crate::layout::{LayoutEngine, Size, Rect};
-use crate::render::{renderer::Renderer, node::RenderNode};
-use crate::components::registry::transform_component;
-use crate::UIComponent;
-use crate::canvas_context::CanvasRenderer;
 
 #[wasm_bindgen]
 pub struct WebRenderer {
@@ -19,12 +18,11 @@ pub struct WebRenderer {
 #[wasm_bindgen]
 impl WebRenderer {
     #[wasm_bindgen(constructor)]
-    pub fn new(canvas_id: &str) -> Result<WebRenderer, JsValue> {
-        let canvas_renderer = CanvasRenderer::new(canvas_id)?;
-        let context = canvas_renderer.get_context();
+    pub fn new(canvas_id: &str, width: f32, height: f32) -> Result<WebRenderer, JsValue> {
+        let canvas_renderer = CanvasRenderer::new(canvas_id, width, height);
         
         // Get canvas dimensions for layout
-        let (width, height) = context.get_dimensions();
+        let (width, height) = canvas_renderer.get_dimensions();
         let container_size = Size::new(width, height);
         
         Ok(Self {
@@ -57,11 +55,10 @@ impl WebRenderer {
         *self.current_node.borrow_mut() = Some(render_node.clone());
         
         // Create a temporary internal renderer that doesn't get exposed to JS
-        let render_result = {
+        let render_result: Result<(), JsValue> = {
             #[cfg(target_arch = "wasm32")]
             {
                 // For WebAssembly, use internal methods
-                use crate::render::renderer::Renderer;
                 
                 // We're using a wasm-specific approach to access internal methods
                 let context = unsafe { &*(&self.canvas_renderer as *const CanvasRenderer) }.get_context();
@@ -89,7 +86,7 @@ impl WebRenderer {
     pub fn redraw(&self) -> Result<(), JsValue> {
         if let Some(render_node) = &*self.current_node.borrow() {
             // Create a temporary internal renderer that doesn't get exposed to JS
-            let render_result = {
+            let render_result: Result<(), JsValue> = {
                 #[cfg(target_arch = "wasm32")]
                 {
                     // For WebAssembly, use internal methods
@@ -124,7 +121,7 @@ impl WebRenderer {
     pub fn mark_dirty_region(&self, x: f32, y: f32, width: f32, height: f32) -> Result<(), JsValue> {
         if let Some(render_node) = &*self.current_node.borrow() {
             // Create a temporary internal renderer that doesn't get exposed to JS
-            let render_result = {
+            let render_result: Result<(), JsValue> = {
                 #[cfg(target_arch = "wasm32")]
                 {
                     // For WebAssembly, use internal methods
@@ -193,8 +190,8 @@ impl WebRenderer {
                         "hover_exit" => EventType::HoverExit,
                         "swipe_left" => EventType::Swipe(crate::events::SwipeDirection::Left),
                         "swipe_right" => EventType::Swipe(crate::events::SwipeDirection::Right),
-                        "swipe_up" => EventType::Swipe(crate::events::SwipeDirection::Up),
-                        "swipe_down" => EventType::Swipe(crate::events::SwipeDirection::Down),
+                        "swipe_up" => EventType::Swipe(SwipeDirection::Up),
+                        "swipe_down" => EventType::Swipe(SwipeDirection::Down),
                         _ => return Err(JsValue::from_str(&format!("Unknown event type: {}", event_type))),
                     };
                     
@@ -255,9 +252,9 @@ impl WebRenderer {
 
 // Static function to render a component to a canvas
 #[wasm_bindgen]
-pub fn render_to_canvas_element(canvas_id: &str, json: &str) -> Result<(), JsValue> {
-    // Create a renderer instance
-    let mut renderer = WebRenderer::new(canvas_id)?;
+pub fn render_to_canvas_element(canvas_id: &str, json: &str, width: f32, height: f32) -> Result<(), JsValue> {
+    // Create a renderer instance with the additional width and height parameters
+    let mut renderer = WebRenderer::new(canvas_id, width, height)?;
     
     // Use the renderer to render the component
     renderer.render_component(json)
@@ -274,6 +271,7 @@ pub fn get_render_node(json: &str) -> Result<JsValue, JsValue> {
     let render_node = transform_component(&component);
     
     // Convert the render node to JSON
-    serde_wasm_bindgen::to_value(&render_node)
-        .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
+    serde_json::to_string(&render_node)
+    .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
+    .map(|s| JsValue::from_str(&s))
 }
