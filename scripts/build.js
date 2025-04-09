@@ -263,6 +263,20 @@ AddType application/wasm .wasm
   console.log(`Created .htaccess file at ${htaccessPath}`);
 }
 
+function movePkgToDist() {
+  console.log("\n--- Moving pkg to dist directory ---");
+
+  // Ensure the dist directory exists
+  ensureDir(TS_TARGET_DIR);
+
+  if (fs.existsSync(WASM_PKG_SOURCE_DIR)) {
+    copyDir(WASM_PKG_SOURCE_DIR, TS_TARGET_DIR);
+    console.log(`Moved pkg from ${WASM_PKG_SOURCE_DIR} to ${TS_TARGET_DIR}`);
+  } else {
+    console.warn(`pkg directory not found at ${WASM_PKG_SOURCE_DIR}`);
+  }
+}
+
 // Main function
 function main() {
   const args = process.argv.slice(2);
@@ -271,11 +285,13 @@ function main() {
     clean();
   } else if (args.includes("--wasm")) {
     buildWasm();
+    movePkgToDist();
   } else if (args.includes("--ts")) {
     buildTs();
   } else if (args.includes("--all")) {
     clean();
     buildWasm();
+    movePkgToDist();
     buildTs();
     createTestHtml();
     createHtaccess();
