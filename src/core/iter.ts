@@ -1,11 +1,9 @@
+import { isWasmInitialized, getWasmModule } from "../initWasm/init";
+import { callWasmStaticMethod } from "../initWasm/lib";
 import { Vec, i32, Str, u32 } from "../types";
+import { initWasm } from "../ui";
 import { ValidationError } from "./error";
-import { Option } from "../core/option";
-import {
-  initWasm,
-  getWasmModule,
-  isWasmInitialized,
-} from "../initWasm/init.js";
+import { Option } from "./option";
 
 export class Iter<T> implements Iterable<T> {
   private readonly iterable: Iterable<T>;
@@ -21,7 +19,7 @@ export class Iter<T> implements Iterable<T> {
     if (this._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        this._inner = new wasmModule.Iter(iterable);
+        this._inner = wasmModule.from(iterable);
       } catch (err) {
         console.warn(
           `WASM Iter creation failed, using JS implementation: ${err}`
@@ -36,40 +34,102 @@ export class Iter<T> implements Iterable<T> {
   }
 
   static fromVec<T>(vec: Vec<T>): Iter<T> {
-    return new Iter(vec);
+    if (isWasmInitialized()) {
+      try {
+        const wasmModule = getWasmModule();
+        if (typeof wasmModule.fromVec === "function") {
+          return callWasmStaticMethod(
+            "Iter",
+            "fromVec",
+            [vec],
+            () => new Iter<T>(vec)
+          );
+        }
+      } catch (err) {
+        console.warn(`WASM fromVec failed, using JS fallback: ${err}`);
+      }
+    }
+    return new Iter<T>(vec);
   }
 
   static empty<T>(): Iter<T> {
-    return new Iter<T>(Vec.empty<T>());
+    if (isWasmInitialized()) {
+      try {
+        const wasmModule = getWasmModule();
+        if (typeof wasmModule.empty === "function") {
+          return callWasmStaticMethod(
+            "Iter",
+            "empty",
+            [],
+            () => new Iter<T>([])
+          );
+        }
+      } catch (err) {
+        console.warn(`WASM empty failed, using JS fallback: ${err}`);
+      }
+    }
+    return new Iter<T>([]);
   }
 
   static range(start: i32, end: i32, step: i32 = i32(1)): Iter<i32> {
-    const startNum = start as unknown as i32;
-    const endNum = end as unknown as i32;
-    const stepNum = step as unknown as i32;
+    const startNum = start as unknown as number;
+    const endNum = end as unknown as number;
+    const stepNum = step as unknown as number;
 
     if (isWasmInitialized()) {
       try {
         const wasmModule = getWasmModule();
-        wasmModule.checkIterableRange(startNum, endNum, stepNum);
+        if (typeof wasmModule.checkIterableRange === "function") {
+          wasmModule.checkIterableRange(startNum, endNum, stepNum);
+        }
+
+        if (typeof wasmModule.range === "function") {
+          return callWasmStaticMethod(
+            "Iter",
+            "range",
+            [start, end, step],
+            () => {
+              if (stepNum === 0) {
+                throw new ValidationError(Str.fromRaw("Step cannot be zero"));
+              }
+              return new Iter<i32>(
+                Iter.createRangeIterator(startNum, endNum, stepNum)
+              );
+            }
+          );
+        }
       } catch (err) {
-        throw new ValidationError(Str.fromRaw("Step cannot be zero"));
+        if (
+          typeof err === "object" &&
+          err !== null &&
+          "message" in err &&
+          String(err.message).includes("Step cannot be zero")
+        ) {
+          throw new ValidationError(Str.fromRaw("Step cannot be zero"));
+        }
+        console.warn(`WASM range failed, using JS fallback: ${err}`);
       }
-    } else if (stepNum === 0) {
+    }
+
+    if (stepNum === 0) {
       throw new ValidationError(Str.fromRaw("Step cannot be zero"));
     }
 
-    return new Iter({
+    return new Iter<i32>(Iter.createRangeIterator(startNum, endNum, stepNum));
+  }
+
+  private static createRangeIterator(
+    start: number,
+    end: number,
+    step: number
+  ): Iterable<i32> {
+    return {
       *[Symbol.iterator]() {
-        for (
-          let i = startNum;
-          stepNum > 0 ? i < endNum : i > endNum;
-          i = i32(i + stepNum)
-        ) {
+        for (let i = start; step > 0 ? i < end : i > end; i += step) {
           yield i32(i);
         }
       },
-    });
+    };
   }
 
   static async init(): Promise<void> {
@@ -89,14 +149,10 @@ export class Iter<T> implements Iterable<T> {
   }
 
   next(): Option<T> {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         const result = this._inner.next();
-        if (result.isSome()) {
-          return Option.Some(result.unwrap() as T);
-        } else {
-          return Option.None<T>();
-        }
+        return result;
       } catch (err) {
         console.warn(`WASM next failed, using JS fallback: ${err}`);
       }
@@ -104,10 +160,19 @@ export class Iter<T> implements Iterable<T> {
 
     const iter = this[Symbol.iterator]();
     const { done, value } = iter.next();
-    return done ? Option.None() : Option.Some(value);
+    return done ? Option.None<T>() : Option.Some(value);
   }
 
   map<U>(f: (item: T, index: u32) => U): Iter<U> {
+    if (this._useWasm && this._inner) {
+      try {
+        const result = this._inner.map(f);
+        return result;
+      } catch (err) {
+        console.warn(`WASM map failed, using JS fallback: ${err}`);
+      }
+    }
+
     const self = this;
     return new Iter<U>({
       *[Symbol.iterator]() {
@@ -120,6 +185,15 @@ export class Iter<T> implements Iterable<T> {
   }
 
   filter(predicate: (item: T, index: u32) => boolean): Iter<T> {
+    if (this._useWasm && this._inner) {
+      try {
+        const result = this._inner.filter(predicate);
+        return result;
+      } catch (err) {
+        console.warn(`WASM filter failed, using JS fallback: ${err}`);
+      }
+    }
+
     const self = this;
     return new Iter({
       *[Symbol.iterator]() {
@@ -132,8 +206,17 @@ export class Iter<T> implements Iterable<T> {
   }
 
   take(n: u32): Iter<T> {
+    if (this._useWasm && this._inner) {
+      try {
+        const result = this._inner.take(n);
+        return result;
+      } catch (err) {
+        console.warn(`WASM take failed, using JS fallback: ${err}`);
+      }
+    }
+
     const self = this;
-    const nValue = n as unknown as u32;
+    const nValue = n as unknown as number;
     return new Iter({
       *[Symbol.iterator]() {
         let count = 0;
@@ -146,8 +229,17 @@ export class Iter<T> implements Iterable<T> {
   }
 
   skip(n: u32): Iter<T> {
+    if (this._useWasm && this._inner) {
+      try {
+        const result = this._inner.skip(n);
+        return result;
+      } catch (err) {
+        console.warn(`WASM skip failed, using JS fallback: ${err}`);
+      }
+    }
+
     const self = this;
-    const nValue = n as unknown as u32;
+    const nValue = n as unknown as number;
     return new Iter({
       *[Symbol.iterator]() {
         let count = 0;
@@ -210,7 +302,7 @@ export class Iter<T> implements Iterable<T> {
 
   chunks(size: u32): Iter<Vec<T>> {
     const self = this;
-    const sizeValue = size as unknown as u32;
+    const sizeValue = size as unknown as number;
     return new Iter({
       *[Symbol.iterator]() {
         let chunk: T[] = [];
@@ -227,10 +319,28 @@ export class Iter<T> implements Iterable<T> {
   }
 
   collect(): Vec<T> {
-    return Vec.from(this.iterable);
+    if (this._useWasm && this._inner) {
+      try {
+        const result = this._inner.collect();
+        return result;
+      } catch (err) {
+        console.warn(`WASM collect failed, using JS fallback: ${err}`);
+      }
+    }
+
+    return Vec.from(Array.from(this));
   }
 
   find(predicate: (item: T) => boolean): Option<T> {
+    if (this._useWasm && this._inner) {
+      try {
+        const result = this._inner.find(predicate);
+        return result;
+      } catch (err) {
+        console.warn(`WASM find failed, using JS fallback: ${err}`);
+      }
+    }
+
     for (const item of this) {
       if (predicate(item)) return Option.Some(item);
     }
@@ -253,7 +363,7 @@ export class Iter<T> implements Iterable<T> {
 
   nth(n: u32): Option<T> {
     let i = 0;
-    const nValue = n as unknown as u32;
+    const nValue = n as unknown as number;
     for (const item of this) {
       if (i++ === nValue) return Option.Some(item);
     }
@@ -261,6 +371,15 @@ export class Iter<T> implements Iterable<T> {
   }
 
   forEach(fn: (item: T, index: u32) => void): void {
+    if (this._useWasm && this._inner) {
+      try {
+        this._inner.forEach(fn);
+        return;
+      } catch (err) {
+        console.warn(`WASM forEach failed, using JS fallback: ${err}`);
+      }
+    }
+
     let index = 0;
     for (const item of this) {
       fn(item, u32(index++));
@@ -268,6 +387,14 @@ export class Iter<T> implements Iterable<T> {
   }
 
   all(predicate: (item: T) => boolean): boolean {
+    if (this._useWasm && this._inner) {
+      try {
+        return this._inner.all(predicate);
+      } catch (err) {
+        console.warn(`WASM all failed, using JS fallback: ${err}`);
+      }
+    }
+
     for (const item of this) {
       if (!predicate(item)) return false;
     }
@@ -275,6 +402,14 @@ export class Iter<T> implements Iterable<T> {
   }
 
   any(predicate: (item: T) => boolean): boolean {
+    if (this._useWasm && this._inner) {
+      try {
+        return this._inner.any(predicate);
+      } catch (err) {
+        console.warn(`WASM any failed, using JS fallback: ${err}`);
+      }
+    }
+
     for (const item of this) {
       if (predicate(item)) return true;
     }
@@ -282,9 +417,9 @@ export class Iter<T> implements Iterable<T> {
   }
 
   count(): u32 {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
-        return u32(this._inner.count());
+        return this._inner.count();
       } catch (err) {
         console.warn(`WASM count failed, using JS fallback: ${err}`);
       }
@@ -298,6 +433,14 @@ export class Iter<T> implements Iterable<T> {
   }
 
   fold<R>(initial: R, f: (acc: R, item: T, index: u32) => R): R {
+    if (this._useWasm && this._inner) {
+      try {
+        return this._inner.fold(initial, f);
+      } catch (err) {
+        console.warn(`WASM fold failed, using JS fallback: ${err}`);
+      }
+    }
+
     let acc = initial;
     let index = 0;
     for (const item of this) {

@@ -1,11 +1,8 @@
 import { HashMap, HashSet, Vec, Str, u32 } from "../types";
 import { Iter } from "./iter";
-import {
-  initWasm,
-  getWasmModule,
-  isWasmInitialized,
-} from "../initWasm/init.js";
-import { ValidationError } from "../core/error";
+import { ValidationError } from "./error";
+import { isWasmInitialized, getWasmModule } from "../initWasm/init";
+import { initWasm } from "../ui";
 
 export async function initFunctional(): Promise<void> {
   if (!isWasmInitialized()) {
@@ -23,16 +20,49 @@ export function toHashMap<T, K, V>(
   iterator: Iter<T>,
   keyValueFn: (item: T) => [K, V]
 ): HashMap<K, V> {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      if (typeof wasmModule.toHashMapRust === "function") {
+        return wasmModule.toHashMapRust(iterator, keyValueFn);
+      }
+    } catch (err) {
+      console.warn(`WASM toHashMap failed, using JS fallback: ${err}`);
+    }
+  }
+
   const pairs = iterator.map(keyValueFn).collect();
   return HashMap.from(pairs);
 }
 
 export function toHashSet<T>(iterator: Iter<T>): HashSet<T> {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      if (typeof wasmModule.toHashSetRust === "function") {
+        return wasmModule.toHashSetRust(iterator);
+      }
+    } catch (err) {
+      console.warn(`WASM toHashSet failed, using JS fallback: ${err}`);
+    }
+  }
+
   return HashSet.from(iterator.collect());
 }
 
 export function toVec<T>(iterator: Iter<T>): Vec<T> {
-  return Vec.from(iterator.collect());
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      if (typeof wasmModule.toVecRust === "function") {
+        return wasmModule.toVecRust(iterator);
+      }
+    } catch (err) {
+      console.warn(`WASM toVec failed, using JS fallback: ${err}`);
+    }
+  }
+
+  return iterator.collect();
 }
 
 export type StrKeyedRecord<V> = { [key: string]: V };
@@ -41,14 +71,23 @@ export function mapObject<T, U, K extends Str>(
   obj: StrKeyedRecord<T>,
   fn: (value: T, key: K) => U
 ): StrKeyedRecord<U> {
-  const result = {} as StrKeyedRecord<U>;
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      if (typeof wasmModule.mapObjectRust === "function") {
+        return wasmModule.mapObjectRust(obj, fn);
+      }
+    } catch (err) {
+      console.warn(`WASM mapObject failed, using JS fallback: ${err}`);
+    }
+  }
 
+  const result = {} as StrKeyedRecord<U>;
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       result[key] = fn(obj[key] as T, key as unknown as K);
     }
   }
-
   return result;
 }
 
@@ -56,8 +95,18 @@ export function filterObject<T, K extends Str>(
   obj: StrKeyedRecord<T>,
   predicate: (value: T, key: K) => boolean
 ): StrKeyedRecord<T> {
-  const result = {} as StrKeyedRecord<T>;
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      if (typeof wasmModule.filterObjectRust === "function") {
+        return wasmModule.filterObjectRust(obj, predicate);
+      }
+    } catch (err) {
+      console.warn(`WASM filterObject failed, using JS fallback: ${err}`);
+    }
+  }
 
+  const result = {} as StrKeyedRecord<T>;
   for (const key in obj) {
     if (
       Object.prototype.hasOwnProperty.call(obj, key) &&
@@ -66,8 +115,17 @@ export function filterObject<T, K extends Str>(
       result[key] = obj[key] as T;
     }
   }
-
   return result;
+}
+
+function isMergeableObject(item: any): item is StrKeyedRecord<any> {
+  return (
+    item &&
+    typeof item === "object" &&
+    !(item instanceof Vec) &&
+    !(item instanceof HashMap) &&
+    !(item instanceof HashSet)
+  );
 }
 
 export function mergeDeep<T extends object>(
@@ -133,21 +191,33 @@ export function mergeDeep<T extends object>(
   return mergeDeep(target, ...sources);
 }
 
-function isMergeableObject(item: any): item is StrKeyedRecord<any> {
-  return (
-    item &&
-    typeof item === "object" &&
-    !(item instanceof Vec) &&
-    !(item instanceof HashMap) &&
-    !(item instanceof HashSet)
-  );
-}
-
 export function pipe<T>(...fns: ((arg: T) => T)[]): (arg: T) => T {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      if (typeof wasmModule.pipeRust === "function") {
+        return (arg: T) => wasmModule.pipeRust(fns, arg);
+      }
+    } catch (err) {
+      console.warn(`WASM pipe failed, using JS fallback: ${err}`);
+    }
+  }
+
   return (arg) => Vec.from(fns).fold(arg, (result, fn) => fn(result));
 }
 
 export function compose<T>(...fns: ((arg: T) => T)[]): (arg: T) => T {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      if (typeof wasmModule.composeRust === "function") {
+        return (arg: T) => wasmModule.composeRust(fns, arg);
+      }
+    } catch (err) {
+      console.warn(`WASM compose failed, using JS fallback: ${err}`);
+    }
+  }
+
   return (arg) =>
     Vec.from(fns)
       .reverse()
@@ -198,7 +268,6 @@ export function memoize<Args extends unknown[], Return>(
         }
 
         const result = fn(...args);
-
         wasmModule.mapSetRust(cache, cacheKey, result as any);
         return result;
       } catch (err) {
@@ -240,7 +309,7 @@ export function throttle<Args extends unknown[]>(
   let lastCall = 0;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let lastArgs: Args | null = null;
-  const waitMs = wait as unknown as u32;
+  const waitMs = wait as unknown as number;
 
   if (isWasmInitialized()) {
     try {
@@ -317,7 +386,7 @@ export function debounce<Args extends unknown[]>(
     timeout = setTimeout(() => {
       fn(...args);
       timeout = null;
-    }, wait as unknown as u32);
+    }, wait as unknown as number);
   };
 }
 
@@ -367,6 +436,17 @@ export function not<T>(
 export function allOf<T>(
   ...predicates: Array<(value: T) => boolean>
 ): (value: T) => boolean {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      if (typeof wasmModule.allOfRust === "function") {
+        return (value: T) => wasmModule.allOfRust(predicates, value);
+      }
+    } catch (err) {
+      console.warn(`WASM allOf failed, using JS fallback: ${err}`);
+    }
+  }
+
   return (value: T) =>
     Vec.from(predicates).all((predicate) => predicate(value));
 }
@@ -374,6 +454,17 @@ export function allOf<T>(
 export function anyOf<T>(
   ...predicates: Array<(value: T) => boolean>
 ): (value: T) => boolean {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      if (typeof wasmModule.anyOfRust === "function") {
+        return (value: T) => wasmModule.anyOfRust(predicates, value);
+      }
+    } catch (err) {
+      console.warn(`WASM anyOf failed, using JS fallback: ${err}`);
+    }
+  }
+
   return (value: T) =>
     Vec.from(predicates).any((predicate) => predicate(value));
 }
@@ -467,10 +558,21 @@ export function zipWith<T, U, R>(
   as: Vec<T>,
   bs: Vec<U>
 ): Vec<R> {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      if (typeof wasmModule.zipWithRust === "function") {
+        return wasmModule.zipWithRust(fn, as, bs);
+      }
+    } catch (err) {
+      console.warn(`WASM zipWith failed, using JS fallback: ${err}`);
+    }
+  }
+
   const result: R[] = [];
   const minLen = Math.min(
-    as.len() as unknown as u32,
-    bs.len() as unknown as u32
+    as.len() as unknown as number,
+    bs.len() as unknown as number
   );
 
   for (let i = 0; i < minLen; i++) {
@@ -490,6 +592,17 @@ export function converge<
   after: (results: Vec<unknown>) => Return,
   fns: { [K in keyof Results]: (...args: Args) => Results[K] }
 ): (...args: Args) => Return {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      if (typeof wasmModule.convergeRust === "function") {
+        return (...args: Args) => wasmModule.convergeRust(after, fns, args);
+      }
+    } catch (err) {
+      console.warn(`WASM converge failed, using JS fallback: ${err}`);
+    }
+  }
+
   return (...args: Args) => {
     const results = Vec.from(fns.map((fn) => fn(...args)));
     return after(results);
