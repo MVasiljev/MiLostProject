@@ -288,4 +288,11 @@ export {
   createGraph,
 } from "./utils/algorithms/index.js";
 
+export { Sorting } from "./utils/index.js";
+export { Search } from "./utils/index.js";
+export { TextProcessing } from "./utils/index.js";
+export { ImageProcessing } from "./utils/index.js";
+export { Compression } from "./utils/index.js";
+export { Crypto } from "./utils/index.js";
+
 initWasm().catch(console.error);
