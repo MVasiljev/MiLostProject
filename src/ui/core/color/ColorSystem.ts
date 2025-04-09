@@ -3,7 +3,7 @@ import {
   initWasm,
   getWasmModule,
   isWasmInitialized,
-} from "../../../wasm/init.js";
+} from "../../../initWasm/init.js";
 
 export enum ColorVariant {
   White = "White",

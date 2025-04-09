@@ -1,8 +1,8 @@
 import { Vec } from "./vec";
 import { u32 } from "./primitives";
 import { Str } from "./string";
-import { getWasmModule, isWasmInitialized } from "../wasm/init";
-import { callWasmInstanceMethod, callWasmStaticMethod } from "../wasm/lib";
+import { getWasmModule, isWasmInitialized } from "../initWasm/init";
+import { callWasmInstanceMethod, callWasmStaticMethod } from "../initWasm/lib";
 
 export class HashMap<K, V> implements Iterable<[K, V]> {
   private readonly _map: Map<K, V>;

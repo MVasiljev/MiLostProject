@@ -1,6 +1,6 @@
 import { Str } from "./string";
-import { getWasmModule, isWasmInitialized } from "../wasm/init";
-import { callWasmInstanceMethod, callWasmStaticMethod } from "../wasm/lib";
+import { getWasmModule, isWasmInitialized } from "../initWasm/init";
+import { callWasmInstanceMethod, callWasmStaticMethod } from "../initWasm/lib";
 
 export class Tuple<T extends unknown[]> implements Iterable<unknown> {
   private readonly _items: T;

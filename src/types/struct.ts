@@ -1,7 +1,7 @@
 import { Str } from "./string";
 import { Vec } from "./vec";
-import { getWasmModule, isWasmInitialized } from "../wasm/init";
-import { callWasmInstanceMethod, callWasmStaticMethod } from "../wasm/lib";
+import { getWasmModule, isWasmInitialized } from "../initWasm/init";
+import { callWasmInstanceMethod, callWasmStaticMethod } from "../initWasm/lib";
 
 export class Struct<T extends Record<string, unknown>> {
   private readonly _fields: Readonly<T>;

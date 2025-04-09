@@ -1,13 +1,14 @@
 {
   "name": "milost",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.10",
   "description": "A Rust-like TypeScript library with WebAssembly optimizations",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
   "files": [
     "dist",
-    "pkg"
+    "*.wasm",
+    "*.js"
   ],
   "scripts": {
     "build:standalone": "bash scripts/build-standalone.sh",
@@ -32,7 +33,17 @@
   "engines": {
     "node": ">=16.0.0"
   },
-  "dependencies": {
-    "express": "^5.1.0"
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./wasm": {
+      "import": "./dist/wasm-index.js",
+      "require": "./dist/wasm-index.js",
+      "types": "./dist/wasm-index.d.ts"
+    },
+    "./wasm/*": "./dist/wasm/*"
   }
 }

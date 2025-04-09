@@ -1,5 +1,9 @@
 import { Str, u32 } from "../types";
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import {
+  initWasm,
+  getWasmModule,
+  isWasmInitialized,
+} from "../initWasm/init.js";
 
 export class AppError extends Error {
   constructor(message: Str) {

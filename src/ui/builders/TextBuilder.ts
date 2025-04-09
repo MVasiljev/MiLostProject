@@ -1,4 +1,4 @@
-import { getWasmModule } from "../../wasm/init";
+import { getWasmModule } from "../../initWasm/init";
 import { UIComponent, Color } from "../core";
 import { ColorType } from "../types";
 import { UI } from "../ui";

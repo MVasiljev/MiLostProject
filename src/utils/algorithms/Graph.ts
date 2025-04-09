@@ -1,7 +1,11 @@
 import { AppError, Result, Ok, Err } from "../../core";
 import { Option } from "../../core/option";
 import { Str, f64, Vec } from "../../types";
-import { initWasm, getWasmModule, isWasmInitialized } from "../../wasm/init.js";
+import {
+  initWasm,
+  getWasmModule,
+  isWasmInitialized,
+} from "../../initWasm/init.js";
 
 export class GraphError extends AppError {
   constructor(message: Str) {

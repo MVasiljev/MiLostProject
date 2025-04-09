@@ -9,7 +9,11 @@ import {
   NetworkError,
 } from "./error";
 import { Option } from "../core/option";
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import {
+  initWasm,
+  getWasmModule,
+  isWasmInitialized,
+} from "../initWasm/init.js";
 
 export class Result<T, E extends AppError = AppError> {
   private readonly _value?: T;

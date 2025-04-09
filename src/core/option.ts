@@ -1,6 +1,10 @@
 import { Str, Vec } from "../types";
 import { ValidationError } from "./error";
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import {
+  initWasm,
+  getWasmModule,
+  isWasmInitialized,
+} from "../initWasm/init.js";
 
 export class Option<T> {
   private readonly _value?: T;

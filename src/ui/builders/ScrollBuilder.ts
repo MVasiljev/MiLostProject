@@ -1,4 +1,4 @@
-import { getWasmModule } from "../../wasm/init";
+import { getWasmModule } from "../../initWasm/init";
 import { UIComponent } from "../core";
 import { UI } from "../ui";
 

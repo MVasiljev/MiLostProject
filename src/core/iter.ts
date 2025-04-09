@@ -1,7 +1,11 @@
 import { Vec, i32, Str, u32 } from "../types";
 import { ValidationError } from "./error";
 import { Option } from "../core/option";
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import {
+  initWasm,
+  getWasmModule,
+  isWasmInitialized,
+} from "../initWasm/init.js";
 
 export class Iter<T> implements Iterable<T> {
   private readonly iterable: Iterable<T>;

@@ -1,7 +1,11 @@
 import { Str } from "../types/string.js";
 import { AppError } from "../core/error.js";
 import { Result, Ok, Err } from "../core/result.js";
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import {
+  initWasm,
+  getWasmModule,
+  isWasmInitialized,
+} from "../initWasm/init.js";
 
 export class TaskError extends AppError {
   constructor(message: Str) {

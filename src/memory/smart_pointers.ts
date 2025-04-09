@@ -1,5 +1,9 @@
 import { u32, Str } from "../types";
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import {
+  initWasm,
+  getWasmModule,
+  isWasmInitialized,
+} from "../initWasm/init.js";
 
 export class Rc<T> {
   private readonly _inner: any;

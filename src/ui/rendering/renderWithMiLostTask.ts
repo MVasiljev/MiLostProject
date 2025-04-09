@@ -1,7 +1,11 @@
 import { Task } from "../../concurrency";
 import { AppError, Ok, Err } from "../../core";
 import { Str } from "../../types";
-import { isWasmInitialized, initWasm, getWasmModule } from "../../wasm/init";
+import {
+  isWasmInitialized,
+  initWasm,
+  getWasmModule,
+} from "../../initWasm/init";
 import { UI } from "../ui";
 import { setupEventListeners } from "./setupEventListeners";
 

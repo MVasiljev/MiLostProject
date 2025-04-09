@@ -4,12 +4,12 @@ import { Brand } from "./branding";
 import { u32, i32, f64, limits } from "./primitives";
 import { Str } from "./string";
 import { Option } from "../core/option";
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init";
+import { initWasm, getWasmModule, isWasmInitialized } from "../initWasm/init";
 import {
   callWasmInstanceMethod,
   createWasmInstance,
   callWasmStaticMethod,
-} from "../wasm/lib";
+} from "../initWasm/lib";
 
 export type Fallible<T> = Result<T, AppError>;
 export type AsyncFallible<T> = Promise<Result<T, AppError>>;

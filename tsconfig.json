@@ -4,10 +4,7 @@
     "module": "ES2020",
     "moduleResolution": "node",
     "esModuleInterop": true,
-    "lib": [
-      "ES2020",
-      "DOM"
-    ],
+    "lib": ["ES2020", "DOM"],
     "declaration": true,
     "outDir": "./dist",
     "rootDir": "./src",
@@ -24,13 +21,6 @@
     "noFallthroughCasesInSwitch": true,
     "sourceMap": true
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "pkg",
-    "example"
-  ]
+  "include": ["src/**/*", "pkg"],
+  "exclude": ["node_modules", "dist", "pkg", "example"]
 }

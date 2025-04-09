@@ -1,4 +1,8 @@
-import { initWasm, getWasmModule, isWasmInitialized } from "../../wasm/init";
+import {
+  initWasm,
+  getWasmModule,
+  isWasmInitialized,
+} from "../../initWasm/init";
 
 export enum ColorVariant {
   White = "White",

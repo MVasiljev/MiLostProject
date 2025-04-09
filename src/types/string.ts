@@ -1,5 +1,5 @@
-import { getWasmModule, isWasmInitialized } from "../wasm/init";
-import { callWasmInstanceMethod, callWasmStaticMethod } from "../wasm/lib";
+import { getWasmModule, isWasmInitialized } from "../initWasm/init";
+import { callWasmInstanceMethod, callWasmStaticMethod } from "../initWasm/lib";
 
 export class Str {
   private readonly _inner: any;

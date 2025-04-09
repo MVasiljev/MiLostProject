@@ -2,7 +2,11 @@ import { Str } from "../types/string.js";
 import { AppError } from "../core/error.js";
 import { Option } from "../core/option.js";
 import { u32 } from "../types/primitives.js";
-import { getWasmModule, initWasm, isWasmInitialized } from "../wasm/init.js";
+import {
+  getWasmModule,
+  initWasm,
+  isWasmInitialized,
+} from "../initWasm/init.js";
 
 export class ChannelError extends AppError {
   constructor(message: Str) {

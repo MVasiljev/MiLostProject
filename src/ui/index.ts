@@ -1,4 +1,4 @@
-export { initWasm } from "../wasm/init.js";
+export { initWasm } from "../initWasm/init.js";
 
 export { UI } from "./ui.js";
 export { UIComponent } from "./core/UIComponent.js";

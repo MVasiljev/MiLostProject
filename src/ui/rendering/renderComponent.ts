@@ -4,7 +4,11 @@ import { Ok, Err } from "../../core/result.js";
 import { Patterns } from "../../patterns/matching.js";
 import { u32 } from "../../types/index.js";
 import { Str } from "../../types/string.js";
-import { initWasm, getWasmModule, isWasmInitialized } from "../../wasm/init.js";
+import {
+  initWasm,
+  getWasmModule,
+  isWasmInitialized,
+} from "../../initWasm/init.js";
 import { MiLost } from "./MiLostRenderer.js";
 import { UI } from "../ui.js";
 

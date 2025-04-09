@@ -1,7 +1,11 @@
 import { Str } from "../types/string.js";
 import { Resource } from "./resource.js";
 import { AppError } from "../core/error.js";
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import {
+  initWasm,
+  getWasmModule,
+  isWasmInitialized,
+} from "../initWasm/init.js";
 
 export interface IDisposable {
   dispose(): Promise<void> | void;

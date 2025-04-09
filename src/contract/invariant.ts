@@ -1,6 +1,10 @@
 import { Str } from "../types/string.js";
 import { ContractError } from "./contract.js";
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import {
+  initWasm,
+  getWasmModule,
+  isWasmInitialized,
+} from "../initWasm/init.js";
 
 export class Invariant<T> {
   private readonly _value: T;

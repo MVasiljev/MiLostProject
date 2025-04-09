@@ -1,4 +1,4 @@
-import { initWasm } from "./wasm/init.js";
+import { initWasm } from "./initWasm/init.js";
 
 // Export all modules
 export * as async from "./async/index.js";
@@ -45,7 +45,7 @@ export {
   DatabaseError,
 } from "./core/error.js";
 export { Result, Ok, Err } from "./core/result.js";
-export { initWasm, isWasmInitialized, getWasmModule } from "./wasm/init.js";
+export { initWasm, isWasmInitialized, getWasmModule } from "./initWasm/init.js";
 
 export { RefMut, Ref } from "./borrow";
 

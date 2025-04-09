@@ -1,8 +1,8 @@
 import { ValidationError, Result, Ok, Err } from "../core/index";
 import { Brand } from "./branding";
 import { Str } from "./string";
-import { getWasmModule, isWasmInitialized } from "../wasm/init";
-import { callWasmStaticMethod } from "../wasm/lib";
+import { getWasmModule, isWasmInitialized } from "../initWasm/init";
+import { callWasmStaticMethod } from "../initWasm/lib";
 
 type RawNumber = number;
 

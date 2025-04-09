@@ -1,6 +1,10 @@
 import { Str } from "../types/string.js";
 import { OwnershipError } from "./ownership.js";
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import {
+  initWasm,
+  getWasmModule,
+  isWasmInitialized,
+} from "../initWasm/init.js";
 
 export class RefMut<T> {
   private _value: T;

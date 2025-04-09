@@ -1,7 +1,11 @@
 import { AppError, Result, ValidationError } from "../core/index.js";
 import { Str, i32, u32, f64, Vec } from "../types/index.js";
 import { Option } from "../core/option.js";
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import {
+  initWasm,
+  getWasmModule,
+  isWasmInitialized,
+} from "../initWasm/init.js";
 
 export type MatchArm<T, R> = {
   pattern: MatchPattern<T>;

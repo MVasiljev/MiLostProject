@@ -1,6 +1,10 @@
 import { HashMap, HashSet, Vec, Str, u32 } from "../types";
 import { Iter } from "./iter";
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import {
+  initWasm,
+  getWasmModule,
+  isWasmInitialized,
+} from "../initWasm/init.js";
 import { ValidationError } from "../core/error";
 
 export async function initFunctional(): Promise<void> {
