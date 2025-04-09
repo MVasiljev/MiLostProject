@@ -281,4 +281,11 @@ export { Vec } from "./types/vec.js";
 
 export { initWasm, isWasmInitialized, getWasmModule } from "./initWasm/init.js";
 
+export {
+  Graph,
+  GraphEdge,
+  GraphError,
+  createGraph,
+} from "./utils/algorithms/index.js";
+
 initWasm().catch(console.error);

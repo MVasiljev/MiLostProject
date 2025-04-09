@@ -1,6 +1,6 @@
 {
   "name": "milost",
-  "version": "0.1.0-alpha.11",
+  "version": "0.1.0-alpha.14",
   "description": "A Rust-like TypeScript library with WebAssembly optimizations",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -18,10 +18,20 @@
     "build": "node scripts/build.js --all"
   },
   "keywords": [
+    "milost",
+    "react",
+    "vue",
+    "angular",
+    "frontend",
     "rust",
     "typescript",
     "wasm",
-    "webassembly"
+    "webassembly",
+    "regex",
+    "state management",
+    "algorithms",
+    "data structures",
+    "machine learning"
   ],
   "author": "",
   "license": "MIT",
@@ -29,9 +39,6 @@
     "@types/jest": "^29.5.14",
     "http-server": "^14.1.1",
     "typescript": "^5.0.0"
-  },
-  "engines": {
-    "node": ">=16.0.0"
   },
   "exports": {
     ".": {

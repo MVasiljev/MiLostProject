@@ -1,1 +1,1 @@
-export * from "./Graph";
+export { Graph, GraphEdge, GraphError, createGraph } from "./Graph";
