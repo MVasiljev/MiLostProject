@@ -1,12 +1,8 @@
-import { Str } from "../types/string.js";
-import { AppError } from "../core/error.js";
-import { Option } from "../core/option.js";
-import { u32 } from "../types/primitives.js";
-import {
-  getWasmModule,
-  initWasm,
-  isWasmInitialized,
-} from "../initWasm/init.js";
+import { Str } from "../types/string";
+import { AppError } from "../core/error";
+import { Option } from "../core/option";
+import { u32 } from "../types/primitives";
+import { getWasmModule, isWasmInitialized } from "../initWasm/init";
 
 export class ChannelError extends AppError {
   constructor(message: Str) {
@@ -202,7 +198,7 @@ class Channel<T> {
 
   static async init(): Promise<void> {
     if (!isWasmInitialized()) {
-      await initWasm();
+      await import("../initWasm/init").then((mod) => mod.initWasm());
     }
   }
 

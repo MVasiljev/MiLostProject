@@ -1,2 +1,7 @@
-export * from "./resource";
-export * from "./disposable";
+export { Resource, ResourceError, withResource } from "./resource";
+
+export {
+  DisposableGroup,
+  IDisposable,
+  useDisposableResource,
+} from "./disposable";

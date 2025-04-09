@@ -1,2 +1,3 @@
-export * from './channel.js';
-export * from './task.js';
+export { ChannelError, Sender, Receiver, createChannel } from "./channel";
+
+export { Task, TaskError } from "./task";

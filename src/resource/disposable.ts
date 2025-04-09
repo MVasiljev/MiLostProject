@@ -1,46 +1,53 @@
 import { Str } from "../types/string.js";
 import { Resource } from "./resource.js";
 import { AppError } from "../core/error.js";
+import { getWasmModule, isWasmInitialized } from "../initWasm/init.js";
 import {
-  initWasm,
-  getWasmModule,
-  isWasmInitialized,
-} from "../initWasm/init.js";
+  callWasmInstanceMethod,
+  callWasmStaticMethod,
+} from "../initWasm/lib.js";
 
 export interface IDisposable {
   dispose(): Promise<void> | void;
 }
 
-export async function asResource<
+export function useDisposableResource<
   T extends IDisposable,
   E extends AppError = AppError
->(disposable: T): Promise<Resource<T, E>> {
-  if (!isWasmInitialized()) {
-    try {
-      await initWasm();
-    } catch (error) {
-      console.warn(
-        `WASM module not available, using JS implementation: ${error}`
-      );
+>() {
+  return async (disposable: T): Promise<Resource<T, E>> => {
+    if (!isWasmInitialized()) {
+      try {
+        await import("../initWasm/init.js").then((mod) => mod.initWasm());
+      } catch (error) {
+        console.warn(
+          `WASM module not available, using JS implementation: ${error}`
+        );
+      }
     }
-  }
 
-  if (isWasmInitialized()) {
-    try {
-      const wasmModule = getWasmModule();
-      const wasmResource = wasmModule.asResource(disposable);
+    if (isWasmInitialized()) {
+      try {
+        const wasmModule = getWasmModule();
+        const wasmResource = callWasmStaticMethod(
+          "Resource",
+          "asResource",
+          [disposable],
+          () => null
+        );
 
-      return Resource.fromWasmResource<T, E>(
-        disposable,
-        (d) => d.dispose(),
-        wasmResource
-      );
-    } catch (err) {
-      console.warn(`WASM asResource failed, using JS fallback: ${err}`);
+        return Resource.fromWasmResource<T, E>(
+          disposable,
+          (d) => d.dispose(),
+          wasmResource
+        );
+      } catch (err) {
+        console.warn(`WASM asResource failed, using JS fallback: ${err}`);
+      }
     }
-  }
 
-  return Resource.new<T, E>(disposable, (d) => d.dispose());
+    return Resource.new<T, E>(disposable, (d) => d.dispose());
+  };
 }
 
 export class DisposableGroup implements IDisposable {
@@ -58,8 +65,12 @@ export class DisposableGroup implements IDisposable {
       this._inner = existingWasmGroup;
     } else if (this._useWasm) {
       try {
-        const wasmModule = getWasmModule();
-        this._inner = wasmModule.createDisposableGroup();
+        this._inner = callWasmStaticMethod(
+          "DisposableGroup",
+          "create",
+          [],
+          () => null
+        );
       } catch (err) {
         console.warn(
           `WASM DisposableGroup creation failed, falling back to JS implementation: ${err}`
@@ -80,7 +91,7 @@ export class DisposableGroup implements IDisposable {
   static async create(): Promise<DisposableGroup> {
     if (!isWasmInitialized()) {
       try {
-        await initWasm();
+        await import("../initWasm/init.js").then((mod) => mod.initWasm());
       } catch (error) {
         console.warn(
           `WASM module not available, using JS implementation: ${error}`
@@ -98,7 +109,20 @@ export class DisposableGroup implements IDisposable {
   add(disposable: IDisposable): DisposableGroup {
     if (this._useWasm) {
       try {
-        const newWasmGroup = this._inner.add(disposable);
+        const newWasmGroup = callWasmInstanceMethod(
+          this._inner,
+          "add",
+          [disposable],
+          () => {
+            if (this._disposed) {
+              throw new Error("Cannot add to disposed group");
+            }
+            const newGroup = new DisposableGroup(false);
+            newGroup._disposables = [...this._disposables, disposable];
+            return newGroup;
+          }
+        );
+
         const newGroup = DisposableGroup.fromWasmGroup(newWasmGroup);
         newGroup._disposables = [...this._disposables, disposable];
         newGroup._disposed = this._disposed;
@@ -130,7 +154,21 @@ export class DisposableGroup implements IDisposable {
   async dispose(): Promise<void> {
     if (this._useWasm) {
       try {
-        await this._inner.dispose();
+        await callWasmInstanceMethod(this._inner, "dispose", [], async () => {
+          if (!this._disposed) {
+            for (let i = this._disposables.length - 1; i >= 0; i--) {
+              try {
+                const result = this._disposables[i].dispose();
+                if (result instanceof Promise) {
+                  await result;
+                }
+              } catch (err) {
+                console.error("Error disposing resource:", err);
+              }
+            }
+            this._disposables = [];
+          }
+        });
         this._disposed = true;
         this._disposables = [];
         return;
@@ -158,37 +196,28 @@ export class DisposableGroup implements IDisposable {
   }
 
   get isDisposed(): boolean {
-    if (this._useWasm) {
-      try {
-        return this._inner.isDisposed;
-      } catch (err) {
-        console.warn(`WASM isDisposed failed, using JS fallback: ${err}`);
-      }
-    }
-    return this._disposed;
+    return callWasmInstanceMethod(
+      this._inner,
+      "isDisposed",
+      [],
+      () => this._disposed
+    );
   }
 
   get size(): number {
-    if (this._useWasm) {
-      try {
-        return this._inner.size;
-      } catch (err) {
-        console.warn(`WASM size failed, using JS fallback: ${err}`);
-      }
-    }
-    return this._disposables.length;
+    return callWasmInstanceMethod(
+      this._inner,
+      "size",
+      [],
+      () => this._disposables.length
+    );
   }
 
   toString(): Str {
-    if (this._useWasm) {
-      try {
-        return Str.fromRaw(this._inner.toString());
-      } catch (err) {
-        console.warn(`WASM toString failed, using JS fallback: ${err}`);
-      }
-    }
-    return Str.fromRaw(
-      `[DisposableGroup size=${this._disposables.length} disposed=${this._disposed}]`
+    return callWasmInstanceMethod(this._inner, "toString", [], () =>
+      Str.fromRaw(
+        `[DisposableGroup size=${this._disposables.length} disposed=${this._disposed}]`
+      )
     );
   }
 

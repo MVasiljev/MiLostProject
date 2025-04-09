@@ -1,11 +1,7 @@
-import { Str } from "../types/string.js";
-import { AppError } from "../core/error.js";
-import { Result, Ok, Err } from "../core/result.js";
-import {
-  initWasm,
-  getWasmModule,
-  isWasmInitialized,
-} from "../initWasm/init.js";
+import { Str } from "../types/string";
+import { AppError } from "../core/error";
+import { Result, Ok, Err } from "../core/result";
+import { getWasmModule, isWasmInitialized } from "../initWasm/init";
 
 export class TaskError extends AppError {
   constructor(message: Str) {
@@ -53,7 +49,7 @@ export class Task<T, E extends AppError = AppError> {
   static async init(): Promise<void> {
     if (!isWasmInitialized()) {
       try {
-        await initWasm();
+        await import("../initWasm/init").then((mod) => mod.initWasm());
       } catch (error) {
         console.warn(
           `WASM module not available, using JS implementation: ${error}`

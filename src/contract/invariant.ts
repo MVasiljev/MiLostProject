@@ -1,10 +1,6 @@
-import { Str } from "../types/string.js";
-import { ContractError } from "./contract.js";
-import {
-  initWasm,
-  getWasmModule,
-  isWasmInitialized,
-} from "../initWasm/init.js";
+import { Str } from "../types/string";
+import { ContractError } from "./contract";
+import { getWasmModule, isWasmInitialized } from "../initWasm/init";
 
 export class Invariant<T> {
   private readonly _value: T;
@@ -58,7 +54,7 @@ export class Invariant<T> {
   static async init(): Promise<void> {
     if (!isWasmInitialized()) {
       try {
-        await initWasm();
+        await import("../initWasm/init").then((mod) => mod.initWasm());
       } catch (error) {
         console.warn(
           `WASM module not available, using JS implementation: ${error}`

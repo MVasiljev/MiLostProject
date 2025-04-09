@@ -5,57 +5,53 @@ import {
   getWasmModule,
   isWasmInitialized,
 } from "../initWasm/init.js";
+import { callWasmInstanceMethod, createWasmInstance } from "../initWasm/lib.js";
 
 export class RefMut<T> {
   private _value: T;
-  private _active: boolean = true;
+  private _active: boolean;
   private _inner: any;
   private _useWasm: boolean;
 
-  static readonly _type = "RefMut";
+  static readonly TYPE = "RefMut";
 
-  private constructor(value: T) {
+  constructor(value: T) {
     this._value = value;
+    this._active = true;
     this._useWasm = isWasmInitialized();
 
     if (this._useWasm) {
-      try {
-        const wasmModule = getWasmModule();
-        this._inner = wasmModule.createRefMut(value as any);
-      } catch (err) {
-        console.warn(
-          `WASM RefMut creation failed, using JS implementation: ${err}`
-        );
+      this._inner = createWasmInstance("createRefMut", [value], () => {
         this._useWasm = false;
-      }
+        return null;
+      });
     }
   }
 
-  static new<T>(value: T): RefMut<T> {
+  static create<T>(value: T): RefMut<T> {
     return new RefMut(value);
   }
 
-  static async init(): Promise<void> {
+  static async initialize(): Promise<void> {
     if (!isWasmInitialized()) {
       try {
         await initWasm();
       } catch (error) {
-        console.warn(
-          `WASM module not available, using JS implementation: ${error}`
-        );
+        console.warn(`WASM module initialization failed: ${error}`);
       }
     }
   }
 
   get(): T {
     if (this._useWasm) {
-      try {
-        return this._inner.get() as T;
-      } catch (err) {
-        throw new OwnershipError(
-          Str.fromRaw("Mutable reference is no longer valid")
-        );
-      }
+      return callWasmInstanceMethod(this._inner, "get", [], () => {
+        if (!this._active) {
+          throw new OwnershipError(
+            Str.fromRaw("Mutable reference is no longer valid")
+          );
+        }
+        return this._value;
+      });
     }
 
     if (!this._active) {
@@ -68,15 +64,15 @@ export class RefMut<T> {
 
   set(updater: (value: T) => T): void {
     if (this._useWasm) {
-      try {
-        this._inner.set((val: T) => updater(val));
+      callWasmInstanceMethod(this._inner, "set", [updater], () => {
+        if (!this._active) {
+          throw new OwnershipError(
+            Str.fromRaw("Mutable reference is no longer valid")
+          );
+        }
         this._value = updater(this._value);
-        return;
-      } catch (err) {
-        throw new OwnershipError(
-          Str.fromRaw("Mutable reference is no longer valid")
-        );
-      }
+      });
+      return;
     }
 
     if (!this._active) {
@@ -89,13 +85,10 @@ export class RefMut<T> {
 
   drop(): void {
     if (this._useWasm) {
-      try {
-        this._inner.drop();
+      callWasmInstanceMethod(this._inner, "drop", [], () => {
         this._active = false;
-        return;
-      } catch (err) {
-        console.warn(`WASM drop failed, using JS fallback: ${err}`);
-      }
+      });
+      return;
     }
 
     this._active = false;
@@ -103,27 +96,26 @@ export class RefMut<T> {
 
   isActive(): boolean {
     if (this._useWasm) {
-      try {
-        return this._inner.isActive();
-      } catch (err) {
-        console.warn(`WASM isActive failed, using JS fallback: ${err}`);
-      }
+      return callWasmInstanceMethod(
+        this._inner,
+        "isActive",
+        [],
+        () => this._active
+      );
     }
     return this._active;
   }
 
   toString(): Str {
     if (this._useWasm) {
-      try {
-        return Str.fromRaw(this._inner.toString());
-      } catch (err) {
-        console.warn(`WASM toString failed, using JS fallback: ${err}`);
-      }
+      return callWasmInstanceMethod(this._inner, "toString", [], () =>
+        Str.fromRaw(`[RefMut ${this._active ? "active" : "dropped"}]`)
+      );
     }
     return Str.fromRaw(`[RefMut ${this._active ? "active" : "dropped"}]`);
   }
 
-  get [Symbol.toStringTag](): Str {
-    return Str.fromRaw(RefMut._type);
+  get [Symbol.toStringTag](): string {
+    return RefMut.TYPE;
   }
 }

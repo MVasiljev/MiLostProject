@@ -1,4 +1,3 @@
-import { memory } from "../index.js";
 import { AtomManager } from "./atom.js";
 import { Result, Ok, Err } from "../core/result.js";
 import { Str } from "../types/string.js";
@@ -6,6 +5,7 @@ import { Option } from "../core/option.js";
 import { Vec } from "../types/vec.js";
 import { HashMap } from "../types/hash_map.js";
 import { AppError } from "../core/error.js";
+import { createRcRefCell, createArc } from "../memory/smart_pointers.js";
 
 export class AtomContextError extends AppError {
   constructor(message: Str) {
@@ -43,8 +43,8 @@ export class AtomContextImpl<T extends Record<string, any>>
     atoms: AtomRecord<T>
   ): Promise<AtomContext<T>> {
     const context = new AtomContextImpl(atoms);
-    context._atomsContainer = await memory.createRcRefCell(atoms);
-    context._arc = await memory.createArc({ atoms });
+    context._atomsContainer = await createRcRefCell(atoms);
+    context._arc = await createArc({ atoms });
 
     return context;
   }

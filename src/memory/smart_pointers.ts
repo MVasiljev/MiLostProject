@@ -1,9 +1,6 @@
 import { u32, Str } from "../types";
-import {
-  initWasm,
-  getWasmModule,
-  isWasmInitialized,
-} from "../initWasm/init.js";
+import { getWasmModule, isWasmInitialized } from "../initWasm/init";
+import { callWasmStaticMethod, callWasmInstanceMethod } from "../initWasm/lib";
 
 export class Rc<T> {
   private readonly _inner: any;
@@ -22,8 +19,12 @@ export class Rc<T> {
       this._inner = existingWasmRc;
     } else if (this._useWasm) {
       try {
-        const wasmModule = getWasmModule();
-        this._inner = new wasmModule.JsRc(initialValue);
+        this._inner = callWasmStaticMethod(
+          "Rc",
+          "create",
+          [initialValue],
+          () => null
+        );
       } catch (error) {
         console.warn(
           `WASM Rc creation failed, falling back to JS implementation: ${error}`
@@ -38,66 +39,34 @@ export class Rc<T> {
   }
 
   borrow(): T {
-    if (this._useWasm) {
-      try {
-        return this._inner.borrow();
-      } catch (error) {
-        console.warn(`WASM borrow failed, using JS fallback: ${error}`);
-      }
-    }
-    return this._value;
+    return callWasmInstanceMethod(this._inner, "borrow", [], () => this._value);
   }
 
   borrow_mut(updater: (value: T) => T): Rc<T> {
-    if (this._useWasm) {
-      try {
-        const updatedValue = updater(this._inner.borrow());
-        const clonedWasmRc = this._inner.clone();
-        return new Rc(updatedValue, true, clonedWasmRc);
-      } catch (error) {
-        console.warn(`WASM borrow_mut failed, using JS fallback: ${error}`);
-      }
-    }
-    return new Rc(updater(this._value));
+    return callWasmInstanceMethod(
+      this._inner,
+      "borrow_mut",
+      [updater],
+      () => new Rc(updater(this._value))
+    );
   }
 
   clone(): Rc<T> {
-    if (this._useWasm) {
-      try {
-        const clonedWasmRc = this._inner.clone();
-        return new Rc(this._value, true, clonedWasmRc);
-      } catch (error) {
-        console.warn(`WASM clone failed, using JS fallback: ${error}`);
-      }
-    }
-    return this;
+    return callWasmInstanceMethod(this._inner, "clone", [], () => this);
   }
 
   drop(): Rc<T> {
-    if (this._useWasm) {
-      try {
-        this._inner.drop();
-        return this;
-      } catch (error) {
-        console.warn(`WASM drop failed, using JS fallback: ${error}`);
-      }
-    }
-    return this;
+    return callWasmInstanceMethod(this._inner, "drop", [], () => this);
   }
 
   refCount(): u32 {
-    if (this._useWasm) {
-      try {
-        return u32(this._inner.refCount());
-      } catch (error) {
-        console.warn(`WASM refCount failed, using JS fallback: ${error}`);
-      }
-    }
-    return u32(1);
+    return callWasmInstanceMethod(this._inner, "refCount", [], () => u32(1));
   }
 
   toString(): Str {
-    return Str.fromRaw(`[Rc refCount=${this.refCount()}]`);
+    return callWasmInstanceMethod(this._inner, "toString", [], () =>
+      Str.fromRaw(`[Rc refCount=${this.refCount()}]`)
+    );
   }
 
   get [Symbol.toStringTag](): Str {
@@ -122,8 +91,12 @@ export class Weak<T> {
       this._inner = existingWasmWeak;
     } else if (this._useWasm) {
       try {
-        const wasmModule = getWasmModule();
-        this._inner = new wasmModule.JsWeak(initialValue);
+        this._inner = callWasmStaticMethod(
+          "Weak",
+          "create",
+          [initialValue],
+          () => null
+        );
       } catch (error) {
         console.warn(
           `WASM Weak creation failed, falling back to JS implementation: ${error}`
@@ -138,30 +111,22 @@ export class Weak<T> {
   }
 
   getOrDefault(defaultValue: T): T {
-    if (this._useWasm) {
-      try {
-        return this._inner.getOrDefault(defaultValue);
-      } catch (error) {
-        console.warn(`WASM getOrDefault failed, using JS fallback: ${error}`);
-      }
-    }
-    return defaultValue;
+    return callWasmInstanceMethod(
+      this._inner,
+      "getOrDefault",
+      [defaultValue],
+      () => defaultValue
+    );
   }
 
   drop(): Weak<T> {
-    if (this._useWasm) {
-      try {
-        this._inner.drop();
-        return this;
-      } catch (error) {
-        console.warn(`WASM drop failed, using JS fallback: ${error}`);
-      }
-    }
-    return this;
+    return callWasmInstanceMethod(this._inner, "drop", [], () => this);
   }
 
   toString(): Str {
-    return Str.fromRaw(`[Weak]`);
+    return callWasmInstanceMethod(this._inner, "toString", [], () =>
+      Str.fromRaw(`[Weak]`)
+    );
   }
 
   get [Symbol.toStringTag](): Str {
@@ -186,8 +151,12 @@ export class RefCell<T> {
       this._inner = existingWasmRefCell;
     } else if (this._useWasm) {
       try {
-        const wasmModule = getWasmModule();
-        this._inner = new wasmModule.JsRefCell(initialValue);
+        this._inner = callWasmStaticMethod(
+          "RefCell",
+          "create",
+          [initialValue],
+          () => null
+        );
       } catch (error) {
         console.warn(
           `WASM RefCell creation failed, falling back to JS implementation: ${error}`
@@ -202,30 +171,22 @@ export class RefCell<T> {
   }
 
   borrow(): T {
-    if (this._useWasm) {
-      try {
-        return this._inner.borrow();
-      } catch (error) {
-        console.warn(`WASM borrow failed, using JS fallback: ${error}`);
-      }
-    }
-    return this._value;
+    return callWasmInstanceMethod(this._inner, "borrow", [], () => this._value);
   }
 
   borrow_mut(updater: (value: T) => T): RefCell<T> {
-    if (this._useWasm) {
-      try {
-        const updatedValue = updater(this._inner.borrow());
-        return new RefCell(updatedValue, true, this._inner);
-      } catch (error) {
-        console.warn(`WASM borrow_mut failed, using JS fallback: ${error}`);
-      }
-    }
-    return new RefCell(updater(this._value));
+    return callWasmInstanceMethod(
+      this._inner,
+      "borrow_mut",
+      [updater],
+      () => new RefCell(updater(this._value))
+    );
   }
 
   toString(): Str {
-    return Str.fromRaw(`[RefCell]`);
+    return callWasmInstanceMethod(this._inner, "toString", [], () =>
+      Str.fromRaw(`[RefCell]`)
+    );
   }
 
   get [Symbol.toStringTag](): Str {
@@ -250,8 +211,12 @@ export class RcRefCell<T> {
       this._inner = existingWasmRcRefCell;
     } else if (this._useWasm) {
       try {
-        const wasmModule = getWasmModule();
-        this._inner = new wasmModule.JsRcRefCell(initialValue);
+        this._inner = callWasmStaticMethod(
+          "RcRefCell",
+          "create",
+          [initialValue],
+          () => null
+        );
       } catch (error) {
         console.warn(
           `WASM RcRefCell creation failed, falling back to JS implementation: ${error}`
@@ -266,66 +231,34 @@ export class RcRefCell<T> {
   }
 
   borrow(): T {
-    if (this._useWasm) {
-      try {
-        return this._inner.borrow();
-      } catch (error) {
-        console.warn(`WASM borrow failed, using JS fallback: ${error}`);
-      }
-    }
-    return this._value;
+    return callWasmInstanceMethod(this._inner, "borrow", [], () => this._value);
   }
 
   borrow_mut(updater: (value: T) => T): RcRefCell<T> {
-    if (this._useWasm) {
-      try {
-        const updatedValue = updater(this._inner.borrow());
-        const clonedWasmRcRefCell = this._inner.clone();
-        return new RcRefCell(updatedValue, true, clonedWasmRcRefCell);
-      } catch (error) {
-        console.warn(`WASM borrow_mut failed, using JS fallback: ${error}`);
-      }
-    }
-    return new RcRefCell(updater(this._value));
+    return callWasmInstanceMethod(
+      this._inner,
+      "borrow_mut",
+      [updater],
+      () => new RcRefCell(updater(this._value))
+    );
   }
 
   clone(): RcRefCell<T> {
-    if (this._useWasm) {
-      try {
-        const clonedWasmRcRefCell = this._inner.clone();
-        return new RcRefCell(this._value, true, clonedWasmRcRefCell);
-      } catch (error) {
-        console.warn(`WASM clone failed, using JS fallback: ${error}`);
-      }
-    }
-    return this;
+    return callWasmInstanceMethod(this._inner, "clone", [], () => this);
   }
 
   drop(): RcRefCell<T> {
-    if (this._useWasm) {
-      try {
-        this._inner.drop();
-        return this;
-      } catch (error) {
-        console.warn(`WASM drop failed, using JS fallback: ${error}`);
-      }
-    }
-    return this;
+    return callWasmInstanceMethod(this._inner, "drop", [], () => this);
   }
 
   refCount(): u32 {
-    if (this._useWasm) {
-      try {
-        return u32(this._inner.refCount());
-      } catch (error) {
-        console.warn(`WASM refCount failed, using JS fallback: ${error}`);
-      }
-    }
-    return u32(1);
+    return callWasmInstanceMethod(this._inner, "refCount", [], () => u32(1));
   }
 
   toString(): Str {
-    return Str.fromRaw(`[RcRefCell refCount=${this.refCount()}]`);
+    return callWasmInstanceMethod(this._inner, "toString", [], () =>
+      Str.fromRaw(`[RcRefCell refCount=${this.refCount()}]`)
+    );
   }
 
   get [Symbol.toStringTag](): Str {
@@ -350,8 +283,12 @@ export class Arc<T> {
       this._inner = existingWasmArc;
     } else if (this._useWasm) {
       try {
-        const wasmModule = getWasmModule();
-        this._inner = new wasmModule.JsArc(initialValue);
+        this._inner = callWasmStaticMethod(
+          "Arc",
+          "create",
+          [initialValue],
+          () => null
+        );
       } catch (error) {
         console.warn(
           `WASM Arc creation failed, falling back to JS implementation: ${error}`
@@ -366,43 +303,26 @@ export class Arc<T> {
   }
 
   get(): T {
-    if (this._useWasm) {
-      try {
-        return this._inner.get();
-      } catch (error) {
-        console.warn(`WASM get failed, using JS fallback: ${error}`);
-      }
-    }
-    return this._value;
+    return callWasmInstanceMethod(this._inner, "get", [], () => this._value);
   }
 
   set(updater: (prev: T) => T): Arc<T> {
-    if (this._useWasm) {
-      try {
-        const updatedValue = updater(this._inner.get());
-        this._inner.set(() => updatedValue);
-        return new Arc(updatedValue, true, this._inner);
-      } catch (error) {
-        console.warn(`WASM set failed, using JS fallback: ${error}`);
-      }
-    }
-    return new Arc(updater(this._value));
+    return callWasmInstanceMethod(
+      this._inner,
+      "set",
+      [updater],
+      () => new Arc(updater(this._value))
+    );
   }
 
   clone(): Arc<T> {
-    if (this._useWasm) {
-      try {
-        const clonedWasmArc = this._inner.clone();
-        return new Arc(this._value, true, clonedWasmArc);
-      } catch (error) {
-        console.warn(`WASM clone failed, using JS fallback: ${error}`);
-      }
-    }
-    return this;
+    return callWasmInstanceMethod(this._inner, "clone", [], () => this);
   }
 
   toString(): Str {
-    return Str.fromRaw(`[Arc]`);
+    return callWasmInstanceMethod(this._inner, "toString", [], () =>
+      Str.fromRaw(`[Arc]`)
+    );
   }
 
   get [Symbol.toStringTag](): Str {
@@ -413,7 +333,7 @@ export class Arc<T> {
 export async function createRc<T>(initialValue: T): Promise<Rc<T>> {
   if (!isWasmInitialized()) {
     try {
-      await initWasm();
+      await import("../initWasm/init").then((mod) => mod.initWasm());
     } catch (error) {
       console.warn(
         `WASM module not available, using JS implementation: ${error}`
@@ -426,7 +346,7 @@ export async function createRc<T>(initialValue: T): Promise<Rc<T>> {
 export async function createWeak<T>(initialValue: T): Promise<Weak<T>> {
   if (!isWasmInitialized()) {
     try {
-      await initWasm();
+      await import("../initWasm/init").then((mod) => mod.initWasm());
     } catch (error) {
       console.warn(
         `WASM module not available, using JS implementation: ${error}`
@@ -439,7 +359,7 @@ export async function createWeak<T>(initialValue: T): Promise<Weak<T>> {
 export async function createRefCell<T>(initialValue: T): Promise<RefCell<T>> {
   if (!isWasmInitialized()) {
     try {
-      await initWasm();
+      await import("../initWasm/init").then((mod) => mod.initWasm());
     } catch (error) {
       console.warn(
         `WASM module not available, using JS implementation: ${error}`
@@ -454,7 +374,7 @@ export async function createRcRefCell<T>(
 ): Promise<RcRefCell<T>> {
   if (!isWasmInitialized()) {
     try {
-      await initWasm();
+      await import("../initWasm/init").then((mod) => mod.initWasm());
     } catch (error) {
       console.warn(
         `WASM module not available, using JS implementation: ${error}`
@@ -467,7 +387,7 @@ export async function createRcRefCell<T>(
 export async function createArc<T>(initialValue: T): Promise<Arc<T>> {
   if (!isWasmInitialized()) {
     try {
-      await initWasm();
+      await import("../initWasm/init").then((mod) => mod.initWasm());
     } catch (error) {
       console.warn(
         `WASM module not available, using JS implementation: ${error}`

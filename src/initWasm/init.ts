@@ -33,6 +33,10 @@ export async function initWasm(): Promise<void> {
       }
     }
 
+    if (wasmModule === null) {
+      wasmModule = getWasmModule();
+    }
+
     // If all paths fail, throw the last encountered error
     throw new Error(
       `Failed to initialize WASM module. Last error: ${
@@ -53,4 +57,14 @@ export function getWasmModule(): any {
 
 export function isWasmInitialized(): boolean {
   return initialized;
+}
+
+declare global {
+  interface Window {
+    wasmModule: any;
+  }
+}
+
+if (typeof window !== "undefined") {
+  window.wasmModule = wasmModule;
 }

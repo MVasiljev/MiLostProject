@@ -1,2 +1,9 @@
-export * from "./contract.js";
-export * from "./invariant.js";
+export {
+  ContractError,
+  initContracts,
+  requires,
+  ensures,
+  contract,
+} from "./contract";
+
+export { Invariant } from "./invariant";

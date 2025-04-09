@@ -1,8 +1,4 @@
-import {
-  initWasm,
-  getWasmModule,
-  isWasmInitialized,
-} from "../initWasm/init.js";
+import { initWasm, getWasmModule, isWasmInitialized } from "../initWasm/init";
 import { Str } from "../types/string";
 import { u32 } from "../types/primitives";
 import { AppError, ValidationError } from "../core/error";
@@ -25,7 +21,6 @@ export class Mutex<T> {
     } else if (this._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        // Determine appropriate WASM constructor based on type
         this._inner =
           typeof initialValue === "number"
             ? new wasmModule.JsMutexNum(initialValue)
@@ -69,7 +64,6 @@ export class Mutex<T> {
       }
     }
 
-    // Fallback JS implementation
     if (this._inner?.locked) return;
     this._inner.locked = true;
 
@@ -136,7 +130,6 @@ export class RwLock<T> {
     } else if (this._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        // Determine appropriate WASM constructor based on type
         this._inner =
           typeof initialValue === "number"
             ? new wasmModule.JsRwLockNum(initialValue)
@@ -261,7 +254,6 @@ export class ArcMutex<T> {
     } else if (this._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        // Determine appropriate WASM constructor based on type
         this._inner =
           typeof initialValue === "number"
             ? new wasmModule.JsArcMutexNum(initialValue)
@@ -334,7 +326,6 @@ export class ArcMutex<T> {
       }
     }
 
-    // Fallback JS implementation
     if (this._inner?.locked) return;
     this._inner.locked = true;
 
@@ -358,8 +349,6 @@ export class ArcMutex<T> {
   clone(): ArcMutex<T> {
     if (this._useWasm) {
       try {
-        // This assumes the WASM implementation supports clone
-        // You might need to adjust based on your exact WASM implementation
         const clonedWasmArcMutex = this._inner.clone();
         return new ArcMutex(this._state.value, true, clonedWasmArcMutex);
       } catch (error) {

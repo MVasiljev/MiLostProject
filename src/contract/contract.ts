@@ -1,10 +1,6 @@
-import { Str } from "../types/string.js";
-import { AppError } from "../core/error.js";
-import {
-  initWasm,
-  getWasmModule,
-  isWasmInitialized,
-} from "../initWasm/init.js";
+import { Str } from "../types/string";
+import { AppError } from "../core/error";
+import { getWasmModule, isWasmInitialized } from "../initWasm/init";
 
 export class ContractError extends AppError {
   constructor(message: Str) {
@@ -15,7 +11,7 @@ export class ContractError extends AppError {
 export async function initContracts(): Promise<void> {
   if (!isWasmInitialized()) {
     try {
-      await initWasm();
+      await import("../initWasm/init").then((mod) => mod.initWasm());
     } catch (error) {
       console.warn(
         `WASM module not available, using JS implementation: ${error}`
@@ -47,7 +43,6 @@ export function requires<_T>(
     }
   }
 
-  // JS fallback
   if (!condition) {
     throw new ContractError(errorMessage);
   }
@@ -76,7 +71,6 @@ export function ensures<_T>(
     }
   }
 
-  // JS fallback
   if (!condition) {
     throw new ContractError(errorMessage);
   }
@@ -107,7 +101,6 @@ export function contract<T, R>(
     }
   }
 
-  // JS fallback
   return (arg: T): R => {
     if (precondition && !precondition(arg)) {
       throw new ContractError(
