@@ -2,7 +2,6 @@
 members = [
     "crates/wasm",
     "crates/ui",
-    "crates/wasm/lang",
 ]
 
 [workspace.package]

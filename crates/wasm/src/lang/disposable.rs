@@ -1,7 +1,7 @@
 use wasm_bindgen::prelude::*;
 use js_sys::{Array, Function, Object, Promise, Reflect};
 use std::cell::RefCell;
-use crate::resource::ManagedResource;
+use crate::lang::resource::ManagedResource;
 
 #[wasm_bindgen]
 extern "C" {

@@ -1,13 +1,8 @@
 #![recursion_limit = "256"]
 
-mod regex_builder;
-mod algorithms;
-mod compression;
-mod crypto;
-mod image;
-mod math;
-mod text;
+pub mod utils;
+pub mod lang;
 
-
-pub use regex_builder::*;
-
+use utils::*;
+use lang::*;
+// pub use ui::*;

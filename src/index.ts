@@ -12,6 +12,7 @@ export { Patterns } from "./patterns/index.js";
 export * as resource from "./resource/index.js";
 export * as types from "./types/index.js";
 export { Str } from "./types/string.js";
+export { f64, u32, u16 } from "./types/primitives.js";
 export {
   UI,
   HStackBuilder,
@@ -44,7 +45,7 @@ export {
   DatabaseError,
 } from "./core/error.js";
 export { Result, Ok, Err } from "./core/result.js";
-export { initWasm } from "./wasm/init.js";
+export { initWasm, isWasmInitialized, getWasmModule } from "./wasm/init.js";
 
 export { RefMut, Ref } from "./borrow";
 
@@ -52,5 +53,6 @@ export * from "./ui/dsl";
 export * from "./ui/dsl/uiDsl.js";
 export * from "./ui/dsl/renderNodeTree.js";
 export * from "./regex";
+export * from "./utils";
 
 initWasm().catch(console.error);

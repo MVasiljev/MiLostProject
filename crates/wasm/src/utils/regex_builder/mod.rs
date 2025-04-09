@@ -1,9 +1,9 @@
-mod operators;
-mod language;
-mod patterns;
-mod parser;
-mod regex_builder;
-mod expressions;
+pub mod operators;
+pub mod language;
+pub mod patterns;
+pub mod parser;
+pub mod regex_builder;
+pub mod expressions;
 
 pub use language::RegexLanguage;
 pub use parser::{parse_regex, extract_matches, test_pattern, replace_matches};

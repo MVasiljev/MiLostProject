@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use js_sys::{Array, Function, Reflect, Object, Iterator as JsIterator};
-use crate::option::{Option as RustOption, create_some, create_none};
+use crate::lang::{create_none, create_some, option::Option as RustOption};
 
 #[wasm_bindgen]
 pub struct Iter {

@@ -2,6 +2,7 @@ module.exports = {
   preset: "ts-jest",
   testEnvironment: "node",
   roots: ["<rootDir>"],
+  transformIgnorePatterns: ["node_modules/(?!(@milost|milost-wasm)/)"],
   transform: {
     "^.+\\.tsx?$": [
       "ts-jest",

@@ -1,6 +1,7 @@
 use wasm_bindgen::prelude::*;
 use js_sys::{Reflect, Error as JsError, Object, Function};
-use crate::str::Str;
+
+use super::Str;
 
 #[wasm_bindgen]
 pub struct ValidationError {
