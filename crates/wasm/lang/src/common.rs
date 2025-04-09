@@ -1,7 +1,7 @@
 use wasm_bindgen::prelude::*;
 use js_sys::{Array, Object, Reflect, Function, Symbol};
-use crate::str::Str;
-use crate::vec::Vec as RustVec;
+use super::Str;
+use super::Vec as RustVec; 
 
 #[wasm_bindgen]
 pub struct LoadingStates {

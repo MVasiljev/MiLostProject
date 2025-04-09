@@ -1,6 +1,5 @@
 pub mod compression;
+pub mod huffman_node;
 
-pub use compression::{
-    Compression, CompressionOptions, CompressionResult, CompressionError,
-    CompressionErrorKind, CompressionErrorDetails,
-};
+pub use huffman_node::*;
+pub use compression::*;

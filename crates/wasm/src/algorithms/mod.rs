@@ -4,4 +4,4 @@ pub mod graph;
 
 pub use sorting::Sorting;
 pub use search::Search; 
-pub use graph::Graph;   
+pub use graph::Graph;

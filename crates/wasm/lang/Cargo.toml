@@ -1,5 +1,5 @@
 [package]
-name = "milost-wasm"
+name = "milost-lang"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -10,8 +10,6 @@ license.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-milost-core = { path = "../core" }
-milost-ui = { path = "../ui" }
 regex = "1.9"
 wasm-bindgen = { version = "0.2.100", features = ["serde-serialize"] }
 js-sys = "0.3"
@@ -22,7 +20,6 @@ console_error_panic_hook = "0.1.7"
 web-sys = { version = "0.3", features = [
   "console",
   "Window",
-  "Crypto",
   "Document",
   "Element",
   "HtmlCanvasElement",
@@ -31,16 +28,10 @@ web-sys = { version = "0.3", features = [
   "Event",
 ]}
 
-# Add these for WebAssembly random number generation
-rand = { version = "0.8.5", features = ["std", "getrandom"] }
-getrandom = { version = "0.2", features = ["js"] }
-
 # Cryptography dependencies
 sha2 = "0.10.6"
 hmac = "0.12.1"
-aes-gcm = "0.10.2"
-
-# Math dependencies 
+aes-gcm = "0.10.2"# Math dependencies 
 num-complex = "0.4.3"
 
 [features]

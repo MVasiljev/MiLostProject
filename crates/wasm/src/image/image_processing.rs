@@ -1,5 +1,5 @@
 use wasm_bindgen::prelude::*;
-use js_sys::{Uint8Array, Uint8ClampedArray, Object, Reflect};
+use js_sys::{ Uint8ClampedArray, Object, Reflect};
 
 #[wasm_bindgen]
 pub struct ImageProcessing;

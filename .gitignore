@@ -1,14 +1,21 @@
-/target
-/.idea
-/.vscode
-/.gradle
-/.DS_Store
-/.classpath
-/.project
-/dist
-/build
-/example
-/test
+# Ignore all Rust build targets
+**/target/
+
+# IDE/editor specific
+.idea/
+.vscode/
+.gradle/
+.DS_Store
+.classpath
+.project
+
+# Build artifacts
+/dist/
+/build/
+/example/
+/test/
+
+# Node.js
 /node_modules/
 src/node_modules/
 src/**/node_modules/

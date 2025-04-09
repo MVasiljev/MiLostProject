@@ -369,10 +369,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4567c8db10ae91089c99af84c68c38da3ec2f087c3f82960bcdbf3656b6f4d7"
 dependencies = [
  "cfg-if",
- "js-sys",
  "libc",
  "wasi 0.11.0+wasi-snapshot-preview1",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -610,24 +608,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "milost-lang"
-version = "0.1.0"
-dependencies = [
- "aes-gcm",
- "console_error_panic_hook",
- "flate2",
- "hmac",
- "js-sys",
- "num-complex",
- "regex",
- "serde",
- "serde_json",
- "sha2",
- "wasm-bindgen",
- "web-sys",
-]
-
-[[package]]
 name = "milost-ui"
 version = "0.1.0"
 dependencies = [
@@ -644,13 +624,11 @@ dependencies = [
  "aes-gcm",
  "console_error_panic_hook",
  "flate2",
- "getrandom 0.2.15",
  "hmac",
  "js-sys",
  "milost-core",
  "milost-ui",
  "num-complex",
- "rand",
  "regex",
  "serde",
  "serde_json",

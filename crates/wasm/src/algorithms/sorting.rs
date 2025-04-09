@@ -1,13 +1,15 @@
 use wasm_bindgen::prelude::*;
 use js_sys::{Array, Function, Object, Reflect};
+use std::rc::Rc;
 
 #[wasm_bindgen]
 pub struct Sorting;
 
 #[wasm_bindgen]
 impl Sorting {
+    
     #[wasm_bindgen(js_name = "quickSort")]
-    pub fn quick_sort(arr: &js_sys::Array, comparator: Option<&Function>) -> js_sys::Array {
+    pub fn quick_sort(arr: &js_sys::Array, comparator: Option<Function>) -> js_sys::Array {
         if arr.length() <= 1 {
             return arr.clone();
         }
@@ -15,8 +17,8 @@ impl Sorting {
         let length = arr.length() as usize;
         let mut vector: Vec<JsValue> = (0..length).map(|i| arr.get(i as u32)).collect();
         
-        let compare_fn = |a: &JsValue, b: &JsValue| -> i32 {
-            if let Some(cmp) = comparator {
+        let compare_fn = Rc::new(move |a: &JsValue, b: &JsValue| -> i32 {
+            if let Some(ref cmp) = &comparator {
                 let result = cmp.call2(&JsValue::NULL, a, b)
                     .unwrap_or(JsValue::from(0));
                 return result.as_f64().unwrap_or(0.0) as i32;
@@ -41,7 +43,7 @@ impl Sorting {
                 }
                 return 0;
             }
-        };
+        });
 
         Self::quick_sort_internal(&mut vector, 0, length - 1, compare_fn);
         
@@ -54,7 +56,7 @@ impl Sorting {
     }
 
     #[wasm_bindgen(js_name = "mergeSort")]
-    pub fn merge_sort(arr: &js_sys::Array, comparator: Option<&Function>) -> js_sys::Array {
+    pub fn merge_sort(arr: &js_sys::Array, comparator: Option<Function>) -> js_sys::Array {
         if arr.length() <= 1 {
             return arr.clone();
         }
@@ -62,8 +64,8 @@ impl Sorting {
         let length = arr.length() as usize;
         let mut vector: Vec<JsValue> = (0..length).map(|i| arr.get(i as u32)).collect();
         
-        let compare_fn = |a: &JsValue, b: &JsValue| -> i32 {
-            if let Some(cmp) = comparator {
+        let compare_fn = Rc::new(move |a: &JsValue, b: &JsValue| -> i32 {
+            if let Some(ref cmp) = &comparator {
                 let result = cmp.call2(&JsValue::NULL, a, b)
                     .unwrap_or(JsValue::from(0));
                 return result.as_f64().unwrap_or(0.0) as i32;
@@ -88,7 +90,7 @@ impl Sorting {
                 }
                 return 0;
             }
-        };
+        });
 
         Self::merge_sort_internal(&mut vector, 0, length - 1, compare_fn);
         
@@ -101,7 +103,7 @@ impl Sorting {
     }
 
     #[wasm_bindgen(js_name = "heapSort")]
-    pub fn heap_sort(arr: &js_sys::Array, comparator: Option<&Function>) -> js_sys::Array {
+    pub fn heap_sort(arr: &js_sys::Array, comparator: Option<Function>) -> js_sys::Array {
         if arr.length() <= 1 {
             return arr.clone();
         }
@@ -109,8 +111,8 @@ impl Sorting {
         let length = arr.length() as usize;
         let mut vector: Vec<JsValue> = (0..length).map(|i| arr.get(i as u32)).collect();
         
-        let compare_fn = |a: &JsValue, b: &JsValue| -> i32 {
-            if let Some(cmp) = comparator {
+        let compare_fn = Rc::new(move |a: &JsValue, b: &JsValue| -> i32 {
+            if let Some(ref cmp) = &comparator {
                 let result = cmp.call2(&JsValue::NULL, a, b)
                     .unwrap_or(JsValue::from(0));
                 return result.as_f64().unwrap_or(0.0) as i32;
@@ -135,7 +137,7 @@ impl Sorting {
                 }
                 return 0;
             }
-        };
+        });
 
         Self::heap_sort_internal(&mut vector, compare_fn);
         
@@ -147,19 +149,19 @@ impl Sorting {
         result
     }
 
-    fn quick_sort_internal<F>(arr: &mut [JsValue], low: usize, high: usize, compare: F) 
+    fn quick_sort_internal<F>(arr: &mut [JsValue], low: usize, high: usize, compare: Rc<F>) 
     where F: Fn(&JsValue, &JsValue) -> i32 {
         if low < high {
-            let pivot = Self::partition(arr, low, high, &compare);
+            let pivot = Self::partition(arr, low, high, Rc::clone(&compare));
             
             if pivot > 0 {
-                Self::quick_sort_internal(arr, low, pivot - 1, &compare);
+                Self::quick_sort_internal(arr, low, pivot - 1, Rc::clone(&compare));
             }
-            Self::quick_sort_internal(arr, pivot + 1, high, &compare);
+            Self::quick_sort_internal(arr, pivot + 1, high, compare);
         }
     }
 
-    fn partition<F>(arr: &mut [JsValue], low: usize, high: usize, compare: F) -> usize 
+    fn partition<F>(arr: &mut [JsValue], low: usize, high: usize, compare: Rc<F>) -> usize 
     where F: Fn(&JsValue, &JsValue) -> i32 {
         let pivot = arr[high].clone();
         let mut i = low;
@@ -175,20 +177,20 @@ impl Sorting {
         i
     }
 
-    fn merge_sort_internal<F>(arr: &mut [JsValue], left: usize, right: usize, compare: F)
+    fn merge_sort_internal<F>(arr: &mut [JsValue], left: usize, right: usize, compare: Rc<F>)
     where F: Fn(&JsValue, &JsValue) -> i32 {
         if left < right {
             let mid = left + (right - left) / 2;
             
-            Self::merge_sort_internal(arr, left, mid, &compare);
-            Self::merge_sort_internal(arr, mid + 1, right, &compare);
+            Self::merge_sort_internal(arr, left, mid, Rc::clone(&compare));
+            Self::merge_sort_internal(arr, mid + 1, right, Rc::clone(&compare));
             
-            Self::merge(arr, left, mid, right, &compare);
+            Self::merge(arr, left, mid, right, compare);
         }
     }
 
-    fn merge<F>(arr: &mut [JsValue], left: usize, mid: usize, right: usize, compare: F)
-    where F: Fn(&JsValue, &JsValue) -> i32 {
+    fn merge<F>(arr: &mut [JsValue], left: usize, mid: usize, right: usize, compare: Rc<F>)
+        where F: Fn(&JsValue, &JsValue) -> i32 {
         let n1 = mid - left + 1;
         let n2 = right - mid;
         
@@ -231,21 +233,21 @@ impl Sorting {
         }
     }
 
-    fn heap_sort_internal<F>(arr: &mut [JsValue], compare: F)
+    fn heap_sort_internal<F>(arr: &mut [JsValue], compare: Rc<F>)
     where F: Fn(&JsValue, &JsValue) -> i32 {
         let n = arr.len();
         
         for i in (0..n/2).rev() {
-            Self::heapify(arr, n, i, &compare);
+            Self::heapify(arr, n, i, Rc::clone(&compare));
         }
         
         for i in (1..n).rev() {
             arr.swap(0, i);
-            Self::heapify(arr, i, 0, &compare);
+            Self::heapify(arr, i, 0, Rc::clone(&compare));
         }
     }
 
-    fn heapify<F>(arr: &mut [JsValue], n: usize, i: usize, compare: F)
+    fn heapify<F>(arr: &mut [JsValue], n: usize, i: usize, compare: Rc<F>)
     where F: Fn(&JsValue, &JsValue) -> i32 {
         let mut largest = i;
         let left = 2 * i + 1;
@@ -261,12 +263,12 @@ impl Sorting {
         
         if largest != i {
             arr.swap(i, largest);
-            Self::heapify(arr, n, largest, &compare);
+            Self::heapify(arr, n, largest, compare);
         }
     }
 
     #[wasm_bindgen(js_name = "isSorted")]
-    pub fn is_sorted(arr: &js_sys::Array, comparator: Option<&Function>) -> bool {
+    pub fn is_sorted(arr: &js_sys::Array, comparator: Option<Function>) -> bool {
         if arr.length() <= 1 {
             return true;
         }
@@ -277,7 +279,7 @@ impl Sorting {
             let a = arr.get(i as u32);
             let b = arr.get((i + 1) as u32);
             
-            let result = if let Some(cmp) = comparator {
+            let result = if let Some(ref cmp) = comparator {
                 cmp.call2(&JsValue::NULL, &a, &b)
                     .unwrap_or(JsValue::from(0))
                     .as_f64()

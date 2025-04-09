@@ -1,9 +1,9 @@
 use wasm_bindgen::prelude::*;
 use js_sys::{Array, Uint8Array};
 use sha2::{Sha256, Sha512, Digest};
-use hmac::{Hmac, Mac};
+use hmac::{Hmac, Mac, digest::KeyInit};
 use aes_gcm::{
-    aead::{Aead, KeyInit, OsRng},
+    aead::{Aead, KeyInit as AeadKeyInit, AeadCore, OsRng},
     Aes256Gcm, Nonce
 };
 
@@ -28,7 +28,7 @@ impl Crypto {
 
     #[wasm_bindgen(js_name = "hmac256")]
     pub fn hmac_sha256(key: &[u8], data: &[u8]) -> Result<Vec<u8>, JsValue> {
-        let mut mac = Hmac::<Sha256>::new_from_slice(key)
+        let mut mac = <Hmac<Sha256> as KeyInit>::new_from_slice(key)
             .map_err(|_| JsValue::from_str("Invalid key length"))?;
         mac.update(data);
         Ok(mac.finalize().into_bytes().to_vec())
@@ -36,7 +36,7 @@ impl Crypto {
 
     #[wasm_bindgen(js_name = "hmac512")]
     pub fn hmac_sha512(key: &[u8], data: &[u8]) -> Result<Vec<u8>, JsValue> {
-        let mut mac = Hmac::<Sha512>::new_from_slice(key)
+        let mut mac = <Hmac<Sha512> as KeyInit>::new_from_slice(key)
             .map_err(|_| JsValue::from_str("Invalid key length"))?;
         mac.update(data);
         Ok(mac.finalize().into_bytes().to_vec())
@@ -85,7 +85,7 @@ impl Crypto {
     #[wasm_bindgen(js_name = "randomBytes")]
     pub fn random_bytes(length: usize) -> Uint8Array {
         let mut bytes = vec![0u8; length];
-        getrandom::getrandom(&mut bytes).unwrap();
+        getrandom::getrandom(&mut bytes).expect("Failed to generate random bytes");
         Uint8Array::from(&bytes[..])
     }
 }

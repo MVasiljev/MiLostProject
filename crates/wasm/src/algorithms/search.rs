@@ -138,11 +138,10 @@ impl Search {
         let h_chars: Vec<char> = haystack.chars().collect();
         let n_chars: Vec<char> = needle.chars().collect();
         
-        // Compute LPS (Longest Prefix Suffix) array
         let lps = Self::compute_lps(&n_chars);
         
-        let mut i = 0; // for haystack
-        let mut j = 0; // for needle
+        let mut i = 0;
+        let mut j = 0;
         
         while i < h_chars.len() {
             if h_chars[i] == n_chars[j] {
