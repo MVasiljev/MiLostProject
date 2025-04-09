@@ -1,8 +1,8 @@
 {
   "name": "milost",
   "private": true,
-  "version": "0.1.0",
-  "description": "MiLost programming language library",
+  "version": "0.1.0-alpha.1",
+  "description": "MiLost",
   "main": "index.js",
   "types": "index.d.ts",
   "files": [

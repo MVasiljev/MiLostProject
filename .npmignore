@@ -1,10 +1,12 @@
+# .npmignore
 src/
 crates/
 scripts/
-*.ts
-!*.d.ts
-tsconfig.json
-Cargo.*
 test/
-.github/
-src/__tests__
+.vscode/
+*.sh
+*.html
+*.lock
+.htaccess
+Cargo.toml
+Cargo.lock
