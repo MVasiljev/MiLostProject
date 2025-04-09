@@ -89,11 +89,11 @@ export class Result<T, E extends AppError = AppError> {
     return this.isErr() && this._error instanceof errorType;
   }
 
-  expect(message: string): T {
+  expect(message: Str): T {
     if (this._ok && this._value !== undefined) {
       return this._value;
     }
-    throw new Error(message);
+    throw new AppError(message);
   }
 
   unwrap(): T {
@@ -101,7 +101,10 @@ export class Result<T, E extends AppError = AppError> {
       try {
         return this._inner.unwrap() as T;
       } catch (err) {
-        throw this._error || new Error("Called unwrap on an Err result");
+        throw (
+          this._error ||
+          new AppError(Str.fromRaw("Called unwrap on an Err result"))
+        );
       }
     }
 
@@ -242,17 +245,17 @@ export class Result<T, E extends AppError = AppError> {
   static fromValidation<T>(
     value: T,
     validator: (val: T) => boolean,
-    errorMsg: string
+    errorMsg: Str
   ): Result<T, AppError> {
     if (validator(value)) {
       return Result.Ok(value);
     }
-    return Result.Err(new AppError(Str.fromRaw(errorMsg)));
+    return Result.Err(new AppError(errorMsg));
   }
 
   static async apiRequest<T>(
     requestFn: () => Promise<Response>,
-    defaultErrorMsg: string = "API request failed"
+    defaultErrorMsg: Str = Str.fromRaw("API request failed")
   ): Promise<Result<T, AppError>> {
     try {
       const response = await requestFn();
@@ -361,12 +364,12 @@ export async function tryAsync<T, E extends AppError = AppError>(
 }
 
 export async function apiRequest<T>(
-  url: string,
+  url: Str,
   options: RequestInit = {},
   errorMapper: (error: unknown) => AppError = apiErrorMapper
 ): Promise<Result<T, AppError>> {
   try {
-    const response = await fetch(url, {
+    const response = await fetch(url.unwrap(), {
       ...options,
       headers: {
         "Content-Type": "application/json",

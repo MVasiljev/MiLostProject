@@ -236,7 +236,7 @@ export function throttle<Args extends unknown[]>(
   let lastCall = 0;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let lastArgs: Args | null = null;
-  const waitMs = wait as unknown as number;
+  const waitMs = wait as unknown as u32;
 
   if (isWasmInitialized()) {
     try {
@@ -313,7 +313,7 @@ export function debounce<Args extends unknown[]>(
     timeout = setTimeout(() => {
       fn(...args);
       timeout = null;
-    }, wait as unknown as number);
+    }, wait as unknown as u32);
   };
 }
 
@@ -465,8 +465,8 @@ export function zipWith<T, U, R>(
 ): Vec<R> {
   const result: R[] = [];
   const minLen = Math.min(
-    as.len() as unknown as number,
-    bs.len() as unknown as number
+    as.len() as unknown as u32,
+    bs.len() as unknown as u32
   );
 
   for (let i = 0; i < minLen; i++) {

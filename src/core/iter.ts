@@ -40,9 +40,9 @@ export class Iter<T> implements Iterable<T> {
   }
 
   static range(start: i32, end: i32, step: i32 = i32(1)): Iter<i32> {
-    const startNum = start as unknown as number;
-    const endNum = end as unknown as number;
-    const stepNum = step as unknown as number;
+    const startNum = start as unknown as i32;
+    const endNum = end as unknown as i32;
+    const stepNum = step as unknown as i32;
 
     if (isWasmInitialized()) {
       try {
@@ -60,7 +60,7 @@ export class Iter<T> implements Iterable<T> {
         for (
           let i = startNum;
           stepNum > 0 ? i < endNum : i > endNum;
-          i += stepNum
+          i = i32(i + stepNum)
         ) {
           yield i32(i);
         }
@@ -129,7 +129,7 @@ export class Iter<T> implements Iterable<T> {
 
   take(n: u32): Iter<T> {
     const self = this;
-    const nValue = n as unknown as number;
+    const nValue = n as unknown as u32;
     return new Iter({
       *[Symbol.iterator]() {
         let count = 0;
@@ -143,7 +143,7 @@ export class Iter<T> implements Iterable<T> {
 
   skip(n: u32): Iter<T> {
     const self = this;
-    const nValue = n as unknown as number;
+    const nValue = n as unknown as u32;
     return new Iter({
       *[Symbol.iterator]() {
         let count = 0;
@@ -206,7 +206,7 @@ export class Iter<T> implements Iterable<T> {
 
   chunks(size: u32): Iter<Vec<T>> {
     const self = this;
-    const sizeValue = size as unknown as number;
+    const sizeValue = size as unknown as u32;
     return new Iter({
       *[Symbol.iterator]() {
         let chunk: T[] = [];
@@ -249,7 +249,7 @@ export class Iter<T> implements Iterable<T> {
 
   nth(n: u32): Option<T> {
     let i = 0;
-    const nValue = n as unknown as number;
+    const nValue = n as unknown as u32;
     for (const item of this) {
       if (i++ === nValue) return Option.Some(item);
     }

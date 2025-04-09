@@ -258,7 +258,7 @@ export namespace DomainErrors {
           const wasmModule = getWasmModule();
           const wasmError = wasmModule.createRateLimitError(
             message.unwrap(),
-            retryAfterSeconds ? (retryAfterSeconds as unknown as number) : null
+            retryAfterSeconds ? (retryAfterSeconds as unknown as u32) : null
           );
           super(Str.fromRaw(wasmError.message));
           this.retryAfterSeconds = retryAfterSeconds;
