@@ -1,8 +1,9 @@
 import { Str } from "./string";
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import { getWasmModule, isWasmInitialized } from "../wasm/init";
+import { callWasmInstanceMethod, callWasmStaticMethod } from "../wasm/lib";
 
-export class Tuple<T extends unknown[]> {
-  private readonly items: T;
+export class Tuple<T extends unknown[]> implements Iterable<unknown> {
+  private readonly _items: T;
   private readonly _inner: any;
   private readonly _useWasm: boolean;
 
@@ -13,7 +14,7 @@ export class Tuple<T extends unknown[]> {
     useWasm: boolean = true,
     existingWasmTuple?: any
   ) {
-    this.items = items;
+    this._items = [...items] as T;
     this._useWasm = useWasm && isWasmInitialized();
 
     if (existingWasmTuple) {
@@ -22,15 +23,13 @@ export class Tuple<T extends unknown[]> {
       try {
         const wasmModule = getWasmModule();
         const jsArray = new Array(items.length);
-
         for (let i = 0; i < items.length; i++) {
           jsArray[i] = items[i];
         }
-
-        this._inner = wasmModule.Tuple.fromArray(jsArray);
+        this._inner = wasmModule.Tuple.from(jsArray);
       } catch (error) {
         console.warn(
-          `WASM Tuple creation failed, falling back to JS implementation: ${error}`
+          `WASM Tuple creation failed, using JS implementation: ${error}`
         );
         this._useWasm = false;
       }
@@ -38,30 +37,49 @@ export class Tuple<T extends unknown[]> {
   }
 
   static from<T extends unknown[]>(...items: T): Tuple<T> {
-    return new Tuple<T>(items);
+    return callWasmStaticMethod(
+      "Tuple",
+      "from",
+      [items],
+      () => new Tuple<T>(items, false)
+    );
   }
 
   static pair<A, B>(a: A, b: B): Tuple<[A, B]> {
-    return Tuple.from(a, b);
+    return callWasmStaticMethod(
+      "Tuple",
+      "pair",
+      [a, b],
+      () => new Tuple<[A, B]>([a, b] as [A, B], false)
+    );
   }
 
-  static async create<T extends unknown[]>(...items: T): Promise<Tuple<T>> {
-    if (!isWasmInitialized()) {
-      try {
-        await initWasm();
-      } catch (error) {
-        console.warn(
-          `WASM module not available, using JS implementation: ${error}`
-        );
-      }
+  len(): number {
+    if (this._useWasm) {
+      return callWasmInstanceMethod(
+        this._inner,
+        "len",
+        [],
+        () => this._items.length
+      );
     }
+    return this._items.length;
+  }
 
-    return new Tuple<T>(items);
+  isEmpty(): boolean {
+    if (this._useWasm) {
+      return callWasmInstanceMethod(
+        this._inner,
+        "isEmpty",
+        [],
+        () => this._items.length === 0
+      );
+    }
+    return this._items.length === 0;
   }
 
   get<I extends keyof T>(index: I): T[I] {
     const i = Number(index);
-
     if (this._useWasm) {
       try {
         const result = this._inner.get(i);
@@ -70,26 +88,23 @@ export class Tuple<T extends unknown[]> {
         console.warn(`WASM get failed, using JS fallback: ${error}`);
       }
     }
-
-    return this.items[index];
+    return this._items[index];
   }
 
   replace<I extends keyof T>(index: I, value: T[I]): Tuple<T> {
     const i = Number(index);
-
     if (this._useWasm) {
       try {
         const newWasmTuple = this._inner.replace(i, value);
-        const copy = this.items.slice() as T;
+        const copy = this._items.slice() as T;
         copy[i] = value;
         return new Tuple<T>(copy, true, newWasmTuple);
       } catch (error) {
         console.warn(`WASM replace failed, using JS fallback: ${error}`);
       }
     }
-
-    const copy = this.items.slice() as T;
-    copy[Number(index) as keyof T] = value;
+    const copy = this._items.slice() as T;
+    copy[i] = value;
     return new Tuple<T>(copy, this._useWasm);
   }
 
@@ -101,8 +116,7 @@ export class Tuple<T extends unknown[]> {
         console.warn(`WASM first failed, using JS fallback: ${error}`);
       }
     }
-
-    return this.get("0" as keyof T);
+    return this._items[0];
   }
 
   second(): T[1] {
@@ -113,8 +127,32 @@ export class Tuple<T extends unknown[]> {
         console.warn(`WASM second failed, using JS fallback: ${error}`);
       }
     }
+    return this._items[1];
+  }
 
-    return this.get("1" as keyof T);
+  map<R>(fn: (value: unknown, index: number) => R): Tuple<R[]> {
+    if (this._useWasm) {
+      try {
+        const mappedWasm = this._inner.map(fn);
+        const mappedItems = this._items.map(fn) as R[];
+        return new Tuple<R[]>(mappedItems, true, mappedWasm);
+      } catch (error) {
+        console.warn(`WASM map failed, using JS fallback: ${error}`);
+      }
+    }
+    return new Tuple<R[]>(this._items.map(fn) as R[], false);
+  }
+
+  forEach(callback: (value: unknown, index: number) => void): void {
+    if (this._useWasm) {
+      try {
+        this._inner.forEach(callback);
+        return;
+      } catch (error) {
+        console.warn(`WASM forEach failed, using JS fallback: ${error}`);
+      }
+    }
+    this._items.forEach(callback);
   }
 
   toArray(): T {
@@ -126,16 +164,26 @@ export class Tuple<T extends unknown[]> {
         console.warn(`WASM toArray failed, using JS fallback: ${error}`);
       }
     }
-
-    return [...this.items] as T;
+    return [...this._items] as T;
   }
 
   toString(): Str {
-    return Str.fromRaw(`[Tuple ${JSON.stringify(this.items)}]`);
+    if (this._useWasm) {
+      try {
+        return Str.fromRaw(this._inner.toString());
+      } catch (error) {
+        console.warn(`WASM toString failed, using JS fallback: ${error}`);
+      }
+    }
+    return Str.fromRaw(`[Tuple ${JSON.stringify(this._items)}]`);
   }
 
   toJSON(): T {
-    return this.items;
+    return this.toArray();
+  }
+
+  [Symbol.iterator](): Iterator<unknown> {
+    return this._items[Symbol.iterator]();
   }
 
   get [Symbol.toStringTag](): Str {

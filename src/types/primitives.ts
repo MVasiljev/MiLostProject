@@ -1,7 +1,8 @@
-import { ValidationError, Result, Ok, Err } from "../core/index.js";
-import { Brand } from "./branding.js";
-import { Str } from "./string.js";
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import { ValidationError, Result, Ok, Err } from "../core/index";
+import { Brand } from "./branding";
+import { Str } from "./string";
+import { getWasmModule, isWasmInitialized } from "../wasm/init";
+import { callWasmStaticMethod } from "../wasm/lib";
 
 type RawNumber = number;
 
@@ -18,6 +19,15 @@ export type isize = Brand<RawNumber, Str>;
 export type f32 = Brand<RawNumber, Str>;
 export type f64 = Brand<RawNumber, Str>;
 
+export type byte = u8;
+export type short = i16;
+export type int = i32;
+export type long = i64;
+export type uint = u32;
+export type ulong = u64;
+export type float = f32;
+export type double = f64;
+
 export const limits = {
   u8: [0, 255],
   u16: [0, 65535],
@@ -33,283 +43,235 @@ export const limits = {
   f64: [Number.MIN_VALUE, Number.MAX_VALUE],
 } as const;
 
-const isInt = (n: RawNumber): boolean => Number.isInteger(n);
-const isFiniteNum = (n: RawNumber): boolean =>
-  typeof n === "number" && isFinite(n);
-
-function validate(name: keyof typeof limits, value: RawNumber): boolean {
+export function validateU8(n: number): boolean {
   if (isWasmInitialized()) {
     try {
       const wasmModule = getWasmModule();
-      const primitives = wasmModule.Primitives;
-
-      switch (name) {
-        case "u8":
-          return primitives.validateU8(value);
-        case "u16":
-          return primitives.validateU16(value);
-        case "u32":
-          return primitives.validateU32(value);
-        case "i8":
-          return primitives.validateI8(value);
-        case "i16":
-          return primitives.validateI16(value);
-        case "i32":
-          return primitives.validateI32(value);
-        case "f32":
-          return primitives.validateF32(value);
-        case "f64":
-          return primitives.validateF64(value);
-      }
+      const primitives = new wasmModule.Primitives();
+      return primitives.validateU8(n);
     } catch (error) {
-      console.warn(
-        `WASM validation failed, falling back to JS implementation: ${error}`
-      );
+      console.warn(`WASM validateU8 failed, using JS fallback: ${error}`);
     }
   }
-
-  const [min, max] = limits[name];
-  return name.startsWith("f")
-    ? isFiniteNum(value)
-    : isInt(value) && value >= min && value <= max;
+  return Number.isFinite(n) && Number.isInteger(n) && n >= 0 && n <= 255;
 }
 
-function wrap<T>(name: keyof typeof limits, value: RawNumber): T {
-  if (!validate(name, value)) {
-    throw new ValidationError(Str.fromRaw(`Invalid value for type: ${name}`));
-  }
-  return value as T;
-}
-
-function safeWrap<T>(
-  name: keyof typeof limits,
-  value: RawNumber
-): Result<T, ValidationError> {
-  return validate(name, value)
-    ? Ok(value as T)
-    : Err(new ValidationError(Str.fromRaw(`Invalid value for type: ${name}`)));
-}
-
-export const u8 = (v: RawNumber): u8 => wrap("u8", v);
-export const u16 = (v: RawNumber): u16 => wrap("u16", v);
-export const u32 = (v: RawNumber): u32 => wrap("u32", v);
-export const u64 = (v: RawNumber): u64 => wrap("u64", v);
-export const usize = (v: RawNumber): usize => wrap("usize", v);
-export const i8 = (v: RawNumber): i8 => wrap("i8", v);
-export const i16 = (v: RawNumber): i16 => wrap("i16", v);
-export const i32 = (v: RawNumber): i32 => wrap("i32", v);
-export const i64 = (v: RawNumber): i64 => wrap("i64", v);
-export const isize = (v: RawNumber): isize => wrap("isize", v);
-export const f32 = (v: RawNumber): f32 => wrap("f32", v);
-export const f64 = (v: RawNumber): f64 => wrap("f64", v);
-
-export type byte = u8;
-export type short = i16;
-export type int = i32;
-export type long = i64;
-export type uint = u32;
-export type ulong = u64;
-export type float = f32;
-export type double = f64;
-
-export async function initPrimitives(): Promise<void> {
-  if (!isWasmInitialized()) {
-    try {
-      await initWasm();
-    } catch (error) {
-      console.warn(
-        `WASM module not available, using JS implementation: ${error}`
-      );
-    }
-  }
-}
-
-export function format_bin(v: u32): Str {
+export function validateU16(n: number): boolean {
   if (isWasmInitialized()) {
     try {
       const wasmModule = getWasmModule();
-      const primitives = wasmModule.Primitives;
-      return Str.fromRaw(primitives.formatBin(v as unknown as RawNumber));
+      const primitives = new wasmModule.Primitives();
+      return primitives.validateU16(n);
     } catch (error) {
-      console.warn(`WASM formatBin failed, using JS fallback: ${error}`);
+      console.warn(`WASM validateU16 failed, using JS fallback: ${error}`);
     }
   }
-  return Str.fromRaw((v as unknown as RawNumber).toString(2));
+  return Number.isFinite(n) && Number.isInteger(n) && n >= 0 && n <= 65535;
 }
 
-export function format_hex(v: u32): Str {
+export function validateU32(n: number): boolean {
   if (isWasmInitialized()) {
     try {
       const wasmModule = getWasmModule();
-      const primitives = wasmModule.Primitives;
-      return Str.fromRaw(primitives.formatHex(v as unknown as RawNumber));
+      const primitives = new wasmModule.Primitives();
+      return primitives.validateU32(n);
     } catch (error) {
-      console.warn(`WASM formatHex failed, using JS fallback: ${error}`);
+      console.warn(`WASM validateU32 failed, using JS fallback: ${error}`);
     }
   }
-  return Str.fromRaw((v as unknown as RawNumber).toString(16));
+  return Number.isFinite(n) && Number.isInteger(n) && n >= 0 && n <= 0xffffffff;
 }
 
-export function format_oct(v: u32): Str {
+export function validateI8(n: number): boolean {
   if (isWasmInitialized()) {
     try {
       const wasmModule = getWasmModule();
-      const primitives = wasmModule.Primitives;
-      return Str.fromRaw(primitives.formatOct(v as unknown as RawNumber));
+      const primitives = new wasmModule.Primitives();
+      return primitives.validateI8(n);
     } catch (error) {
-      console.warn(`WASM formatOct failed, using JS fallback: ${error}`);
+      console.warn(`WASM validateI8 failed, using JS fallback: ${error}`);
     }
   }
-  return Str.fromRaw((v as unknown as RawNumber).toString(8));
+  return Number.isFinite(n) && Number.isInteger(n) && n >= -128 && n <= 127;
 }
 
-export function format_int(v: u32, radix: u8, pad: u8): Str {
+export function validateI16(n: number): boolean {
   if (isWasmInitialized()) {
     try {
       const wasmModule = getWasmModule();
-      const primitives = wasmModule.Primitives;
-      return Str.fromRaw(
-        primitives.formatInt(
-          v as unknown as RawNumber,
-          radix as unknown as RawNumber,
-          pad as unknown as RawNumber
-        )
-      );
+      const primitives = new wasmModule.Primitives();
+      return primitives.validateI16(n);
     } catch (error) {
-      console.warn(`WASM formatInt failed, using JS fallback: ${error}`);
+      console.warn(`WASM validateI16 failed, using JS fallback: ${error}`);
     }
   }
-  const raw = (v as unknown as RawNumber).toString(radix as unknown as number);
-  return Str.fromRaw(raw.padStart(pad as unknown as number, "0"));
+  return Number.isFinite(n) && Number.isInteger(n) && n >= -32768 && n <= 32767;
 }
 
-export function format_float(v: f32, digits: u8 = u8(2)): Str {
+export function validateI32(n: number): boolean {
   if (isWasmInitialized()) {
     try {
       const wasmModule = getWasmModule();
-      const primitives = wasmModule.Primitives;
-      return Str.fromRaw(
-        primitives.formatFloat(
-          v as unknown as RawNumber,
-          digits as unknown as RawNumber
-        )
-      );
+      const primitives = new wasmModule.Primitives();
+      return primitives.validateI32(n);
     } catch (error) {
-      console.warn(`WASM formatFloat failed, using JS fallback: ${error}`);
+      console.warn(`WASM validateI32 failed, using JS fallback: ${error}`);
     }
   }
-  return Str.fromRaw(
-    (v as unknown as RawNumber).toFixed(digits as unknown as number)
+  return (
+    Number.isFinite(n) &&
+    Number.isInteger(n) &&
+    n >= -2147483648 &&
+    n <= 2147483647
   );
 }
 
-export function is_power_of_two(v: u32): boolean {
-  if (isWasmInitialized()) {
-    try {
-      const wasmModule = getWasmModule();
-      const primitives = wasmModule.Primitives;
-      return primitives.isPowerOfTwo(v as unknown as RawNumber);
-    } catch (error) {
-      console.warn(`WASM isPowerOfTwo failed, using JS fallback: ${error}`);
-    }
+export function u8(v: RawNumber): u8 {
+  if (!validateU8(v)) {
+    throw new ValidationError(Str.fromRaw(`Invalid value for type u8: ${v}`));
   }
-  const raw = v as unknown as RawNumber;
-  return raw > 0 && (raw & (raw - 1)) === 0;
+  return v as u8;
 }
 
-export function next_power_of_two(v: u32): u32 {
-  if (isWasmInitialized()) {
-    try {
-      const wasmModule = getWasmModule();
-      const primitives = wasmModule.Primitives;
-      return u32(primitives.nextPowerOfTwo(v as unknown as RawNumber));
-    } catch (error) {
-      console.warn(`WASM nextPowerOfTwo failed, using JS fallback: ${error}`);
-    }
+export function u16(v: RawNumber): u16 {
+  if (!validateU16(v)) {
+    throw new ValidationError(Str.fromRaw(`Invalid value for type u16: ${v}`));
   }
-
-  let raw = v as unknown as RawNumber;
-  if (raw <= 0) return u32(1);
-  raw--;
-  raw |= raw >> 1;
-  raw |= raw >> 2;
-  raw |= raw >> 4;
-  raw |= raw >> 8;
-  raw |= raw >> 16;
-  return u32(raw + 1);
+  return v as u16;
 }
 
-export function leading_zeros(v: u32): u32 {
-  if (isWasmInitialized()) {
-    try {
-      const wasmModule = getWasmModule();
-      const primitives = wasmModule.Primitives;
-      return u32(primitives.leadingZeros(v as unknown as RawNumber));
-    } catch (error) {
-      console.warn(`WASM leadingZeros failed, using JS fallback: ${error}`);
-    }
+export function u32(v: RawNumber): u32 {
+  if (!validateU32(v)) {
+    throw new ValidationError(Str.fromRaw(`Invalid value for type u32: ${v}`));
   }
-
-  let raw = v as unknown as RawNumber;
-  if (raw === 0) return u32(32);
-  let count = 0;
-  while ((raw & 0x80000000) === 0) {
-    count++;
-    raw <<= 1;
-  }
-  return u32(count);
+  return v as u32;
 }
 
-export function trailing_zeros(v: u32): u32 {
+export function u64(v: RawNumber): u64 {
   if (isWasmInitialized()) {
     try {
       const wasmModule = getWasmModule();
-      const primitives = wasmModule.Primitives;
-      return u32(primitives.trailingZeros(v as unknown as RawNumber));
+      const primitives = new wasmModule.Primitives();
+      if (!primitives.validateU64(v)) {
+        throw new ValidationError(
+          Str.fromRaw(`Invalid value for type u64: ${v}`)
+        );
+      }
+      return v as u64;
     } catch (error) {
-      console.warn(`WASM trailingZeros failed, using JS fallback: ${error}`);
+      console.warn(`WASM validateU64 failed, using JS fallback: ${error}`);
     }
   }
 
-  let raw = v as unknown as RawNumber;
-  if (raw === 0) return u32(32);
-  let count = 0;
-  while ((raw & 1) === 0) {
-    count++;
-    raw >>= 1;
+  if (
+    !Number.isFinite(v) ||
+    !Number.isInteger(v) ||
+    v < 0 ||
+    v > Number.MAX_SAFE_INTEGER
+  ) {
+    throw new ValidationError(Str.fromRaw(`Invalid value for type u64: ${v}`));
   }
-  return u32(count);
+  return v as u64;
 }
 
-export function count_ones(v: u32): u32 {
+export function i8(v: RawNumber): i8 {
+  if (!validateI8(v)) {
+    throw new ValidationError(Str.fromRaw(`Invalid value for type i8: ${v}`));
+  }
+  return v as i8;
+}
+
+export function i16(v: RawNumber): i16 {
+  if (!validateI16(v)) {
+    throw new ValidationError(Str.fromRaw(`Invalid value for type i16: ${v}`));
+  }
+  return v as i16;
+}
+
+export function i32(v: RawNumber): i32 {
+  if (!validateI32(v)) {
+    throw new ValidationError(Str.fromRaw(`Invalid value for type i32: ${v}`));
+  }
+  return v as i32;
+}
+
+export function i64(v: RawNumber): i64 {
   if (isWasmInitialized()) {
     try {
       const wasmModule = getWasmModule();
-      const primitives = wasmModule.Primitives;
-      return u32(primitives.countOnes(v as unknown as RawNumber));
+      const primitives = new wasmModule.Primitives();
+      if (!primitives.validateI64(v)) {
+        throw new ValidationError(
+          Str.fromRaw(`Invalid value for type i64: ${v}`)
+        );
+      }
+      return v as i64;
     } catch (error) {
-      console.warn(`WASM countOnes failed, using JS fallback: ${error}`);
+      console.warn(`WASM validateI64 failed, using JS fallback: ${error}`);
     }
   }
 
-  let raw = v as unknown as RawNumber;
-  let count = 0;
-  while (raw !== 0) {
-    count += raw & 1;
-    raw >>>= 1;
+  if (
+    !Number.isFinite(v) ||
+    !Number.isInteger(v) ||
+    v < Number.MIN_SAFE_INTEGER ||
+    v > Number.MAX_SAFE_INTEGER
+  ) {
+    throw new ValidationError(Str.fromRaw(`Invalid value for type i64: ${v}`));
   }
-  return u32(count);
+  return v as i64;
+}
+
+export function f32(v: RawNumber): f32 {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      if (!primitives.validateF32(v)) {
+        throw new ValidationError(
+          Str.fromRaw(`Invalid value for type f32: ${v}`)
+        );
+      }
+      return v as f32;
+    } catch (error) {
+      console.warn(`WASM validateF32 failed, using JS fallback: ${error}`);
+    }
+  }
+
+  if (!Number.isFinite(v) || v < -3.40282347e38 || v > 3.40282347e38) {
+    throw new ValidationError(Str.fromRaw(`Invalid value for type f32: ${v}`));
+  }
+  return v as f32;
+}
+
+export function f64(v: RawNumber): f64 {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      if (!primitives.validateF64(v)) {
+        throw new ValidationError(
+          Str.fromRaw(`Invalid value for type f64: ${v}`)
+        );
+      }
+      return v as f64;
+    } catch (error) {
+      console.warn(`WASM validateF64 failed, using JS fallback: ${error}`);
+    }
+  }
+
+  if (!Number.isFinite(v)) {
+    throw new ValidationError(Str.fromRaw(`Invalid value for type f64: ${v}`));
+  }
+  return v as f64;
 }
 
 export function add_u8(a: u8, b: u8): Result<u8, ValidationError> {
   if (isWasmInitialized()) {
     try {
       const wasmModule = getWasmModule();
-      const primitives = wasmModule.Primitives;
-      const result = primitives.addU8(
-        a as unknown as RawNumber,
-        b as unknown as RawNumber
-      );
+      const primitives = new wasmModule.Primitives();
+      const result = primitives.add_u8(a as number, b as number);
 
       if (result === null || result === undefined) {
         return Err(
@@ -319,14 +281,14 @@ export function add_u8(a: u8, b: u8): Result<u8, ValidationError> {
         );
       }
 
-      return Ok(u8(result));
+      return Ok(result as u8);
     } catch (error) {
-      console.warn(`WASM addU8 failed, using JS fallback: ${error}`);
+      console.warn(`WASM add_u8 failed, using JS fallback: ${error}`);
     }
   }
 
-  const sum = (a as unknown as number) + (b as unknown as number);
-  if (sum > limits.u8[1]) {
+  const sum = (a as number) + (b as number);
+  if (sum > 255) {
     return Err(
       new ValidationError(
         Str.fromRaw(`Addition would overflow u8: ${a} + ${b} = ${sum}`)
@@ -340,11 +302,8 @@ export function add_u16(a: u16, b: u16): Result<u16, ValidationError> {
   if (isWasmInitialized()) {
     try {
       const wasmModule = getWasmModule();
-      const primitives = wasmModule.Primitives;
-      const result = primitives.addU16(
-        a as unknown as RawNumber,
-        b as unknown as RawNumber
-      );
+      const primitives = new wasmModule.Primitives();
+      const result = primitives.add_u16(a as number, b as number);
 
       if (result === null || result === undefined) {
         return Err(
@@ -354,14 +313,14 @@ export function add_u16(a: u16, b: u16): Result<u16, ValidationError> {
         );
       }
 
-      return Ok(u16(result));
+      return Ok(result as u16);
     } catch (error) {
-      console.warn(`WASM addU16 failed, using JS fallback: ${error}`);
+      console.warn(`WASM add_u16 failed, using JS fallback: ${error}`);
     }
   }
 
-  const sum = (a as unknown as number) + (b as unknown as number);
-  if (sum > limits.u16[1]) {
+  const sum = (a as number) + (b as number);
+  if (sum > 65535) {
     return Err(
       new ValidationError(
         Str.fromRaw(`Addition would overflow u16: ${a} + ${b} = ${sum}`)
@@ -375,11 +334,8 @@ export function add_u32(a: u32, b: u32): Result<u32, ValidationError> {
   if (isWasmInitialized()) {
     try {
       const wasmModule = getWasmModule();
-      const primitives = wasmModule.Primitives;
-      const result = primitives.addU32(
-        a as unknown as RawNumber,
-        b as unknown as RawNumber
-      );
+      const primitives = new wasmModule.Primitives();
+      const result = primitives.add_u32(a as number, b as number);
 
       if (result === null || result === undefined) {
         return Err(
@@ -389,14 +345,14 @@ export function add_u32(a: u32, b: u32): Result<u32, ValidationError> {
         );
       }
 
-      return Ok(u32(result));
+      return Ok(result as u32);
     } catch (error) {
-      console.warn(`WASM addU32 failed, using JS fallback: ${error}`);
+      console.warn(`WASM add_u32 failed, using JS fallback: ${error}`);
     }
   }
 
-  const sum = (a as unknown as number) + (b as unknown as number);
-  if (sum > limits.u32[1]) {
+  const sum = (a as number) + (b as number);
+  if (sum > 0xffffffff) {
     return Err(
       new ValidationError(
         Str.fromRaw(`Addition would overflow u32: ${a} + ${b} = ${sum}`)
@@ -410,11 +366,8 @@ export function sub_u32(a: u32, b: u32): Result<u32, ValidationError> {
   if (isWasmInitialized()) {
     try {
       const wasmModule = getWasmModule();
-      const primitives = wasmModule.Primitives;
-      const result = primitives.subU32(
-        a as unknown as RawNumber,
-        b as unknown as RawNumber
-      );
+      const primitives = new wasmModule.Primitives();
+      const result = primitives.sub_u32(a as number, b as number);
 
       if (result === null || result === undefined) {
         return Err(
@@ -424,14 +377,14 @@ export function sub_u32(a: u32, b: u32): Result<u32, ValidationError> {
         );
       }
 
-      return Ok(u32(result));
+      return Ok(result as u32);
     } catch (error) {
-      console.warn(`WASM subU32 failed, using JS fallback: ${error}`);
+      console.warn(`WASM sub_u32 failed, using JS fallback: ${error}`);
     }
   }
 
-  const diff = (a as unknown as number) - (b as unknown as number);
-  if (diff < limits.u32[0]) {
+  const diff = (a as number) - (b as number);
+  if (diff < 0) {
     return Err(
       new ValidationError(
         Str.fromRaw(`Subtraction would underflow u32: ${a} - ${b} = ${diff}`)
@@ -445,11 +398,8 @@ export function mul_u32(a: u32, b: u32): Result<u32, ValidationError> {
   if (isWasmInitialized()) {
     try {
       const wasmModule = getWasmModule();
-      const primitives = wasmModule.Primitives;
-      const result = primitives.mulU32(
-        a as unknown as RawNumber,
-        b as unknown as RawNumber
-      );
+      const primitives = new wasmModule.Primitives();
+      const result = primitives.mul_u32(a as number, b as number);
 
       if (result === null || result === undefined) {
         return Err(
@@ -459,14 +409,14 @@ export function mul_u32(a: u32, b: u32): Result<u32, ValidationError> {
         );
       }
 
-      return Ok(u32(result));
+      return Ok(result as u32);
     } catch (error) {
-      console.warn(`WASM mulU32 failed, using JS fallback: ${error}`);
+      console.warn(`WASM mul_u32 failed, using JS fallback: ${error}`);
     }
   }
 
-  const product = (a as unknown as number) * (b as unknown as number);
-  if (product > limits.u32[1]) {
+  const product = (a as number) * (b as number);
+  if (product > 0xffffffff) {
     return Err(
       new ValidationError(
         Str.fromRaw(
@@ -482,187 +432,360 @@ export function div_u32(a: u32, b: u32): Result<u32, ValidationError> {
   if (isWasmInitialized()) {
     try {
       const wasmModule = getWasmModule();
-      const primitives = wasmModule.Primitives;
-      const result = primitives.divU32(
-        a as unknown as RawNumber,
-        b as unknown as RawNumber
-      );
+      const primitives = new wasmModule.Primitives();
+      const result = primitives.div_u32(a as number, b as number);
 
       if (result === null || result === undefined) {
-        return Err(new ValidationError(Str.fromRaw("Division by zero")));
+        return Err(
+          new ValidationError(Str.fromRaw(`Division by zero: ${a} / ${b}`))
+        );
       }
 
-      return Ok(u32(result));
+      return Ok(result as u32);
     } catch (error) {
-      console.warn(`WASM divU32 failed, using JS fallback: ${error}`);
+      console.warn(`WASM div_u32 failed, using JS fallback: ${error}`);
     }
   }
 
-  const bValue = b as unknown as number;
-  if (bValue === 0) {
-    return Err(new ValidationError(Str.fromRaw("Division by zero")));
+  if ((b as number) === 0) {
+    return Err(
+      new ValidationError(Str.fromRaw(`Division by zero: ${a} / ${b}`))
+    );
   }
-  return Ok(u32(Math.floor((a as unknown as number) / bValue)));
+  return Ok(u32(Math.floor((a as number) / (b as number))));
 }
 
 export function u8_to_u16(value: u8): u16 {
-  return u16(value as unknown as number);
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return primitives.u8_to_u16(value as number) as u16;
+    } catch (error) {
+      console.warn(`WASM u8_to_u16 failed, using JS fallback: ${error}`);
+    }
+  }
+  return u16(value as number);
 }
 
 export function u8_to_u32(value: u8): u32 {
-  return u32(value as unknown as number);
-}
-
-export function u8_to_u64(value: u8): u64 {
-  return u64(value as unknown as number);
-}
-
-export function u16_to_u32(value: u16): u32 {
-  return u32(value as unknown as number);
-}
-
-export function u16_to_u64(value: u16): u64 {
-  return u64(value as unknown as number);
-}
-
-export function u32_to_u64(value: u32): u64 {
-  return u64(value as unknown as number);
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return primitives.u8_to_u32(value as number) as u32;
+    } catch (error) {
+      console.warn(`WASM u8_to_u32 failed, using JS fallback: ${error}`);
+    }
+  }
+  return u32(value as number);
 }
 
 export function i8_to_i16(value: i8): i16 {
-  return i16(value as unknown as number);
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return primitives.i8_to_i16(value as number) as i16;
+    } catch (error) {
+      console.warn(`WASM i8_to_i16 failed, using JS fallback: ${error}`);
+    }
+  }
+  return i16(value as number);
 }
 
 export function i8_to_i32(value: i8): i32 {
-  return i32(value as unknown as number);
-}
-
-export function i8_to_i64(value: i8): i64 {
-  return i64(value as unknown as number);
-}
-
-export function i16_to_i32(value: i16): i32 {
-  return i32(value as unknown as number);
-}
-
-export function i16_to_i64(value: i16): i64 {
-  return i64(value as unknown as number);
-}
-
-export function i32_to_i64(value: i32): i64 {
-  return i64(value as unknown as number);
-}
-
-export function f32_to_f64(value: f32): f64 {
-  return f64(value as unknown as number);
-}
-
-export function u8_to_i8(value: u8): Result<i8, ValidationError> {
-  const num = value as unknown as number;
-  if (num > limits.i8[1]) {
-    return Err(
-      new ValidationError(Str.fromRaw(`Value ${num} is too large for i8`))
-    );
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return primitives.i8_to_i32(value as number) as i32;
+    } catch (error) {
+      console.warn(`WASM i8_to_i32 failed, using JS fallback: ${error}`);
+    }
   }
-  return Ok(i8(num));
+  return i32(value as number);
 }
 
-export function u16_to_i16(value: u16): Result<i16, ValidationError> {
-  const num = value as unknown as number;
-  if (num > limits.i16[1]) {
-    return Err(
-      new ValidationError(Str.fromRaw(`Value ${num} is too large for i16`))
-    );
+export function format_bin(v: u32): string {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return primitives.format_bin(v as number);
+    } catch (error) {
+      console.warn(`WASM format_bin failed, using JS fallback: ${error}`);
+    }
   }
-  return Ok(i16(num));
+  return (v as number).toString(2);
 }
 
-export function u32_to_i32(value: u32): Result<i32, ValidationError> {
-  const num = value as unknown as number;
-  if (num > limits.i32[1]) {
-    return Err(
-      new ValidationError(Str.fromRaw(`Value ${num} is too large for i32`))
-    );
+export function format_hex(v: u32): string {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return primitives.format_hex(v as number);
+    } catch (error) {
+      console.warn(`WASM format_hex failed, using JS fallback: ${error}`);
+    }
   }
-  return Ok(i32(num));
+  return (v as number).toString(16);
 }
 
-export function i8_to_u8(value: i8): Result<u8, ValidationError> {
-  const num = value as unknown as number;
-  if (num < 0) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(`Cannot convert negative value ${num} to u8`)
-      )
-    );
+export function format_oct(v: u32): string {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return primitives.format_oct(v as number);
+    } catch (error) {
+      console.warn(`WASM format_oct failed, using JS fallback: ${error}`);
+    }
   }
-  return Ok(u8(num));
+  return (v as number).toString(8);
 }
 
-export function i16_to_u16(value: i16): Result<u16, ValidationError> {
-  const num = value as unknown as number;
-  if (num < 0) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(`Cannot convert negative value ${num} to u16`)
-      )
-    );
+export function format_int(v: u32, radix: u8, pad: u8): string {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return primitives.format_int(v as number, radix as number, pad as number);
+    } catch (error) {
+      console.warn(`WASM format_int failed, using JS fallback: ${error}`);
+    }
   }
-  return Ok(u16(num));
+  const raw = (v as number).toString(radix as number);
+  return raw.padStart(pad as number, "0");
 }
 
-export function i32_to_u32(value: i32): Result<u32, ValidationError> {
-  const num = value as unknown as number;
-  if (num < 0) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(`Cannot convert negative value ${num} to u32`)
-      )
-    );
+export function format_float(v: f32, digits: u8 = u8(2)): string {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return primitives.format_float(v as number, digits as number);
+    } catch (error) {
+      console.warn(`WASM format_float failed, using JS fallback: ${error}`);
+    }
   }
-  return Ok(u32(num));
+  return (v as number).toFixed(digits as number);
 }
 
-export function f32_to_i32(value: f32): Result<i32, ValidationError> {
-  const num = value as unknown as number;
-  if (!Number.isInteger(num)) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(`Cannot convert non-integer value ${num} to i32`)
-      )
-    );
+export function is_power_of_two(v: u32): boolean {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return primitives.isPowerOfTwo(v as number);
+    } catch (error) {
+      console.warn(`WASM isPowerOfTwo failed, using JS fallback: ${error}`);
+    }
   }
-  if (num < limits.i32[0] || num > limits.i32[1]) {
-    return Err(
-      new ValidationError(Str.fromRaw(`Value ${num} is outside i32 range`))
-    );
-  }
-  return Ok(i32(num));
+  const raw = v as number;
+  return raw > 0 && (raw & (raw - 1)) === 0;
 }
 
-export function f64_to_i64(value: f64): Result<i64, ValidationError> {
-  const num = value as unknown as number;
-  if (!Number.isInteger(num)) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(`Cannot convert non-integer value ${num} to i64`)
-      )
-    );
+export function next_power_of_two(v: u32): u32 {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return u32(primitives.nextPowerOfTwo(v as number));
+    } catch (error) {
+      console.warn(`WASM nextPowerOfTwo failed, using JS fallback: ${error}`);
+    }
   }
-  if (num < limits.i64[0] || num > limits.i64[1]) {
-    return Err(
-      new ValidationError(Str.fromRaw(`Value ${num} is outside i64 range`))
-    );
-  }
-  return Ok(i64(num));
+
+  let raw = v as number;
+  if (raw <= 0) return u32(1);
+  raw--;
+  raw |= raw >> 1;
+  raw |= raw >> 2;
+  raw |= raw >> 4;
+  raw |= raw >> 8;
+  raw |= raw >> 16;
+  return u32(raw + 1);
 }
 
-export function i32_to_f32(value: i32): f32 {
-  return f32(value as unknown as number);
+export function leading_zeros(v: u32): u32 {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return u32(primitives.leadingZeros(v as number));
+    } catch (error) {
+      console.warn(`WASM leadingZeros failed, using JS fallback: ${error}`);
+    }
+  }
+
+  let raw = v as number;
+  if (raw === 0) return u32(32);
+  let count = 0;
+  while ((raw & 0x80000000) === 0) {
+    count++;
+    raw <<= 1;
+  }
+  return u32(count);
 }
 
-export function i64_to_f64(value: i64): f64 {
-  return f64(value as unknown as number);
+export function trailing_zeros(v: u32): u32 {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return u32(primitives.trailingZeros(v as number));
+    } catch (error) {
+      console.warn(`WASM trailingZeros failed, using JS fallback: ${error}`);
+    }
+  }
+
+  let raw = v as number;
+  if (raw === 0) return u32(32);
+  let count = 0;
+  while ((raw & 1) === 0) {
+    count++;
+    raw >>= 1;
+  }
+  return u32(count);
+}
+
+export function count_ones(v: u32): u32 {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return u32(primitives.countOnes(v as number));
+    } catch (error) {
+      console.warn(`WASM countOnes failed, using JS fallback: ${error}`);
+    }
+  }
+
+  let raw = v as number;
+  let count = 0;
+  while (raw !== 0) {
+    count += raw & 1;
+    raw >>>= 1;
+  }
+  return u32(count);
+}
+
+export function bitwise_and(a: u32, b: u32): u32 {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return u32(primitives.bitwise_and(a as number, b as number));
+    } catch (error) {
+      console.warn(`WASM bitwise_and failed, using JS fallback: ${error}`);
+    }
+  }
+  return u32((a as number) & (b as number));
+}
+
+export function bitwise_or(a: u32, b: u32): u32 {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return u32(primitives.bitwise_or(a as number, b as number));
+    } catch (error) {
+      console.warn(`WASM bitwise_or failed, using JS fallback: ${error}`);
+    }
+  }
+  return u32((a as number) | (b as number));
+}
+
+export function bitwise_xor(a: u32, b: u32): u32 {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return u32(primitives.bitwise_xor(a as number, b as number));
+    } catch (error) {
+      console.warn(`WASM bitwise_xor failed, using JS fallback: ${error}`);
+    }
+  }
+  return u32((a as number) ^ (b as number));
+}
+
+export function bitwise_not(a: u32): u32 {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return u32(primitives.bitwise_not(a as number));
+    } catch (error) {
+      console.warn(`WASM bitwise_not failed, using JS fallback: ${error}`);
+    }
+  }
+  return u32(~(a as number) & 0xffffffff);
+}
+
+export function shift_left(a: u32, bits: u32): u32 {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return u32(primitives.shift_left(a as number, bits as number));
+    } catch (error) {
+      console.warn(`WASM shift_left failed, using JS fallback: ${error}`);
+    }
+  }
+  return u32((a as number) << (bits as number));
+}
+
+export function shift_right(a: u32, bits: u32): u32 {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return u32(primitives.shift_right(a as number, bits as number));
+    } catch (error) {
+      console.warn(`WASM shift_right failed, using JS fallback: ${error}`);
+    }
+  }
+  return u32((a as number) >>> (bits as number));
+}
+
+export function to_binary(value: i32): string {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return primitives.to_binary(value as number);
+    } catch (error) {
+      console.warn(`WASM to_binary failed, using JS fallback: ${error}`);
+    }
+  }
+  return (value as number).toString(2);
+}
+
+export function to_hex(value: i32): string {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return primitives.to_hex(value as number);
+    } catch (error) {
+      console.warn(`WASM to_hex failed, using JS fallback: ${error}`);
+    }
+  }
+  return (value as number).toString(16);
+}
+
+export function to_octal(value: i32): string {
+  if (isWasmInitialized()) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return primitives.to_octal(value as number);
+    } catch (error) {
+      console.warn(`WASM to_octal failed, using JS fallback: ${error}`);
+    }
+  }
+  return (value as number).toString(8);
 }
 
 export const Byte = u8;
@@ -673,15 +796,3 @@ export const UInt = u32;
 export const ULong = u64;
 export const Float = f32;
 export const Double = f64;
-
-export function to_binary(value: number): string {
-  return value.toString(2);
-}
-
-export function to_hex(value: number): string {
-  return value.toString(16);
-}
-
-export function to_octal(value: number): string {
-  return value.toString(8);
-}

@@ -1,5 +1,5 @@
 use wasm_bindgen::prelude::*;
-use js_sys::{Array, Map};
+use js_sys::{Array, Function, Map};
 
 #[wasm_bindgen]
 pub struct HashMap {
@@ -15,7 +15,7 @@ impl HashMap {
         }
     }
 
-    #[wasm_bindgen(js_name = fromEntries)]
+    #[wasm_bindgen(js_name = "from")]
     pub fn from_entries(entries: &js_sys::Array) -> HashMap {
         let map = Map::new();
         
@@ -33,7 +33,158 @@ impl HashMap {
         HashMap { map }
     }
 
-    #[wasm_bindgen(js_name = empty)]
+    #[wasm_bindgen(js_name = "map")]
+    pub fn map(&self, fn_val: &JsValue) -> Result<HashMap, JsValue> {
+        let fn_obj = fn_val.dyn_ref::<Function>().ok_or_else(|| {
+            JsValue::from_str("Expected a function")
+        })?;
+        
+        let new_map = Map::new();
+        let entries_iter = self.map.entries();
+        
+        loop {
+            let next_result = entries_iter.next();
+            if let Ok(iter_next) = next_result {
+                if iter_next.done() {
+                    break;
+                }
+                
+                if let Some(entry_array) = iter_next.value().dyn_ref::<js_sys::Array>() {
+                    if entry_array.length() >= 2 {
+                        let k = entry_array.get(0);
+                        let v = entry_array.get(1);
+                        
+                        let args = js_sys::Array::new();
+                        args.push(&v);
+                        args.push(&k);
+                        
+                        let result = fn_obj.apply(&JsValue::NULL, &args)?;
+                        new_map.set(&k, &result);
+                    }
+                }
+            } else {
+                break;
+            }
+        }
+        
+        Ok(HashMap { map: new_map })
+    }
+    
+    #[wasm_bindgen(js_name = "filter")]
+    pub fn filter(&self, fn_val: &JsValue) -> Result<HashMap, JsValue> {
+        let fn_obj = fn_val.dyn_ref::<Function>().ok_or_else(|| {
+            JsValue::from_str("Expected a function")
+        })?;
+        
+        let new_map = Map::new();
+        let entries_iter = self.map.entries();
+        
+        loop {
+            let next_result = entries_iter.next();
+            if let Ok(iter_next) = next_result {
+                if iter_next.done() {
+                    break;
+                }
+                
+                if let Some(entry_array) = iter_next.value().dyn_ref::<js_sys::Array>() {
+                    if entry_array.length() >= 2 {
+                        let k = entry_array.get(0);
+                        let v = entry_array.get(1);
+                        
+                        let args = js_sys::Array::new();
+                        args.push(&v);
+                        args.push(&k);
+                        
+                        let result = fn_obj.apply(&JsValue::NULL, &args)?;
+                        
+                        if result.is_truthy() {
+                            new_map.set(&k, &v);
+                        }
+                    }
+                }
+            } else {
+                break;
+            }
+        }
+        
+        Ok(HashMap { map: new_map })
+    }
+    
+    #[wasm_bindgen(js_name = "find")]
+    pub fn find(&self, fn_val: &JsValue) -> Result<JsValue, JsValue> {
+        let fn_obj = fn_val.dyn_ref::<Function>().ok_or_else(|| {
+            JsValue::from_str("Expected a function")
+        })?;
+        
+        let entries_iter = self.map.entries();
+        
+        loop {
+            let next_result = entries_iter.next();
+            if let Ok(iter_next) = next_result {
+                if iter_next.done() {
+                    break;
+                }
+                
+                if let Some(entry_array) = iter_next.value().dyn_ref::<js_sys::Array>() {
+                    if entry_array.length() >= 2 {
+                        let k = entry_array.get(0);
+                        let v = entry_array.get(1);
+                        
+                        let args = js_sys::Array::new();
+                        args.push(&v);
+                        args.push(&k);
+                        
+                        let result = fn_obj.apply(&JsValue::NULL, &args)?;
+                        
+                        if result.is_truthy() {
+                            return Ok(entry_array.into());
+                        }
+                    }
+                }
+            } else {
+                break;
+            }
+        }
+        
+        Ok(JsValue::UNDEFINED)
+    }
+    
+    #[wasm_bindgen(js_name = "forEach")]
+    pub fn for_each(&self, fn_val: &JsValue) -> Result<(), JsValue> {
+        let fn_obj = fn_val.dyn_ref::<Function>().ok_or_else(|| {
+            JsValue::from_str("Expected a function")
+        })?;
+        
+        let entries_iter = self.map.entries();
+        
+        loop {
+            let next_result = entries_iter.next();
+            if let Ok(iter_next) = next_result {
+                if iter_next.done() {
+                    break;
+                }
+                
+                if let Some(entry_array) = iter_next.value().dyn_ref::<js_sys::Array>() {
+                    if entry_array.length() >= 2 {
+                        let k = entry_array.get(0);
+                        let v = entry_array.get(1);
+                        
+                        let args = js_sys::Array::new();
+                        args.push(&v);
+                        args.push(&k);
+                        
+                        fn_obj.apply(&JsValue::NULL, &args)?;
+                    }
+                }
+            } else {
+                break;
+            }
+        }
+        
+        Ok(())
+    }
+
+    #[wasm_bindgen(js_name = "empty")]
     pub fn empty() -> HashMap {
         HashMap::new()
     }
@@ -43,7 +194,7 @@ impl HashMap {
         self.map.size() as usize
     }
 
-    #[wasm_bindgen(js_name = isEmpty)]
+    #[wasm_bindgen(js_name = "isEmpty")]
     pub fn is_empty(&self) -> bool {
         self.map.size() == 0
     }
@@ -232,8 +383,13 @@ impl HashMap {
         HashMap::new()
     }
 
-    #[wasm_bindgen(js_name = toArray)]
+    #[wasm_bindgen(js_name = "toArray")]
     pub fn to_array(&self) -> Array {
         self.entries()
+    }
+    
+    #[wasm_bindgen(js_name = "toString")]
+    pub fn to_string_js(&self) -> String {
+        format!("[HashMap size={}]", self.size())
     }
 }

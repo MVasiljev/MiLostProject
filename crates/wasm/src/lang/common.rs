@@ -13,6 +13,7 @@ pub struct LoadingStates {
 
 #[wasm_bindgen]
 impl LoadingStates {
+    
     #[wasm_bindgen(constructor)]
     pub fn new() -> LoadingStates {
         LoadingStates {
@@ -27,9 +28,19 @@ impl LoadingStates {
     pub fn idle(&self) -> Str {
         self.idle.clone()
     }
+    
+    #[wasm_bindgen(getter, js_name = "IDLE")]
+    pub fn idle_state(&self) -> Str {
+        self.idle.clone()
+    }
 
     #[wasm_bindgen(getter)]
     pub fn loading(&self) -> Str {
+        self.loading.clone()
+    }
+
+    #[wasm_bindgen(getter, js_name = "LOADING")]
+    pub fn loading_state(&self) -> Str {
         self.loading.clone()
     }
 
@@ -38,8 +49,18 @@ impl LoadingStates {
         self.succeeded.clone()
     }
 
+    #[wasm_bindgen(getter, js_name = "SUCCEEDED")]
+    pub fn succeeded_state(&self) -> Str {
+        self.succeeded.clone()
+    }
+
     #[wasm_bindgen(getter)]
     pub fn failed(&self) -> Str {
+        self.failed.clone()
+    }
+
+    #[wasm_bindgen(getter, js_name = "FAILED")]
+    pub fn failed_state(&self) -> Str {
         self.failed.clone()
     }
 }

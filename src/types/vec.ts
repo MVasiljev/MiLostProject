@@ -1,7 +1,8 @@
 import { Option } from "../core/option";
 import { u32 } from "./primitives";
 import { Str } from "./string";
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import { getWasmModule, isWasmInitialized } from "../wasm/init";
+import { callWasmInstanceMethod, callWasmStaticMethod } from "../wasm/lib";
 
 export class Vec<T> implements Iterable<T> {
   private readonly _items: T[];
@@ -16,7 +17,6 @@ export class Vec<T> implements Iterable<T> {
   ) {
     this._items = [...items];
     this._useWasm = useWasm && isWasmInitialized();
-
     this._isNumeric = items.every((item) => typeof item === "number");
 
     if (existingWasmVec) {
@@ -24,7 +24,6 @@ export class Vec<T> implements Iterable<T> {
     } else if (this._useWasm && this._isNumeric) {
       try {
         const wasmModule = getWasmModule();
-
         this._inner = new wasmModule.Vec();
 
         for (const item of items) {
@@ -32,86 +31,73 @@ export class Vec<T> implements Iterable<T> {
         }
       } catch (error) {
         console.warn(
-          `WASM Vec creation failed, falling back to JS implementation: ${error}`
+          `WASM Vec creation failed, using JS implementation: ${error}`
         );
         this._useWasm = false;
       }
-    } else if (this._useWasm && !this._isNumeric) {
+    } else {
       this._useWasm = false;
     }
   }
 
-  static new<T>(): Vec<T> {
-    return new Vec<T>();
+  static from<T>(iterable: Iterable<T>): Vec<T> {
+    if (isWasmInitialized()) {
+      try {
+        const wasmModule = getWasmModule();
+        const items = [...iterable];
+
+        if (items.every((item) => typeof item === "number")) {
+          const array = new Array(items.length);
+          for (let i = 0; i < items.length; i++) {
+            array[i] = items[i];
+          }
+
+          const wasmVec = wasmModule.Vec.from(array);
+          return new Vec<T>(items, true, wasmVec);
+        }
+      } catch (error) {
+        console.warn(`WASM Vec.from failed, using JS implementation: ${error}`);
+      }
+    }
+
+    return new Vec<T>([...iterable], false);
   }
 
   static empty<T>(): Vec<T> {
-    return Vec.new<T>();
+    return callWasmStaticMethod(
+      "Vec",
+      "empty",
+      [],
+      () => new Vec<T>([], false)
+    );
   }
 
-  static from<T>(iterable: Iterable<T>): Vec<T> {
-    return new Vec<T>([...iterable]);
-  }
-
-  static async withCapacity<T>(capacity: number): Promise<Vec<T>> {
-    if (!isWasmInitialized()) {
-      try {
-        await initWasm();
-      } catch (error) {
-        console.warn(
-          `WASM module not available, using JS implementation: ${error}`
-        );
-      }
-    }
-
-    const wasmInitialized = isWasmInitialized();
-
-    if (wasmInitialized) {
-      try {
-        const wasmModule = getWasmModule();
-        const wasmVec = wasmModule.Vec.withCapacity(capacity);
-
-        return new Vec<T>([], true, wasmVec);
-      } catch (error) {
-        console.warn(`WASM withCapacity failed, using JS fallback: ${error}`);
-      }
-    }
-
-    return new Vec<T>();
-  }
-
-  static async create<T>(items: T[] = []): Promise<Vec<T>> {
-    if (!isWasmInitialized()) {
-      try {
-        await initWasm();
-      } catch (error) {
-        console.warn(
-          `WASM module not available, using JS implementation: ${error}`
-        );
-      }
-    }
-
-    return new Vec<T>(items);
+  static withCapacity<T>(capacity: number): Vec<T> {
+    return callWasmStaticMethod(
+      "Vec",
+      "withCapacity",
+      [capacity],
+      () => new Vec<T>([], false)
+    );
   }
 
   len(): u32 {
     if (this._useWasm && this._isNumeric) {
-      try {
-        return u32(this._inner.len());
-      } catch (error) {
-        console.warn(`WASM len failed, using JS fallback: ${error}`);
-      }
+      return callWasmInstanceMethod(this._inner, "len", [], () =>
+        u32(this._items.length)
+      );
     }
     return u32(this._items.length);
   }
 
   isEmpty(): boolean {
     if (this._useWasm && this._isNumeric) {
-      try {
-        return this._inner.isEmpty();
-      } catch (error) {
-        console.warn(`WASM isEmpty failed, using JS fallback: ${error}`);
-      }
+      return callWasmInstanceMethod(
+        this._inner,
+        "isEmpty",
+        [],
+        () => this._items.length === 0
+      );
     }
     return this._items.length === 0;
   }
@@ -122,7 +108,7 @@ export class Vec<T> implements Iterable<T> {
     if (this._useWasm && this._isNumeric) {
       try {
         const result = this._inner.get(i);
-        return result !== undefined
+        return result !== undefined && result !== null
           ? Option.Some(result as unknown as T)
           : Option.None<T>();
       } catch (error) {
@@ -135,33 +121,196 @@ export class Vec<T> implements Iterable<T> {
       : Option.None<T>();
   }
 
-  set(index: u32, value: T): Vec<T> {
-    const i = Number(index);
-
-    if (i < 0 || i >= this._items.length) {
-      return this;
-    }
-
-    const newItems = [...this._items];
-    newItems[i] = value;
-
-    if (this._useWasm && this._isNumeric && typeof value === "number") {
+  find(predicate: (item: T) => boolean): Option<T> {
+    if (this._useWasm && this._isNumeric) {
       try {
-        const wasmModule = getWasmModule();
-
-        const newWasmVec = new wasmModule.Vec();
-
-        for (let j = 0; j < newItems.length; j++) {
-          newWasmVec.push(newItems[j] as unknown as number);
+        const result = this._inner.find(predicate);
+        if (result !== undefined && result !== null) {
+          return Option.Some(result as T);
         }
-
-        return new Vec<T>(newItems, this._useWasm, newWasmVec);
+        return Option.None<T>();
       } catch (error) {
-        console.warn(`WASM set operation failed, using JS fallback: ${error}`);
+        console.warn(`WASM find failed, using JS fallback: ${error}`);
       }
     }
 
-    return new Vec<T>(newItems, this._useWasm && this._isNumeric);
+    for (const item of this._items) {
+      if (predicate(item)) {
+        return Option.Some(item);
+      }
+    }
+    return Option.None<T>();
+  }
+
+  fold<R>(initial: R, fn: (acc: R, item: T, index: u32) => R): R {
+    if (this._useWasm && this._isNumeric) {
+      try {
+        const result = this._inner.fold(initial, fn);
+        return result as R;
+      } catch (error) {
+        console.warn(`WASM fold failed, using JS fallback: ${error}`);
+      }
+    }
+
+    let acc = initial;
+    let index = 0;
+    for (const item of this._items) {
+      acc = fn(acc, item, u32(index++));
+    }
+    return acc;
+  }
+
+  map<U>(fn: (item: T, index: u32) => U): Vec<U> {
+    if (this._useWasm && this._isNumeric) {
+      try {
+        const mappedWasm = this._inner.map(fn);
+        const mappedItems = this._items.map((item, index) =>
+          fn(item, u32(index))
+        );
+        const isNumeric = mappedItems.every((item) => typeof item === "number");
+        return new Vec<U>(mappedItems, isNumeric, mappedWasm);
+      } catch (error) {
+        console.warn(`WASM map failed, using JS fallback: ${error}`);
+      }
+    }
+
+    const result: U[] = [];
+    let index = 0;
+    for (const item of this._items) {
+      result.push(fn(item, u32(index++)));
+    }
+    return new Vec<U>(
+      result,
+      result.every((item) => typeof item === "number")
+    );
+  }
+
+  filter(predicate: (item: T, index: u32) => boolean): Vec<T> {
+    if (this._useWasm && this._isNumeric) {
+      try {
+        const filteredWasm = this._inner.filter(predicate);
+        const filteredItems = this._items.filter((item, index) =>
+          predicate(item, u32(index))
+        );
+        return new Vec<T>(filteredItems, true, filteredWasm);
+      } catch (error) {
+        console.warn(`WASM filter failed, using JS fallback: ${error}`);
+      }
+    }
+
+    const result: T[] = [];
+    let index = 0;
+    for (const item of this._items) {
+      if (predicate(item, u32(index++))) {
+        result.push(item);
+      }
+    }
+    return new Vec<T>(result, this._useWasm && this._isNumeric);
+  }
+
+  reverse(): Vec<T> {
+    if (this._useWasm && this._isNumeric) {
+      try {
+        const reversedWasm = this._inner.reverse();
+        const reversedItems = [...this._items].reverse();
+        return new Vec<T>(reversedItems, true, reversedWasm);
+      } catch (error) {
+        console.warn(`WASM reverse failed, using JS fallback: ${error}`);
+      }
+    }
+
+    const result = [...this._items].reverse();
+    return new Vec<T>(result, this._useWasm && this._isNumeric);
+  }
+
+  all(predicate: (item: T) => boolean): boolean {
+    if (this._useWasm && this._isNumeric) {
+      try {
+        return this._inner.all(predicate);
+      } catch (error) {
+        console.warn(`WASM all failed, using JS fallback: ${error}`);
+      }
+    }
+
+    for (const item of this._items) {
+      if (!predicate(item)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  any(predicate: (item: T) => boolean): boolean {
+    if (this._useWasm && this._isNumeric) {
+      try {
+        return this._inner.any(predicate);
+      } catch (error) {
+        console.warn(`WASM any failed, using JS fallback: ${error}`);
+      }
+    }
+
+    for (const item of this._items) {
+      if (predicate(item)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  take(n: u32): Vec<T> {
+    if (this._useWasm && this._isNumeric) {
+      try {
+        const takenWasm = this._inner.take(Number(n));
+        const count = Math.min(Number(n), this._items.length);
+        const result = this._items.slice(0, count);
+        return new Vec<T>(result, true, takenWasm);
+      } catch (error) {
+        console.warn(`WASM take failed, using JS fallback: ${error}`);
+      }
+    }
+
+    const count = Math.min(Number(n), this._items.length);
+    const result = this._items.slice(0, count);
+    return new Vec<T>(result, this._useWasm && this._isNumeric);
+  }
+
+  drop(n: u32): Vec<T> {
+    if (this._useWasm && this._isNumeric) {
+      try {
+        const droppedWasm = this._inner.drop(Number(n));
+        const count = Math.min(Number(n), this._items.length);
+        const result = this._items.slice(count);
+        return new Vec<T>(result, true, droppedWasm);
+      } catch (error) {
+        console.warn(`WASM drop failed, using JS fallback: ${error}`);
+      }
+    }
+
+    const count = Math.min(Number(n), this._items.length);
+    const result = this._items.slice(count);
+    return new Vec<T>(result, this._useWasm && this._isNumeric);
+  }
+
+  concat(other: Vec<T>): Vec<T> {
+    if (
+      this._useWasm &&
+      this._isNumeric &&
+      other._useWasm &&
+      other._isNumeric
+    ) {
+      try {
+        const concatWasm = this._inner.concat(other._inner);
+        const result = [...this._items, ...other._items];
+        return new Vec<T>(result, true, concatWasm);
+      } catch (error) {
+        console.warn(`WASM concat failed, using JS fallback: ${error}`);
+      }
+    }
+
+    const result = [...this._items, ...other._items];
+    const isNumeric =
+      this._isNumeric && other._items.every((item) => typeof item === "number");
+    return new Vec<T>(result, isNumeric);
   }
 
   push(item: T): Vec<T> {
@@ -171,7 +320,6 @@ export class Vec<T> implements Iterable<T> {
     if (this._useWasm && isNumeric) {
       try {
         const wasmModule = getWasmModule();
-
         const newWasmVec = new wasmModule.Vec();
 
         for (const value of this._items) {
@@ -179,44 +327,31 @@ export class Vec<T> implements Iterable<T> {
         }
         newWasmVec.push(item as unknown as number);
 
-        return new Vec<T>(newItems, this._useWasm, newWasmVec);
+        return new Vec<T>(newItems, true, newWasmVec);
       } catch (error) {
         console.warn(`WASM push failed, using JS fallback: ${error}`);
       }
     }
 
-    return new Vec<T>(newItems, this._useWasm && isNumeric);
+    return new Vec<T>(newItems, isNumeric);
   }
 
-  pop(): [Vec<T>, Option<T>] {
-    if (this.isEmpty()) return [this, Option.None<T>()];
-
-    const lastItem = this._items[this._items.length - 1];
-    const newItems = this._items.slice(0, -1);
-
+  forEach(callback: (item: T, index: u32) => void): void {
     if (this._useWasm && this._isNumeric) {
       try {
-        const wasmModule = getWasmModule();
-
-        const newWasmVec = new wasmModule.Vec();
-
-        for (let i = 0; i < newItems.length; i++) {
-          newWasmVec.push(newItems[i] as unknown as number);
-        }
-
-        return [
-          new Vec<T>(newItems, this._useWasm, newWasmVec),
-          Option.Some(lastItem),
-        ];
+        this._inner.forEach((item: T, index: number) => {
+          callback(item, u32(index));
+        });
+        return;
       } catch (error) {
-        console.warn(`WASM pop failed, using JS fallback: ${error}`);
+        console.warn(`WASM forEach failed, using JS fallback: ${error}`);
       }
     }
 
-    return [
-      new Vec<T>(newItems, this._useWasm && this._isNumeric),
-      Option.Some(lastItem),
-    ];
+    let index = 0;
+    for (const item of this._items) {
+      callback(item, u32(index++));
+    }
   }
 
   toArray(): T[] {
@@ -231,95 +366,19 @@ export class Vec<T> implements Iterable<T> {
     return [...this._items];
   }
 
-  find(predicate: (item: T) => boolean): Option<T> {
-    for (const item of this._items) {
-      if (predicate(item)) {
-        return Option.Some(item);
+  toString(): Str {
+    if (this._useWasm && this._isNumeric) {
+      try {
+        return Str.fromRaw(this._inner.toString());
+      } catch (error) {
+        console.warn(`WASM toString failed, using JS fallback: ${error}`);
       }
     }
-    return Option.None<T>();
-  }
-
-  fold<R>(initial: R, fn: (acc: R, item: T, index: u32) => R): R {
-    let acc = initial;
-    let index = 0;
-    for (const item of this._items) {
-      acc = fn(acc, item, u32(index++));
-    }
-    return acc;
-  }
-
-  map<U>(fn: (item: T, index: u32) => U): Vec<U> {
-    const result: U[] = [];
-    let index = 0;
-    for (const item of this._items) {
-      result.push(fn(item, u32(index++)));
-    }
-    return new Vec<U>(
-      result,
-      this._useWasm && result.every((item) => typeof item === "number")
-    );
-  }
-
-  filter(predicate: (item: T, index: u32) => boolean): Vec<T> {
-    const result: T[] = [];
-    let index = 0;
-    for (const item of this._items) {
-      if (predicate(item, u32(index++))) {
-        result.push(item);
-      }
-    }
-    return new Vec<T>(result, this._useWasm && this._isNumeric);
-  }
-
-  reverse(): Vec<T> {
-    const result = [...this._items].reverse();
-    return new Vec<T>(result, this._useWasm && this._isNumeric);
-  }
-
-  all(predicate: (item: T) => boolean): boolean {
-    for (const item of this._items) {
-      if (!predicate(item)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  any(predicate: (item: T) => boolean): boolean {
-    for (const item of this._items) {
-      if (predicate(item)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  take(n: u32): Vec<T> {
-    const count = Math.min(Number(n), this._items.length);
-    const result = this._items.slice(0, count);
-    return new Vec<T>(result, this._useWasm && this._isNumeric);
-  }
-
-  drop(n: u32): Vec<T> {
-    const count = Math.min(Number(n), this._items.length);
-    const result = this._items.slice(count);
-    return new Vec<T>(result, this._useWasm && this._isNumeric);
-  }
-
-  concat(other: Vec<T>): Vec<T> {
-    const result = [...this._items, ...other.toArray()];
-    const isNumeric =
-      this._isNumeric && other.all((item) => typeof item === "number");
-    return new Vec<T>(result, this._useWasm && isNumeric);
+    return Str.fromRaw(`[Vec len=${this._items.length}]`);
   }
 
   [Symbol.iterator](): Iterator<T> {
     return this._items[Symbol.iterator]();
-  }
-
-  toString(): Str {
-    return Str.fromRaw(`[Vec len=${this._items.length}]`);
   }
 
   toJSON(): T[] {

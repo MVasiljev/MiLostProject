@@ -1,6 +1,7 @@
 import { Str } from "./string";
 import { Vec } from "./vec";
-import { initWasm, getWasmModule, isWasmInitialized } from "../wasm/init.js";
+import { getWasmModule, isWasmInitialized } from "../wasm/init";
+import { callWasmInstanceMethod, callWasmStaticMethod } from "../wasm/lib";
 
 export class Struct<T extends Record<string, unknown>> {
   private readonly _fields: Readonly<T>;
@@ -30,42 +31,34 @@ export class Struct<T extends Record<string, unknown>> {
           }
         }
 
-        this._inner = wasmModule.Struct.fromObject(jsObject);
+        this._inner = wasmModule.Struct.from(jsObject);
       } catch (error) {
         console.warn(
-          `WASM Struct creation failed, falling back to JS implementation: ${error}`
+          `WASM Struct creation failed, using JS implementation: ${error}`
         );
         this._useWasm = false;
       }
     }
   }
 
-  static from<T extends Record<string, unknown>>(
-    fields: Partial<T>,
-    fallback: () => T
-  ): Struct<T> {
-    const full = { ...fallback(), ...fields } as T;
-    return new Struct(full);
+  static from<T extends Record<string, unknown>>(fields: T): Struct<T> {
+    return callWasmStaticMethod(
+      "Struct",
+      "from",
+      [fields],
+      () => new Struct<T>(fields, false)
+    );
   }
 
-  static empty<T extends Record<string, unknown>>(): Struct<T> {
-    return new Struct({} as T);
-  }
-
-  static async create<T extends Record<string, unknown>>(
-    fields: T
-  ): Promise<Struct<T>> {
-    if (!isWasmInitialized()) {
-      try {
-        await initWasm();
-      } catch (error) {
-        console.warn(
-          `WASM module not available, using JS implementation: ${error}`
-        );
-      }
-    }
-
-    return new Struct<T>(fields);
+  static empty<
+    T extends Record<string, unknown> = Record<string, never>
+  >(): Struct<T> {
+    return callWasmStaticMethod(
+      "Struct",
+      "empty",
+      [],
+      () => new Struct<T>({} as T, false)
+    );
   }
 
   get<K extends keyof T>(key: K): T[K] {
@@ -76,7 +69,6 @@ export class Struct<T extends Record<string, unknown>> {
         console.warn(`WASM get failed, using JS fallback: ${error}`);
       }
     }
-
     return this._fields[key];
   }
 
@@ -90,7 +82,6 @@ export class Struct<T extends Record<string, unknown>> {
         console.warn(`WASM set failed, using JS fallback: ${error}`);
       }
     }
-
     return new Struct({ ...this._fields, [key]: value } as T, this._useWasm);
   }
 
@@ -104,7 +95,6 @@ export class Struct<T extends Record<string, unknown>> {
         console.warn(`WASM keys failed, using JS fallback: ${error}`);
       }
     }
-
     return Vec.from(Object.keys(this._fields) as (keyof T)[]);
   }
 
@@ -120,7 +110,6 @@ export class Struct<T extends Record<string, unknown>> {
         console.warn(`WASM entries failed, using JS fallback: ${error}`);
       }
     }
-
     return Vec.from(Object.entries(this._fields) as [keyof T, T[keyof T]][]);
   }
 
@@ -133,16 +122,101 @@ export class Struct<T extends Record<string, unknown>> {
         console.warn(`WASM toObject failed, using JS fallback: ${error}`);
       }
     }
-
     return { ...this._fields };
+  }
+
+  map<R>(
+    fn: (value: T[keyof T], key: keyof T) => R
+  ): Struct<Record<keyof T, R>> {
+    if (this._useWasm) {
+      try {
+        const mappedWasm = this._inner.map(fn);
+        const result: Record<string, R> = {};
+        for (const key in this._fields) {
+          if (Object.prototype.hasOwnProperty.call(this._fields, key)) {
+            result[key] = fn(this._fields[key], key as keyof T);
+          }
+        }
+        return new Struct<Record<keyof T, R>>(
+          result as Record<keyof T, R>,
+          true,
+          mappedWasm
+        );
+      } catch (error) {
+        console.warn(`WASM map failed, using JS fallback: ${error}`);
+      }
+    }
+
+    const result: Record<string, R> = {};
+    for (const key in this._fields) {
+      if (Object.prototype.hasOwnProperty.call(this._fields, key)) {
+        result[key] = fn(this._fields[key], key as keyof T);
+      }
+    }
+    return new Struct<Record<keyof T, R>>(result as Record<keyof T, R>, false);
+  }
+
+  filter(fn: (value: T[keyof T], key: keyof T) => boolean): Struct<Partial<T>> {
+    if (this._useWasm) {
+      try {
+        const filteredWasm = this._inner.filter(fn);
+        const result: Partial<T> = {};
+        for (const key in this._fields) {
+          if (
+            Object.prototype.hasOwnProperty.call(this._fields, key) &&
+            fn(this._fields[key], key as keyof T)
+          ) {
+            result[key as keyof T] = this._fields[key];
+          }
+        }
+        return new Struct<Partial<T>>(result, true, filteredWasm);
+      } catch (error) {
+        console.warn(`WASM filter failed, using JS fallback: ${error}`);
+      }
+    }
+
+    const result: Partial<T> = {};
+    for (const key in this._fields) {
+      if (
+        Object.prototype.hasOwnProperty.call(this._fields, key) &&
+        fn(this._fields[key], key as keyof T)
+      ) {
+        result[key as keyof T] = this._fields[key];
+      }
+    }
+    return new Struct<Partial<T>>(result, false);
+  }
+
+  forEach(callback: (value: T[keyof T], key: keyof T) => void): void {
+    if (this._useWasm) {
+      try {
+        this._inner.forEach(callback);
+        return;
+      } catch (error) {
+        console.warn(`WASM forEach failed, using JS fallback: ${error}`);
+      }
+    }
+
+    for (const key in this._fields) {
+      if (Object.prototype.hasOwnProperty.call(this._fields, key)) {
+        callback(this._fields[key], key as keyof T);
+      }
+    }
+  }
+
+  toString(): Str {
+    if (this._useWasm) {
+      try {
+        return Str.fromRaw(this._inner.toString());
+      } catch (error) {
+        console.warn(`WASM toString failed, using JS fallback: ${error}`);
+      }
+    }
+    return Str.fromRaw(`[Struct ${JSON.stringify(this._fields)}]`);
   }
 
   toJSON(): T {
     return this.toObject();
-  }
-
-  toString(): Str {
-    return Str.fromRaw(`[Struct ${JSON.stringify(this._fields)}]`);
   }
 
   get [Symbol.toStringTag](): Str {

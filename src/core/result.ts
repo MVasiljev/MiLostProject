@@ -27,10 +27,15 @@ export class Result<T, E extends AppError = AppError> {
     if (this._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (ok) {
-          this._inner = wasmModule.create_ok_result(value as any);
+        if (ok && typeof wasmModule.createOkResultWrapper === "function") {
+          this._inner = wasmModule.createOkResultWrapper(value as any);
+        } else if (
+          !ok &&
+          typeof wasmModule.createErrResultWrapper === "function"
+        ) {
+          this._inner = wasmModule.createErrResultWrapper(error as any);
         } else {
-          this._inner = wasmModule.create_err_result(error as any);
+          this._useWasm = false;
         }
       } catch (err) {
         console.warn(
@@ -270,12 +275,16 @@ export class Result<T, E extends AppError = AppError> {
           );
         if (status === 400)
           return Result.Err(
-            new ValidationError(data?.error || "Invalid request")
+            new ValidationError(Str.fromRaw(data?.error || "Invalid request"))
           );
         if (status >= 500)
-          return Result.Err(new ServerError(data?.error || "Server error"));
+          return Result.Err(
+            new ServerError(Str.fromRaw(data?.error || "Server error"))
+          );
 
-        return Result.Err(new AppError(data?.error || defaultErrorMsg));
+        return Result.Err(
+          new AppError(Str.fromRaw(data?.error || defaultErrorMsg))
+        );
       }
 
       return Result.Ok(data);
@@ -389,14 +398,19 @@ function apiErrorMapper(error: unknown): AppError {
     const status = response.status;
 
     if (status === 401)
-      return new UnauthorizedError(data?.error || "Unauthorized");
-    if (status === 403) return new ForbiddenError(data?.error || "Forbidden");
-    if (status === 404) return new NotFoundError(data?.error || "Not found");
+      return new UnauthorizedError(Str.fromRaw(data?.error || "Unauthorized"));
+    if (status === 403)
+      return new ForbiddenError(Str.fromRaw(data?.error || "Forbidden"));
+    if (status === 404)
+      return new NotFoundError(Str.fromRaw(data?.error || "Not found"));
     if (status === 400)
-      return new ValidationError(data?.error || "Invalid request");
-    if (status >= 500) return new ServerError(data?.error || "Server error");
+      return new ValidationError(Str.fromRaw(data?.error || "Invalid request"));
+    if (status >= 500)
+      return new ServerError(Str.fromRaw(data?.error || "Server error"));
 
-    return new AppError(data?.error || `Request failed with status ${status}`);
+    return new AppError(
+      Str.fromRaw(data?.error || `Request failed with status ${status}`)
+    );
   }
 
   return new NetworkError(
