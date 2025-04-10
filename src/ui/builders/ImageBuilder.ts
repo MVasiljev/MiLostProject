@@ -28,7 +28,7 @@ export enum ContentMode {
 export class ImageBuilder extends UIComponent {
   constructor(src: string) {
     super();
-    this._builder = this.createWasmBuilder("Image", src);
+    this._builder = this.createWasmBuilder("ImageComponent", src);
   }
 
   fromAsset(path: string): ImageBuilder {

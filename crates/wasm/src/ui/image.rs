@@ -4,12 +4,12 @@ use milost_ui::{
 };
 
 #[wasm_bindgen]
-pub struct Image {
+pub struct ImageComponent {
     props: ImageProps,
 }
 
 #[wasm_bindgen]
-impl Image {
+impl ImageComponent {
     #[wasm_bindgen(constructor)]
     pub fn new(url: &str) -> Self {
         Self {
@@ -416,8 +416,8 @@ impl Image {
 
 // Factory methods for common image patterns
 #[wasm_bindgen]
-pub fn create_avatar_image(url: &str, size: f32) -> Image {
-    Image::new(url)
+pub fn create_avatar_image(url: &str, size: f32) -> ImageComponent {
+    ImageComponent::new(url)
         .width(size)
         .height(size)
         .corner_radius(size / 2.0)
@@ -426,8 +426,8 @@ pub fn create_avatar_image(url: &str, size: f32) -> Image {
 }
 
 #[wasm_bindgen]
-pub fn create_thumbnail_image(url: &str, width: f32, height: f32) -> Image {
-    Image::new(url)
+pub fn create_thumbnail_image(url: &str, width: f32, height: f32) -> ImageComponent {
+    ImageComponent::new(url)
         .width(width)
         .height(height)
         .corner_radius(4.0)
@@ -435,8 +435,8 @@ pub fn create_thumbnail_image(url: &str, width: f32, height: f32) -> Image {
 }
 
 #[wasm_bindgen]
-pub fn create_banner_image(url: &str) -> Image {
-    Image::new(url)
+pub fn create_banner_image(url: &str) -> ImageComponent {
+    ImageComponent::new(url)
         .resize_mode("cover")
         .content_mode("scaleAspectFill")
         .aspect_ratio(3.0)
