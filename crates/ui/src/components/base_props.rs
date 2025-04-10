@@ -339,8 +339,8 @@ pub mod utils {
     use crate::render::node::RenderNode;
     use crate::render::property;
     use crate::shared::properties::{Property, PropertyBag};
-    use crate::components::GradientType;
     use crate::shared::styles::SpreadMethod;
+    use crate::GradientType;
     
     pub fn apply_base_props(node: &mut RenderNode, base_props: &BaseComponentProps) {
         fn set_if_some_property<T>(node: &mut RenderNode, key: &str, value: &Option<T>) 

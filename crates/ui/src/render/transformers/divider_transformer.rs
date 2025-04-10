@@ -1,5 +1,5 @@
-use crate::components::apply_base_props;
 use crate::components::base_props::BaseComponentProps;
+use crate::components::base_props_utils::apply_base_props;
 use crate::components::divider::{DividerProps, DividerStyle, LabelPosition};
 use crate::render::node::RenderNode;
 use crate::render::property::keys;

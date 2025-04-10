@@ -26,16 +26,18 @@ pub fn transform_text(props: &TextProps) -> RenderNode {
     }
     
     if let Some(font_weight) = &props.font_weight {
-        node.set_prop(keys::FONT_WEIGHT, font_weight.clone());
+        // Use format!("{:?}", ...) instead of to_string()
+        node.set_prop(keys::FONT_WEIGHT, format!("{:?}", font_weight));
         node.set_prop("font_weight_value", font_weight.to_css_weight());
     }
     
     if let Some(font_slant) = &props.font_slant {
-        node.set_prop(keys::FONT_SLANT, font_slant.clone());
+        node.set_prop(keys::FONT_SLANT, format!("{:?}", font_slant));
     }
     
     if let Some(font_width) = &props.font_width {
-        node.set_prop(keys::FONT_WIDTH, font_width.clone());
+        // Use format!("{:?}", ...) instead of to_string()
+        node.set_prop(keys::FONT_WIDTH, format!("{:?}", font_width));
     }
     
     if let Some(line_height) = props.line_height {

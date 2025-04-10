@@ -1,6 +1,5 @@
 use serde::{Serialize, Deserialize};
-use crate::components::font::FontDescriptor;
-
+use crate::shared::FontDescriptor;
 use super::Color;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

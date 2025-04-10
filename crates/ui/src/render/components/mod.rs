@@ -11,7 +11,7 @@ pub mod zstack_renderer;
 pub mod canvas_renderer;
 pub mod shared;
 
-// Re-export renderers
+// Component renderer exports
 pub use button_renderer::ButtonRenderer;
 pub use divider_renderer::DividerRenderer;
 pub use hstack_renderer::HStackRenderer;
@@ -21,4 +21,30 @@ pub use spacer_renderer::SpacerRenderer;
 pub use text_renderer::TextRenderer;
 pub use vstack_renderer::VStackRenderer;
 pub use zstack_renderer::ZStackRenderer;
-pub use base_renderer::{BaseRenderer, BaseContainerRenderer};
+
+// Base renderer exports
+pub use base_renderer::{
+    BaseRenderer,
+    BaseContainerRenderer,
+};
+
+// Canvas renderer exports
+pub use canvas_renderer::{
+    CanvasRenderer,
+    CanvasContext,
+    Image as CanvasImage,
+    Gradient as CanvasGradient,
+    Color as CanvasColor,
+};
+
+// Shared utilities exports
+pub use shared::{
+    parse_color,
+    draw_rounded_rect,
+    draw_background,
+    draw_border,
+    apply_shadow,
+    clear_shadow,
+    create_gradient,
+    draw_scrollbar,
+};

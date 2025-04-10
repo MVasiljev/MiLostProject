@@ -55,19 +55,19 @@ pub fn transform_button(props: &ButtonProps) -> RenderNode {
     }
     
     if let Some(border_style) = &props.border_style {
-        node.set_prop(keys::BORDER_STYLE, border_style.clone());
+        node.set_prop(keys::BORDER_STYLE, format!("{:?}", border_style));
     }
     
     if let Some(text_transform) = &props.text_transform {
-        node.set_prop(keys::TEXT_TRANSFORM, text_transform.clone());
+        node.set_prop(keys::TEXT_TRANSFORM, format!("{:?}", text_transform));
     }
     
     if let Some(text_align) = &props.text_align {
-        node.set_prop(keys::TEXT_ALIGNMENT, text_align.clone());
+        node.set_prop(keys::TEXT_ALIGNMENT, format!("{:?}", text_align));
     }
     
     if let Some(font_weight) = &props.font_weight {
-        node.set_prop(keys::FONT_WEIGHT, font_weight.clone());
+        node.set_prop(keys::FONT_WEIGHT, format!("{:?}", font_weight));
     }
     
     if let Some(font_size) = props.font_size {
@@ -79,7 +79,7 @@ pub fn transform_button(props: &ButtonProps) -> RenderNode {
     }
     
     if let Some(overflow) = &props.overflow {
-        node.set_prop(keys::OVERFLOW, overflow.clone());
+        node.set_prop(keys::OVERFLOW, format!("{:?}", overflow));
     }
     
     if let Some(is_loading) = props.is_loading {
