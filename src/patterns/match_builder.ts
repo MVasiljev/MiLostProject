@@ -1,4 +1,8 @@
-import { getWasmModule, isWasmInitialized } from "../initWasm/init.js";
+import {
+  getWasmModule,
+  initWasm,
+  isWasmInitialized,
+} from "../initWasm/init.js";
 import {
   callWasmStaticMethod,
   callWasmInstanceMethod,
@@ -40,7 +44,7 @@ export class MatchBuilder<T, R> {
   static async init(): Promise<void> {
     if (!isWasmInitialized()) {
       try {
-        await import("../initWasm/init.js").then((mod) => mod.initWasm());
+        await initWasm();
       } catch (error) {
         console.warn(
           `WASM module not available, using JS implementation: ${error}`

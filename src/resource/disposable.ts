@@ -1,7 +1,11 @@
 import { Str } from "../types/string.js";
 import { Resource } from "./resource.js";
 import { AppError } from "../core/error.js";
-import { getWasmModule, isWasmInitialized } from "../initWasm/init.js";
+import {
+  getWasmModule,
+  initWasm,
+  isWasmInitialized,
+} from "../initWasm/init.js";
 import {
   callWasmInstanceMethod,
   callWasmStaticMethod,
@@ -18,7 +22,7 @@ export function useDisposableResource<
   return async (disposable: T): Promise<Resource<T, E>> => {
     if (!isWasmInitialized()) {
       try {
-        await import("../initWasm/init.js").then((mod) => mod.initWasm());
+        await initWasm();
       } catch (error) {
         console.warn(
           `WASM module not available, using JS implementation: ${error}`
@@ -91,7 +95,7 @@ export class DisposableGroup implements IDisposable {
   static async create(): Promise<DisposableGroup> {
     if (!isWasmInitialized()) {
       try {
-        await import("../initWasm/init.js").then((mod) => mod.initWasm());
+        await initWasm();
       } catch (error) {
         console.warn(
           `WASM module not available, using JS implementation: ${error}`

@@ -1,7 +1,11 @@
 import { Str } from "../types/string.js";
 import { AppError } from "../core/error.js";
 import { Option } from "../core/option.js";
-import { getWasmModule, isWasmInitialized } from "../initWasm/init.js";
+import {
+  getWasmModule,
+  initWasm,
+  isWasmInitialized,
+} from "../initWasm/init.js";
 import {
   callWasmInstanceMethod,
   callWasmStaticMethod,
@@ -64,7 +68,7 @@ export class Resource<T, E extends AppError = AppError> {
   static async init(): Promise<void> {
     if (!isWasmInitialized()) {
       try {
-        await import("../initWasm/init.js").then((mod) => mod.initWasm());
+        await initWasm();
       } catch (error) {
         console.warn(
           `WASM module not available, using JS implementation: ${error}`

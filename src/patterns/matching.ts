@@ -1,7 +1,11 @@
 import { AppError, Result, ValidationError } from "../core/index.js";
 import { Str, i32, u32, f64, Vec } from "../types/index.js";
 import { Option } from "../core/option.js";
-import { getWasmModule, isWasmInitialized } from "../initWasm/init.js";
+import {
+  getWasmModule,
+  initWasm,
+  isWasmInitialized,
+} from "../initWasm/init.js";
 import {
   callWasmStaticMethod,
   callWasmInstanceMethod,
@@ -31,7 +35,7 @@ export class PatternMatcher {
   static async init(): Promise<void> {
     if (!isWasmInitialized()) {
       try {
-        await import("../initWasm/init.js").then((mod) => mod.initWasm());
+        await initWasm();
       } catch (error) {
         console.warn(
           `WASM module not available, using JS implementation: ${error}`
