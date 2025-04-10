@@ -1,7 +1,6 @@
-import { isWasmInitialized, getWasmModule } from "../initWasm/init";
+import { isWasmInitialized, getWasmModule, initWasm } from "../initWasm/init";
 import { callWasmStaticMethod } from "../initWasm/lib";
 import { Vec, i32, Str, u32 } from "../types";
-import { initWasm } from "../ui";
 import { ValidationError } from "./error";
 import { Option } from "./option";
 

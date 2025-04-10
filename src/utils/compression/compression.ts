@@ -1,7 +1,10 @@
 import { Result, Ok, Err } from "../../core";
-import { isWasmInitialized, getWasmModule } from "../../initWasm/init";
+import {
+  isWasmInitialized,
+  getWasmModule,
+  initWasm,
+} from "../../initWasm/init";
 import { callWasmStaticMethod } from "../../initWasm/lib";
-import { initWasm } from "../../ui";
 
 export class CompressionError extends Error {
   constructor(message: string) {

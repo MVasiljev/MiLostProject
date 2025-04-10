@@ -1,7 +1,6 @@
-import { isWasmInitialized, getWasmModule } from "../initWasm/init";
+import { isWasmInitialized, getWasmModule, initWasm } from "../initWasm/init";
 import { callWasmInstanceMethod } from "../initWasm/lib";
 import { Str } from "../types";
-import { initWasm } from "../ui";
 import { ValidationError } from "./error";
 
 export class Option<T> {

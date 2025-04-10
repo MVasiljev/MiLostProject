@@ -1,8 +1,11 @@
 import { Result, Ok, Err } from "../../core";
 import { Option } from "../../core/option";
-import { isWasmInitialized, getWasmModule } from "../../initWasm/init";
+import {
+  isWasmInitialized,
+  getWasmModule,
+  initWasm,
+} from "../../initWasm/init";
 import { callWasmStaticMethod } from "../../initWasm/lib";
-import { initWasm } from "../../ui";
 
 export class CryptoError extends Error {
   constructor(message: string) {

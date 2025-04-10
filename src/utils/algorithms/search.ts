@@ -1,6 +1,9 @@
-import { isWasmInitialized, getWasmModule } from "../../initWasm/init";
+import {
+  isWasmInitialized,
+  getWasmModule,
+  initWasm,
+} from "../../initWasm/init";
 import { callWasmStaticMethod } from "../../initWasm/lib";
-import { initWasm } from "../../ui";
 import { Comparator } from "./sorting";
 
 export type Predicate<T> = (value: T) => boolean;

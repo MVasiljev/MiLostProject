@@ -1,6 +1,6 @@
 {
   "name": "milost",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "A Rust-like TypeScript library with WebAssembly optimizations",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

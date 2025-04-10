@@ -1,8 +1,7 @@
 import { HashMap, HashSet, Vec, Str, u32 } from "../types";
 import { Iter } from "./iter";
 import { ValidationError } from "./error";
-import { isWasmInitialized, getWasmModule } from "../initWasm/init";
-import { initWasm } from "../ui";
+import { isWasmInitialized, getWasmModule, initWasm } from "../initWasm/init";
 
 export async function initFunctional(): Promise<void> {
   if (!isWasmInitialized()) {
