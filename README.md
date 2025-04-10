@@ -43,12 +43,17 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ["milost/wasm", "milost"],
   },
-  esbuild: {
-    supported: {
-      "top-level-await": true,
+  server: {
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Cross-Origin-Embedder-Policy": "require-corp",
     },
   },
+  resolve: {
+    extensions: [".js", ".mjs", ".cjs", ".json", ".wasm"],
+  },
 });
+
 ```
 
 ## 🚀 Quick Start

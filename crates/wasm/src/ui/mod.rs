@@ -4,7 +4,7 @@ pub mod stack_utils;
 pub mod vstack;
 pub mod hstack;
 pub mod zstack;
-// pub mod spacer;
+pub mod spacer;
 // pub mod divider;
 // pub mod scroll;
 pub mod text;
