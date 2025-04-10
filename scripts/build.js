@@ -84,7 +84,29 @@ function copyWasmToDist() {
   const targetDir = path.join(TS_TARGET_DIR, "wasm");
 
   ensureDir(targetDir);
-  copyDir(sourceDir, targetDir);
+
+  const files = fs.readdirSync(sourceDir);
+  files.forEach((file) => {
+    const sourcePath = path.join(sourceDir, file);
+    const targetPath = path.join(targetDir, file);
+
+    // Skip .gitignore
+    if (file === ".gitignore") return;
+
+    try {
+      const stat = fs.statSync(sourcePath);
+
+      if (stat.isDirectory()) {
+        // Copy directory
+        copyDir(sourcePath, targetPath);
+      } else {
+        // Copy file
+        fs.copyFileSync(sourcePath, targetPath);
+      }
+    } catch (error) {
+      console.error(`Error copying ${file}:`, error);
+    }
+  });
 }
 
 function buildTs() {

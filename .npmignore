@@ -1,13 +1,3 @@
 # .npmignore
-src/
-crates/
-scripts/
-test/
-.vscode/
-*.sh
-*.html
-*.lock
-.htaccess
-Cargo.toml
-Cargo.lock
-
+!dist/wasm
+!dist/wasm/*

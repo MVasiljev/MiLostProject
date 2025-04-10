@@ -1,21 +1,25 @@
 {
   "name": "milost",
-  "version": "1.0.0",
+  "version": "1.0.6",
   "description": "A Rust-like TypeScript library with WebAssembly optimizations",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
   "files": [
     "dist",
-    "*.wasm",
-    "*.js"
+    "dist/wasm",
+    "dist/wasm/milost_wasm.js",
+    "dist/wasm/milost_wasm.d.ts",
+    "dist/wasm/milost_wasm_bg.wasm",
+    "dist/wasm/milost_wasm_bg.wasm.d.ts"
   ],
   "scripts": {
     "build:standalone": "bash scripts/build-standalone.sh",
     "clean": "node scripts/build.js --clean",
     "build:wasm": "node scripts/build.js --wasm",
     "build:ts": "node scripts/build.js --ts",
-    "build": "node scripts/build.js --all"
+    "build": "node scripts/build.js --all",
+    "publish": "npm publish --access=public"
   },
   "keywords": [
     "milost",
@@ -33,7 +37,7 @@
     "data structures",
     "machine learning"
   ],
-  "author": "",
+  "author": "Milan Vasiljev",
   "license": "MIT",
   "devDependencies": {
     "@types/jest": "^29.5.14",
