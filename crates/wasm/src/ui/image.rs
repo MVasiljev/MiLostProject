@@ -1,22 +1,15 @@
 use wasm_bindgen::prelude::*;
-use serde_wasm_bindgen::to_value;
-use crate::shared::{
-    color::Color,
-    styles::BorderStyle,
-    edge_insets::EdgeInsets,
+use milost_ui::{
+    components::image::{ContentMode, ImageFilter, ImageProps, ImageSource, ResizeMode}, shared::{color::Color, edge_insets::EdgeInsets}, BorderStyle, UIComponent
 };
-use crate::components::image::{
-    ImageProps, ImageSource, ResizeMode, ContentMode, ImageFilter
-};
-use crate::components::UIComponent;
 
 #[wasm_bindgen]
-pub struct ImageBuilder {
+pub struct Image {
     props: ImageProps,
 }
 
 #[wasm_bindgen]
-impl ImageBuilder {
+impl Image {
     #[wasm_bindgen(constructor)]
     pub fn new(url: &str) -> Self {
         Self {
@@ -24,55 +17,78 @@ impl ImageBuilder {
         }
     }
 
-    #[wasm_bindgen(method)]
+    #[wasm_bindgen]
     pub fn from_asset(mut self, path: &str) -> Self {
         self.props.source = ImageSource::Asset(path.to_string());
         self
     }
-
-    #[wasm_bindgen(method)]
+    
+    #[wasm_bindgen]
     pub fn alt(mut self, alt_text: &str) -> Self {
-        self.props = self.props.with_alt(alt_text.to_string());
+        self.props.alt = Some(alt_text.to_string());
         self
     }
-
-    #[wasm_bindgen(method)]
-    pub fn dimensions(mut self, width: Option<f32>, height: Option<f32>) -> Self {
-        if let Some(w) = width {
-            self.props = self.props.with_width(w);
-        }
-        
-        if let Some(h) = height {
-            self.props = self.props.with_height(h);
-        }
-        
+    
+    // Dimensions and aspect
+    #[wasm_bindgen]
+    pub fn width(mut self, width: f32) -> Self {
+        self.props.width = Some(width);
         self
     }
-
-    #[wasm_bindgen(method)]
+    
+    #[wasm_bindgen]
+    pub fn height(mut self, height: f32) -> Self {
+        self.props.height = Some(height);
+        self
+    }
+    
+    #[wasm_bindgen]
     pub fn aspect_ratio(mut self, ratio: f32) -> Self {
-        self.props = self.props.with_aspect_ratio(ratio);
+        self.props.aspect_ratio = Some(ratio);
         self
     }
-
-    #[wasm_bindgen(method)]
-    pub fn resize_mode(mut self, mode_str: &str) -> Self {
-        let mode = match mode_str.to_lowercase().as_str() {
+    
+    #[wasm_bindgen]
+    pub fn min_width(mut self, min_width: f32) -> Self {
+        self.props.min_width = Some(min_width);
+        self
+    }
+    
+    #[wasm_bindgen]
+    pub fn max_width(mut self, max_width: f32) -> Self {
+        self.props.max_width = Some(max_width);
+        self
+    }
+    
+    #[wasm_bindgen]
+    pub fn min_height(mut self, min_height: f32) -> Self {
+        self.props.min_height = Some(min_height);
+        self
+    }
+    
+    #[wasm_bindgen]
+    pub fn max_height(mut self, max_height: f32) -> Self {
+        self.props.max_height = Some(max_height);
+        self
+    }
+    
+    // Display mode
+    #[wasm_bindgen]
+    pub fn resize_mode(mut self, mode: &str) -> Self {
+        self.props.resize_mode = Some(match mode.to_lowercase().as_str() {
             "fill" => ResizeMode::Fill,
             "fit" => ResizeMode::Fit,
             "cover" => ResizeMode::Cover,
             "contain" => ResizeMode::Contain,
             "none" => ResizeMode::None,
             _ => ResizeMode::Fit,
-        };
-        
-        self.props = self.props.with_resize_mode(mode);
+        });
         self
     }
-
-    #[wasm_bindgen(method)]
-    pub fn content_mode(mut self, mode_str: &str) -> Self {
-        let mode = match mode_str.to_lowercase().as_str() {
+    
+    #[wasm_bindgen]
+    pub fn content_mode(mut self, mode: &str) -> Self {
+        self.props.content_mode = Some(match mode.to_lowercase().as_str() {
             "scaletofill" => ContentMode::ScaleToFill,
             "scaleaspectfit" => ContentMode::ScaleAspectFit,
             "scaleaspectfill" => ContentMode::ScaleAspectFill,
@@ -86,225 +102,367 @@ impl ImageBuilder {
             "bottomleft" => ContentMode::BottomLeft,
             "bottomright" => ContentMode::BottomRight,
             _ => ContentMode::ScaleAspectFit,
-        };
-        
-        self.props = self.props.with_content_mode(mode);
+        });
         self
     }
-
-    #[wasm_bindgen(method)]
-    pub fn background_color(mut self, color_str: &str) -> Self {
-        if let Some(color) = Color::from_hex(color_str).ok() {
-            self.props.background_color = Some(color);
-        }
-        
+    
+    // Appearance
+    #[wasm_bindgen]
+    pub fn background_color(mut self, color: &str) -> Self {
+        self.props.background_color = parse_color(color);
         self
     }
-
-    #[wasm_bindgen(method)]
-    pub fn opacity(mut self, value: f32) -> Self {
-        self.props = self.props.with_opacity(value);
+    
+    #[wasm_bindgen]
+    pub fn opacity(mut self, opacity: f32) -> Self {
+        self.props.opacity = Some(opacity.max(0.0).min(1.0));
         self
     }
-
-    #[wasm_bindgen(method)]
-    pub fn tint_color(mut self, color_str: &str) -> Self {
-        if let Some(color) = Color::from_hex(color_str).ok() {
-            self.props = self.props.with_tint_color(color);
-        }
-        
+    
+    #[wasm_bindgen]
+    pub fn tint_color(mut self, color: &str) -> Self {
+        self.props.tint_color = parse_color(color);
         self
     }
-
+    
     // Border and corner styling
-    #[wasm_bindgen(method)]
+    #[wasm_bindgen]
     pub fn corner_radius(mut self, radius: f32) -> Self {
-        self.props = self.props.with_corner_radius(radius);
+        self.props.corner_radius = Some(radius);
         self
     }
-
-    #[wasm_bindgen(method)]
-    pub fn border(mut self, width: f32, color_str: &str, style_str: Option<String>) -> Self {
-        let color = Color::from_hex(color_str).unwrap_or(Color::Black);
+    
+    #[wasm_bindgen]
+    pub fn border_width(mut self, width: f32) -> Self {
+        self.props.border_width = Some(width);
+        self
+    }
+    
+    #[wasm_bindgen]
+    pub fn border_color(mut self, color: &str) -> Self {
+        self.props.border_color = parse_color(color);
+        self
+    }
+    
+    #[wasm_bindgen]
+    pub fn border_style(mut self, style: &str) -> Self {
+        self.props.border_style = match style.to_lowercase().as_str() {
+            "solid" => Some(BorderStyle::Solid),
+            "dashed" => Some(BorderStyle::Dashed),
+            "dotted" => Some(BorderStyle::Dotted),
+            "none" => Some(BorderStyle::None),
+            _ => None,
+        };
+        self
+    }
+    
+    #[wasm_bindgen]
+    pub fn border(mut self, width: f32, color: &str, style: Option<String>) -> Self {
+        self.props.border_width = Some(width);
+        self.props.border_color = parse_color(color);
         
-        let style = if let Some(s) = style_str {
-            match s.to_lowercase().as_str() {
+        if let Some(style_str) = style {
+            self.props.border_style = match style_str.to_lowercase().as_str() {
                 "solid" => Some(BorderStyle::Solid),
                 "dashed" => Some(BorderStyle::Dashed),
                 "dotted" => Some(BorderStyle::Dotted),
                 "none" => Some(BorderStyle::None),
                 _ => None,
-            }
-        } else {
-            None
-        };
+            };
+        }
         
-        self.props = self.props.with_border(width, color, style);
         self
     }
-
+    
     // Shadow effects
-    #[wasm_bindgen(method)]
-    pub fn shadow(mut self, radius: f32, color_str: &str, offset_x: f32, offset_y: f32) -> Self {
-        let color = Color::from_hex(color_str).unwrap_or(Color::Black);
-        self.props = self.props.with_shadow(radius, color, Some((offset_x, offset_y)));
+    #[wasm_bindgen]
+    pub fn shadow_radius(mut self, radius: f32) -> Self {
+        self.props.shadow_radius = Some(radius);
         self
     }
-
-    // Filters
-    #[wasm_bindgen(method)]
+    
+    #[wasm_bindgen]
+    pub fn shadow_color(mut self, color: &str) -> Self {
+        self.props.shadow_color = parse_color(color);
+        self
+    }
+    
+    #[wasm_bindgen]
+    pub fn shadow_offset(mut self, offset_x: f32, offset_y: f32) -> Self {
+        self.props.shadow_offset = Some((offset_x, offset_y));
+        self
+    }
+    
+    #[wasm_bindgen]
+    pub fn shadow(mut self, radius: f32, color: &str, offset_x: f32, offset_y: f32) -> Self {
+        self.props.shadow_radius = Some(radius);
+        self.props.shadow_color = parse_color(color);
+        self.props.shadow_offset = Some((offset_x, offset_y));
+        self
+    }
+    
+    // Image filters
+    #[wasm_bindgen]
     pub fn blur_filter(mut self, radius: f32) -> Self {
-        self.props = self.props.with_filter(ImageFilter::Blur(radius));
+        if self.props.filters.is_none() {
+            self.props.filters = Some(Vec::new());
+        }
+        
+        if let Some(filters) = &mut self.props.filters {
+            filters.push(ImageFilter::Blur(radius));
+        }
+        
         self
     }
-
-    #[wasm_bindgen(method)]
+    
+    #[wasm_bindgen]
     pub fn grayscale_filter(mut self, intensity: f32) -> Self {
-        self.props = self.props.with_filter(ImageFilter::Grayscale(intensity));
+        if self.props.filters.is_none() {
+            self.props.filters = Some(Vec::new());
+        }
+        
+        if let Some(filters) = &mut self.props.filters {
+            filters.push(ImageFilter::Grayscale(intensity));
+        }
+        
         self
     }
-
-    #[wasm_bindgen(method)]
+    
+    #[wasm_bindgen]
     pub fn sepia_filter(mut self, intensity: f32) -> Self {
-        self.props = self.props.with_filter(ImageFilter::Sepia(intensity));
+        if self.props.filters.is_none() {
+            self.props.filters = Some(Vec::new());
+        }
+        
+        if let Some(filters) = &mut self.props.filters {
+            filters.push(ImageFilter::Sepia(intensity));
+        }
+        
         self
     }
-
-    #[wasm_bindgen(method)]
+    
+    #[wasm_bindgen]
     pub fn saturation_filter(mut self, value: f32) -> Self {
-        self.props = self.props.with_filter(ImageFilter::Saturation(value));
+        if self.props.filters.is_none() {
+            self.props.filters = Some(Vec::new());
+        }
+        
+        if let Some(filters) = &mut self.props.filters {
+            filters.push(ImageFilter::Saturation(value));
+        }
+        
         self
     }
-
-    #[wasm_bindgen(method)]
+    
+    #[wasm_bindgen]
     pub fn brightness_filter(mut self, value: f32) -> Self {
-        self.props = self.props.with_filter(ImageFilter::Brightness(value));
+        if self.props.filters.is_none() {
+            self.props.filters = Some(Vec::new());
+        }
+        
+        if let Some(filters) = &mut self.props.filters {
+            filters.push(ImageFilter::Brightness(value));
+        }
+        
         self
     }
-
-    #[wasm_bindgen(method)]
+    
+    #[wasm_bindgen]
     pub fn contrast_filter(mut self, value: f32) -> Self {
-        self.props = self.props.with_filter(ImageFilter::Contrast(value));
+        if self.props.filters.is_none() {
+            self.props.filters = Some(Vec::new());
+        }
+        
+        if let Some(filters) = &mut self.props.filters {
+            filters.push(ImageFilter::Contrast(value));
+        }
+        
         self
     }
-
-    #[wasm_bindgen(method)]
+    
+    #[wasm_bindgen]
     pub fn hue_filter(mut self, value: f32) -> Self {
-        self.props = self.props.with_filter(ImageFilter::Hue(value));
+        if self.props.filters.is_none() {
+            self.props.filters = Some(Vec::new());
+        }
+        
+        if let Some(filters) = &mut self.props.filters {
+            filters.push(ImageFilter::Hue(value));
+        }
+        
         self
     }
-
-    #[wasm_bindgen(method)]
+    
+    #[wasm_bindgen]
     pub fn invert_filter(mut self, enabled: bool) -> Self {
-        self.props = self.props.with_filter(ImageFilter::Invert(enabled));
+        if self.props.filters.is_none() {
+            self.props.filters = Some(Vec::new());
+        }
+        
+        if let Some(filters) = &mut self.props.filters {
+            filters.push(ImageFilter::Invert(enabled));
+        }
+        
         self
     }
-
-    #[wasm_bindgen(method)]
+    
+    #[wasm_bindgen]
     pub fn blur_radius(mut self, radius: f32) -> Self {
-        self.props = self.props.with_blur(radius);
+        self.props.blur_radius = Some(radius);
         self
     }
-
+    
     // Loading and error states
-    #[wasm_bindgen(method)]
+    #[wasm_bindgen]
     pub fn loading_placeholder(mut self, url: &str) -> Self {
         self.props.loading_placeholder = Some(url.to_string());
         self
     }
-
-    #[wasm_bindgen(method)]
+    
+    #[wasm_bindgen]
     pub fn error_placeholder(mut self, url: &str) -> Self {
         self.props.error_placeholder = Some(url.to_string());
         self
     }
-
-    #[wasm_bindgen(method)]
-    pub fn loading_state(mut self, is_loading: bool) -> Self {
-        self.props = self.props.with_loading_state(is_loading);
+    
+    #[wasm_bindgen]
+    pub fn is_loading(mut self, loading: bool) -> Self {
+        self.props.is_loading = Some(loading);
         self
     }
-
-    #[wasm_bindgen(method)]
-    pub fn error_state(mut self, has_error: bool) -> Self {
-        self.props = self.props.with_error_state(has_error);
+    
+    #[wasm_bindgen]
+    pub fn has_error(mut self, error: bool) -> Self {
+        self.props.has_error = Some(error);
         self
     }
-
+    
     // Layout properties
-    #[wasm_bindgen(method)]
+    #[wasm_bindgen]
     pub fn clip_to_bounds(mut self, clip: bool) -> Self {
-        self.props = self.props.with_clip_to_bounds(clip);
+        self.props.clip_to_bounds = Some(clip);
         self
     }
-
-    #[wasm_bindgen(method)]
+    
+    #[wasm_bindgen]
     pub fn preserve_aspect_ratio(mut self, preserve: bool) -> Self {
-        self.props = self.props.with_preserve_aspect_ratio(preserve);
+        self.props.preserve_aspect_ratio = Some(preserve);
         self
     }
-
-    #[wasm_bindgen(method)]
+    
+    #[wasm_bindgen]
     pub fn padding(mut self, padding: f32) -> Self {
-        self.props = self.props.with_padding(padding);
+        self.props.padding = Some(padding);
         self
     }
-
-    #[wasm_bindgen(method)]
+    
+    #[wasm_bindgen]
     pub fn edge_insets(mut self, top: f32, right: f32, bottom: f32, left: f32) -> Self {
-        self.props = self.props.with_edge_insets(EdgeInsets::new(top, right, bottom, left));
+        self.props.edge_insets = Some(EdgeInsets::new(top, right, bottom, left));
         self
     }
-
+    
     // Animation
-    #[wasm_bindgen(method)]
-    pub fn animation(mut self, duration: f32, is_animating: bool) -> Self {
-        self.props = self.props.with_animation(duration, is_animating);
+    #[wasm_bindgen]
+    pub fn animation_duration(mut self, duration: f32) -> Self {
+        self.props.animation_duration = Some(duration);
         self
     }
-
+    
+    #[wasm_bindgen]
+    pub fn is_animating(mut self, animating: bool) -> Self {
+        self.props.is_animating = Some(animating);
+        self
+    }
+    
+    #[wasm_bindgen]
+    pub fn animation(mut self, duration: f32, animating: bool) -> Self {
+        self.props.animation_duration = Some(duration);
+        self.props.is_animating = Some(animating);
+        self
+    }
+    
     // Accessibility
-    #[wasm_bindgen(method)]
-    pub fn accessibility(mut self, label: Option<String>, hint: Option<String>, is_element: Option<bool>) -> Self {
-        self.props = self.props.with_accessibility(label, hint, is_element);
+    #[wasm_bindgen]
+    pub fn accessibility_label(mut self, label: &str) -> Self {
+        self.props.accessibility_label = Some(label.to_string());
         self
     }
-
-    // Building
-    #[wasm_bindgen(method)]
-    pub fn build(&self) -> Result<JsValue, JsValue> {
-        let component = UIComponent::Image(self.props.clone());
-        
-        to_value(&component)
-            .map_err(|e| JsValue::from_str(&format!("Serialization error: {}", e)))
+    
+    #[wasm_bindgen]
+    pub fn accessibility_hint(mut self, hint: &str) -> Self {
+        self.props.accessibility_hint = Some(hint.to_string());
+        self
+    }
+    
+    #[wasm_bindgen]
+    pub fn is_accessibility_element(mut self, is_element: bool) -> Self {
+        self.props.is_accessibility_element = Some(is_element);
+        self
+    }
+    
+    #[wasm_bindgen]
+    pub fn cache_policy(mut self, policy: &str) -> Self {
+        self.props.cache_policy = Some(policy.to_string());
+        self
+    }
+    
+    #[wasm_bindgen]
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(&UIComponent::Image(self.props.clone()))
+            .unwrap_or_else(|_| "{}".to_string())
     }
 }
 
 // Factory methods for common image patterns
 #[wasm_bindgen]
-pub fn create_avatar_image(url: &str, size: f32) -> Result<JsValue, JsValue> {
-    ImageBuilder::new(url)
-        .dimensions(Some(size), Some(size))
+pub fn create_avatar_image(url: &str, size: f32) -> Image {
+    Image::new(url)
+        .width(size)
+        .height(size)
         .corner_radius(size / 2.0)
         .clip_to_bounds(true)
         .resize_mode("cover")
-        .build()
 }
 
 #[wasm_bindgen]
-pub fn create_thumbnail_image(url: &str, width: f32, height: f32) -> Result<JsValue, JsValue> {
-    ImageBuilder::new(url)
-        .dimensions(Some(width), Some(height))
+pub fn create_thumbnail_image(url: &str, width: f32, height: f32) -> Image {
+    Image::new(url)
+        .width(width)
+        .height(height)
         .corner_radius(4.0)
         .resize_mode("cover")
-        .build()
 }
 
 #[wasm_bindgen]
-pub fn create_banner_image(url: &str) -> Result<JsValue, JsValue> {
-    ImageBuilder::new(url)
+pub fn create_banner_image(url: &str) -> Image {
+    Image::new(url)
         .resize_mode("cover")
         .content_mode("scaleAspectFill")
         .aspect_ratio(3.0)
-        .build()
+}
+
+// Helper function to parse color strings
+fn parse_color(color: &str) -> Option<Color> {
+    match color.to_lowercase().as_str() {
+        "white" => Some(Color::White),
+        "black" => Some(Color::Black),
+        "gray" => Some(Color::Gray),
+        "lightgray" => Some(Color::LightGray),
+        "darkgray" => Some(Color::DarkGray),
+        "red" => Some(Color::Red),
+        "green" => Some(Color::Green),
+        "blue" => Some(Color::Blue),
+        "yellow" => Some(Color::Yellow),
+        "orange" => Some(Color::Orange),
+        "purple" => Some(Color::Purple),
+        "pink" => Some(Color::Pink),
+        "teal" => Some(Color::Teal),
+        "indigo" => Some(Color::Indigo),
+        "cyan" => Some(Color::Cyan),
+        "primary" => Some(Color::Primary),
+        "secondary" => Some(Color::Secondary),
+        "transparent" => Some(Color::Transparent),
+        _ => Some(Color::from_hex(color)),
+    }
 }
