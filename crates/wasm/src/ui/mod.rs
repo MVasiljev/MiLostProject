@@ -7,7 +7,7 @@ pub mod zstack;
 // pub mod spacer;
 // pub mod divider;
 // pub mod scroll;
-// pub mod text;
-// pub mod button;
+pub mod text;
+pub mod button;
 
 

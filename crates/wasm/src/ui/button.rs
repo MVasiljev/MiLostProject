@@ -1,4 +1,3 @@
-// button.rs
 
 use milost_ui::{
     components::{
@@ -140,7 +139,6 @@ impl Button {
 
     #[wasm_bindgen]
     pub fn gradient(mut self, colors_json: &str, is_radial: bool) -> Self {
-        // Parse colors from JSON
         let colors: Vec<Color> = match serde_json::from_str(colors_json) {
             Ok(colors) => colors,
             Err(_) => return self,
@@ -196,8 +194,8 @@ impl Button {
         
         self.props = self.props.with_border(
             width, 
-            Color::from_hex(color),
-            border_style.unwrap_or(BorderStyle::Solid)
+            border_style.unwrap_or(BorderStyle::Solid),
+            Color::from_hex(color)
         );
         
         self
@@ -222,10 +220,10 @@ impl Button {
         self.props = self.props.with_text_style(
             transform_enum,
             align_enum,
-            None, // font_weight
+            None,
             font_size,
-            None, // letter_spacing
-            None  // overflow
+            None,
+            None
         );
         
         self
@@ -233,8 +231,8 @@ impl Button {
 
     #[wasm_bindgen]
     pub fn dimensions(mut self, min_width: Option<f32>, max_width: Option<f32>, fixed_width: Option<f32>, fixed_height: Option<f32>) -> Self {
-        let edge_insets = None; // EdgeInsets can be set in a separate method
-        let alignment = None;   // Alignment can be set in a separate method
+        let edge_insets = None;
+        let alignment = None;
         
         self.props = self.props.with_layout(
             min_width,
@@ -271,7 +269,7 @@ impl Button {
             is_loading,
             indicator,
             color,
-            None, // indicator_size
+            None,
             Some(hide_text)
         );
         
@@ -286,8 +284,8 @@ impl Button {
             on_long_press.as_deref(),
             on_hover_enter.as_deref(),
             on_hover_exit.as_deref(),
-            None, // on_focus
-            None  // on_blur
+            None,
+            None
         );
         
         self
@@ -304,8 +302,8 @@ impl Button {
         self.props = self.props.with_press_effect(
             true,
             Some(scale),
-            None, // color_change
-            None, // offset
+            None,
+            None,
             Some(duration)
         );
         
@@ -319,7 +317,6 @@ impl Button {
     }
 }
 
-// Factory methods for common button patterns
 #[wasm_bindgen]
 pub fn create_primary_button(label: &str, handler_id: &str) -> Button {
     Button::new(label)

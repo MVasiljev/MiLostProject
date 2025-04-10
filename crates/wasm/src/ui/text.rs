@@ -2,11 +2,8 @@
 
 use milost_ui::{
     components::{
-        UIComponent,
-        text::{TextProps, TextDecoration, TextOverflow},
-        font::{FontWeight, FontSlant, FontWidth, FontStyle},
-    },
-    shared::{Color, EdgeInsets, TextAlign, TextTransform},
+        text::{TextDecoration, TextOverflow, TextProps}, UIComponent
+    }, shared::{Color, EdgeInsets, TextAlign, TextTransform}, FontSlant, FontStyle, FontWeight, FontWidth
 };
 use wasm_bindgen::prelude::*;
 
