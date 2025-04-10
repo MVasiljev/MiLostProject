@@ -1,4 +1,4 @@
-use milost_ui::DrawingContext;
+use milost_ui::render::DrawingContext;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, HtmlImageElement, Event};
@@ -6,8 +6,8 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
 
-
 #[wasm_bindgen]
+#[derive(Clone)]
 pub struct CanvasContext {
     ctx: CanvasRenderingContext2d,
     canvas: HtmlCanvasElement,
@@ -54,6 +54,16 @@ impl CanvasContext {
             self.canvas.width() as f32 / self.dpi_scale,
             self.canvas.height() as f32 / self.dpi_scale
         )
+    }
+    
+    pub fn set_dimensions(&mut self, width: f32, height: f32) {
+        self.canvas.set_width((width * self.dpi_scale) as u32);
+        self.canvas.set_height((height * self.dpi_scale) as u32);
+        
+        if self.dpi_scale > 1.0 {
+            self.ctx.scale(self.dpi_scale as f64, self.dpi_scale as f64)
+                .expect("Failed to scale canvas context");
+        }
     }
     
     pub fn load_image(&self, image_id: &str, url: &str) -> Result<(), String> {
@@ -346,7 +356,7 @@ impl DrawingContext for CanvasContext {
         
         for (position, color) in stops {
             gradient.add_color_stop(
-                position as f64,
+                position as f32,
                 &color
             ).map_err(|e| format!("Failed to add color stop: {:?}", e))?;
         }
@@ -369,7 +379,7 @@ impl DrawingContext for CanvasContext {
         
         for (position, color) in stops {
             gradient.add_color_stop(
-                position as f64,
+                position as f32,
                 &color
             ).map_err(|e| format!("Failed to add color stop: {:?}", e))?;
         }
@@ -479,8 +489,6 @@ impl DrawingContext for CanvasContext {
     }
     
     fn apply_filter(&self, filter: &str) -> Result<(), String> {
-        // Canvas API doesn't support CSS filters directly, but we can use filter property
-        // through style attribute on the canvas element
         let canvas_style = self.canvas.style();
         canvas_style.set_property("filter", filter)
             .map_err(|e| format!("Failed to set filter: {:?}", e))?;
@@ -503,11 +511,26 @@ pub struct CanvasRenderer {
 #[wasm_bindgen]
 impl CanvasRenderer {
     #[wasm_bindgen(constructor)]
-    pub fn new(canvas_id: &str) -> Result<CanvasRenderer, JsValue> {
-        let context = CanvasContext::new(canvas_id)
+    pub fn new(canvas_id: &str, width: f32, height: f32) -> Result<CanvasRenderer, JsValue> {
+        let mut context = CanvasContext::new(canvas_id)
             .map_err(|e| JsValue::from_str(&e))?;
         
+        if width > 0.0 && height > 0.0 {
+            context.set_dimensions(width, height);
+        }
+        
         Ok(Self { context })
+    }
+    
+    #[wasm_bindgen]
+    pub fn set_dimensions(&mut self, width: f32, height: f32) {
+        self.context.set_dimensions(width, height);
+    }
+
+    #[wasm_bindgen]
+    pub fn get_dimensions(&self) -> Box<[f32]> {
+        let (width, height) = self.context.get_dimensions();
+        Box::new([width, height])
     }
 
     #[wasm_bindgen]
@@ -528,10 +551,8 @@ impl CanvasRenderer {
         self.context.is_image_loaded(image_id)
     }
     
-    // Internal method for Rust-side code, not exposed to JavaScript
-    #[wasm_bindgen(skip)]
     pub fn get_context(&self) -> CanvasContext {
-        &self.context
+        self.context.clone()
     }
 }
 

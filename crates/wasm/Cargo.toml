@@ -25,12 +25,15 @@ web-sys = { version = "0.3", features = [
   "Crypto",
   "Document",
   "Element",
+  "HtmlElement",
+  "CssStyleDeclaration",
   "HtmlCanvasElement",
   "CanvasRenderingContext2d",
+  "CanvasGradient",
   "HtmlImageElement",
+  "TextMetrics",
   "Event",
 ]}
-
 # Add these for WebAssembly random number generation
 rand = { version = "0.8.5", features = ["std", "getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
