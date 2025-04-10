@@ -1,84 +1,77 @@
-import { getWasmModule } from "../../initWasm/init";
-import {
-  UIComponent,
-  ZStackAlignment,
-  Color,
-  EdgeInsets,
-  LayoutPriority,
-} from "../core";
-import { ColorType } from "../types";
-import { UI } from "../ui";
+import { UIComponent } from "../core/UIComponent.js";
+import { Color } from "../core/color/ColorSystem.js";
+import { EdgeInsets } from "../core/layout/EdgeInsets.js";
+import { ColorType } from "../types.js";
+import { UI } from "../ui.js";
+
+export enum ZStackAlignment {
+  Center = "center",
+  TopLeading = "topLeading",
+  Top = "top",
+  TopTrailing = "topTrailing",
+  Leading = "leading",
+  Trailing = "trailing",
+  BottomLeading = "bottomLeading",
+  Bottom = "bottom",
+  BottomTrailing = "bottomTrailing",
+}
 
 export class ZStackBuilder extends UIComponent {
-  protected _builder: any;
-
   constructor() {
     super();
-    const wasm = getWasmModule();
-    this._builder = new wasm.ZStackBuilder();
+    this._builder = this.createWasmBuilder("ZStack");
   }
 
   alignment(alignment: ZStackAlignment): ZStackBuilder {
-    this._builder = this._builder.alignment(alignment);
-    return this;
+    return this.setBuilderProp("alignment", alignment);
   }
 
   background(color: ColorType): ZStackBuilder {
     const colorString =
       typeof color === "string" ? color : new Color(color).toCssString();
 
-    this._builder = this._builder.background(colorString);
-    return this;
+    return this.setBuilderProp("background", colorString);
   }
 
   edgeInsets(insets: EdgeInsets): ZStackBuilder {
-    this._builder = this._builder.edge_insets(
+    return this.setBuilderProp("edge_insets", [
       insets.top,
       insets.right,
       insets.bottom,
-      insets.left
-    );
-    return this;
+      insets.left,
+    ]);
   }
 
   minWidth(value: number): ZStackBuilder {
-    this._builder = this._builder.min_width(value);
-    return this;
+    return this.setBuilderProp("min_width", value);
   }
 
   idealWidth(value: number): ZStackBuilder {
-    this._builder = this._builder.ideal_width(value);
-    return this;
+    return this.setBuilderProp("ideal_width", value);
   }
 
   maxWidth(value: number): ZStackBuilder {
-    this._builder = this._builder.max_width(value);
-    return this;
+    return this.setBuilderProp("max_width", value);
   }
 
   minHeight(value: number): ZStackBuilder {
-    this._builder = this._builder.min_height(value);
-    return this;
+    return this.setBuilderProp("min_height", value);
   }
 
   idealHeight(value: number): ZStackBuilder {
-    this._builder = this._builder.ideal_height(value);
-    return this;
+    return this.setBuilderProp("ideal_height", value);
   }
 
   maxHeight(value: number): ZStackBuilder {
-    this._builder = this._builder.max_height(value);
-    return this;
+    return this.setBuilderProp("max_height", value);
   }
 
   clipToBounds(value: boolean): ZStackBuilder {
-    this._builder = this._builder.clip_to_bounds(value);
-    return this;
+    return this.setBuilderProp("clip_to_bounds", value);
   }
 
-  layoutPriority(priority: LayoutPriority | number): ZStackBuilder {
-    this._builder = this._builder.layout_priority(priority);
-    return this;
+  layoutPriority(priority: number): ZStackBuilder {
+    return this.setBuilderProp("layout_priority", priority);
   }
 
   async child(component: UIComponent | UI): Promise<ZStackBuilder> {
@@ -90,18 +83,8 @@ export class ZStackBuilder extends UIComponent {
       json = await component.build().then((ui) => ui.toJSON());
     }
 
-    this._builder = this._builder.child(json);
+    this._builder = this._builder.add_children(json);
     return this;
-  }
-
-  async build(): Promise<UI> {
-    try {
-      const result = this._builder.build();
-      return UI.fromJSON(result);
-    } catch (error) {
-      console.error("Error building ZStack component:", error);
-      throw error;
-    }
   }
 
   static async create(): Promise<ZStackBuilder> {

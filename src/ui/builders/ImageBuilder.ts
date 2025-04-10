@@ -1,7 +1,6 @@
-import { getWasmModule } from "../../initWasm/init";
-import { UIComponent, Color } from "../core";
-import { ColorType } from "../types";
-import { UI } from "../ui";
+import { UIComponent } from "../core/UIComponent.js";
+import { Color } from "../core/color/ColorSystem.js";
+import { ColorType } from "../types.js";
 
 export enum ResizeMode {
   Fill = "fill",
@@ -27,124 +26,123 @@ export enum ContentMode {
 }
 
 export class ImageBuilder extends UIComponent {
-  protected _builder: any;
-
   constructor(src: string) {
     super();
-    const wasm = getWasmModule();
-    this._builder = new wasm.ImageBuilder(src);
+    this._builder = this.createWasmBuilder("Image", src);
   }
 
   fromAsset(path: string): ImageBuilder {
-    this._builder = this._builder.from_asset(path);
-    return this;
+    return this.setBuilderProp("from_asset", path);
   }
 
   alt(altText: string): ImageBuilder {
-    this._builder = this._builder.alt(altText);
-    return this;
+    return this.setBuilderProp("alt", altText);
   }
 
   width(width: number): ImageBuilder {
-    this._builder = this._builder.dimensions(width, null);
-    return this;
+    return this.setBuilderProp("width", width);
   }
 
   height(height: number): ImageBuilder {
-    this._builder = this._builder.dimensions(null, height);
-    return this;
+    return this.setBuilderProp("height", height);
   }
 
   dimensions(width: number, height: number): ImageBuilder {
-    this._builder = this._builder.dimensions(width, height);
+    this.width(width);
+    this.height(height);
     return this;
   }
 
   aspectRatio(ratio: number): ImageBuilder {
-    this._builder = this._builder.aspect_ratio(ratio);
-    return this;
+    return this.setBuilderProp("aspect_ratio", ratio);
   }
 
   resizeMode(mode: ResizeMode): ImageBuilder {
-    this._builder = this._builder.resize_mode(mode);
-    return this;
+    return this.setBuilderProp("resize_mode", mode);
   }
 
   contentMode(mode: ContentMode): ImageBuilder {
-    this._builder = this._builder.content_mode(mode);
-    return this;
+    return this.setBuilderProp("content_mode", mode);
   }
 
   cornerRadius(radius: number): ImageBuilder {
-    this._builder = this._builder.corner_radius(radius);
-    return this;
+    return this.setBuilderProp("corner_radius", radius);
   }
 
   circular(diameter?: number): ImageBuilder {
     if (diameter) {
-      this._builder = this._builder
-        .dimensions(diameter, diameter)
-        .corner_radius(diameter / 2);
+      this.dimensions(diameter, diameter);
+      this.cornerRadius(diameter / 2);
     } else {
-      this._builder = this._builder.preserve_aspect_ratio(true);
+      this.setBuilderProp("preserve_aspect_ratio", true);
     }
     return this;
   }
 
-  border(width: number, color: ColorType): ImageBuilder {
+  borderWidth(width: number): ImageBuilder {
+    return this.setBuilderProp("border_width", width);
+  }
+
+  borderColor(color: ColorType): ImageBuilder {
     const colorString =
       typeof color === "string" ? color : new Color(color).toCssString();
+    return this.setBuilderProp("border_color", colorString);
+  }
 
-    this._builder = this._builder.border(width, colorString, null);
-    return this;
+  border(width: number, color: ColorType, style?: string): ImageBuilder {
+    const colorString =
+      typeof color === "string" ? color : new Color(color).toCssString();
+    return this.setBuilderProp("border", [width, colorString, style]);
   }
 
   opacity(value: number): ImageBuilder {
-    this._builder = this._builder.opacity(value);
-    return this;
+    return this.setBuilderProp("opacity", value);
   }
 
   tintColor(color: ColorType): ImageBuilder {
     const colorString =
       typeof color === "string" ? color : new Color(color).toCssString();
-
-    this._builder = this._builder.tint_color(colorString);
-    return this;
+    return this.setBuilderProp("tint_color", colorString);
   }
 
   blur(radius: number): ImageBuilder {
-    this._builder = this._builder.blur_filter(radius);
-    return this;
+    return this.setBuilderProp("blur_filter", radius);
   }
 
   grayscale(intensity: number = 1.0): ImageBuilder {
-    this._builder = this._builder.grayscale_filter(intensity);
-    return this;
+    return this.setBuilderProp("grayscale_filter", intensity);
   }
 
   loadingPlaceholder(src: string): ImageBuilder {
-    this._builder = this._builder.loading_placeholder(src);
-    return this;
+    return this.setBuilderProp("loading_placeholder", src);
   }
 
   errorPlaceholder(src: string): ImageBuilder {
-    this._builder = this._builder.error_placeholder(src);
-    return this;
+    return this.setBuilderProp("error_placeholder", src);
   }
 
   clipToBounds(clip: boolean = true): ImageBuilder {
-    this._builder = this._builder.clip_to_bounds(clip);
-    return this;
+    return this.setBuilderProp("clip_to_bounds", clip);
   }
 
-  async build(): Promise<UI> {
-    try {
-      const result = this._builder.build();
-      return UI.fromJSON(result);
-    } catch (error) {
-      console.error("Error building Image component:", error);
-      throw error;
-    }
+  preserveAspectRatio(preserve: boolean = true): ImageBuilder {
+    return this.setBuilderProp("preserve_aspect_ratio", preserve);
+  }
+
+  shadow(
+    radius: number,
+    color: ColorType,
+    offsetX: number = 0,
+    offsetY: number = 0
+  ): ImageBuilder {
+    const colorString =
+      typeof color === "string" ? color : new Color(color).toCssString();
+    return this.setBuilderProp("shadow", [
+      radius,
+      colorString,
+      offsetX,
+      offsetY,
+    ]);
   }
 
   static async create(src: string): Promise<ImageBuilder> {

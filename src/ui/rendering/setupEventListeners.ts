@@ -1,3 +1,6 @@
+import { EventBus } from "./eventSystem.js";
+import { callWasmStaticMethod } from "../../initWasm/lib.js";
+
 export function setupEventListeners(
   canvas: HTMLCanvasElement,
   renderNode: any
@@ -10,37 +13,139 @@ export function setupEventListeners(
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
 
-      const clickedNode = findNodeAtPoint(renderNode, x, y);
-      if (clickedNode?.resolved_props?.on_tap) {
-        handleNodeClick(clickedNode);
+      const handled = callWasmStaticMethod<boolean>(
+        "WebRenderer",
+        "handle_event",
+        ["tap", x, y, null],
+        () => false
+      );
+
+      if (!handled) {
+        const clickedNode = findNodeAtPoint(renderNode, x, y);
+        if (clickedNode?.resolved_props?.on_tap) {
+          handleNodeClick(clickedNode);
+        }
       }
+    });
+
+    let longPressTimer: number | null = null;
+    let pressPosition: { x: number; y: number } | null = null;
+
+    canvas.addEventListener("mousedown", (event) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      pressPosition = { x, y };
+
+      longPressTimer = window.setTimeout(() => {
+        const handled = callWasmStaticMethod<boolean>(
+          "WebRenderer",
+          "handle_event",
+          ["long_press", x, y, null],
+          () => false
+        );
+
+        if (!handled && pressPosition) {
+          const node = findNodeAtPoint(
+            renderNode,
+            pressPosition.x,
+            pressPosition.y
+          );
+          if (node && node.resolved_props.on_long_press) {
+            const handlerId = node.resolved_props.on_long_press;
+            EventBus.getInstance().trigger(handlerId, { x, y });
+          }
+        }
+      }, 500);
+    });
+
+    canvas.addEventListener("mousemove", (event) => {
+      if (longPressTimer && pressPosition) {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        const dx = x - pressPosition.x;
+        const dy = y - pressPosition.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > 5) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+          pressPosition = null;
+        }
+      }
+    });
+
+    canvas.addEventListener("mouseup", () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+      pressPosition = null;
+    });
+
+    canvas.addEventListener("mouseleave", () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+      pressPosition = null;
     });
   }
 }
 
 function containsInteractiveElements(node: any): boolean {
-  if (node.type_name === "Button" || node?.resolved_props?.on_tap) {
+  if (
+    node.type_name === "Button" ||
+    (node.resolved_props &&
+      (node.resolved_props.on_tap || node.resolved_props.on_long_press))
+  ) {
     return true;
   }
 
-  return (node.children || []).some(containsInteractiveElements);
+  if (node.children && node.children.length > 0) {
+    return node.children.some((child: any) =>
+      containsInteractiveElements(child)
+    );
+  }
+
+  return false;
 }
 
 function findNodeAtPoint(node: any, x: number, y: number): any | null {
-  const px = parseFloat(node.resolved_props?.x ?? "0");
-  const py = parseFloat(node.resolved_props?.y ?? "0");
-  const pw = parseFloat(node.resolved_props?.width ?? "0");
-  const ph = parseFloat(node.resolved_props?.height ?? "0");
+  const nodeX = parseFloat(node.resolved_props?.x || "0");
+  const nodeY = parseFloat(node.resolved_props?.y || "0");
+  const nodeWidth = parseFloat(node.resolved_props?.width || "0");
+  const nodeHeight = parseFloat(node.resolved_props?.height || "0");
 
-  const inBounds = x >= px && x <= px + pw && y >= py && y <= py + ph;
-  if (!inBounds) return null;
+  const isInBounds =
+    x >= nodeX &&
+    x <= nodeX + nodeWidth &&
+    y >= nodeY &&
+    y <= nodeY + nodeHeight;
 
-  for (const child of [...(node.children || [])].reverse()) {
-    const found = findNodeAtPoint(child, x, y);
-    if (found) return found;
+  if (!isInBounds) {
+    return null;
   }
 
-  if (node.type_name === "Button" || node?.resolved_props?.on_tap) {
+  if (node.children && node.children.length > 0) {
+    const reversedChildren = [...node.children].reverse();
+
+    for (const child of reversedChildren) {
+      const found = findNodeAtPoint(child, x, y);
+      if (found) {
+        return found;
+      }
+    }
+  }
+
+  if (
+    node.type_name === "Button" ||
+    node.resolved_props?.on_tap ||
+    node.resolved_props?.on_long_press
+  ) {
     return node;
   }
 
@@ -48,16 +153,8 @@ function findNodeAtPoint(node: any, x: number, y: number): any | null {
 }
 
 function handleNodeClick(node: any): void {
-  const handlerName = node.resolved_props?.on_tap;
-  const handler = (window as any)[handlerName];
-
-  if (typeof handler === "function") {
-    try {
-      handler();
-    } catch (err) {
-      console.error("Error executing click handler:", err);
-    }
-  } else {
-    console.warn(`Handler '${handlerName}' not found`);
+  if (node.resolved_props.on_tap) {
+    const handlerId = node.resolved_props.on_tap;
+    EventBus.getInstance().trigger(handlerId, {});
   }
 }

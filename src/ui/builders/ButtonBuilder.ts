@@ -1,40 +1,36 @@
-import { getWasmModule } from "../../initWasm/init";
-import { UIComponent, Color } from "../core";
-import { EventBus } from "../rendering";
-import { ColorType } from "../types";
-import { UI } from "../ui";
+import { UIComponent } from "../core/UIComponent.js";
+import { Color } from "../core/color/ColorSystem.js";
+import { ColorType } from "../types.js";
+import { EventBus } from "../rendering/eventSystem.js";
 
 export enum ButtonStyle {
-  Primary = "Primary",
-  Secondary = "Secondary",
-  Danger = "Danger",
-  Success = "Success",
-  Outline = "Outline",
-  Text = "Text",
-  Custom = "Custom",
+  Primary = "primary",
+  Secondary = "secondary",
+  Danger = "danger",
+  Success = "success",
+  Outline = "outline",
+  Text = "text",
+  Custom = "custom",
 }
 
 export enum ButtonSize {
-  Small = "Small",
-  Medium = "Medium",
-  Large = "Large",
-  Custom = "Custom",
+  Small = "small",
+  Medium = "medium",
+  Large = "large",
+  Custom = "custom",
 }
 
 export enum BorderStyle {
-  Solid = "Solid",
-  Dashed = "Dashed",
-  Dotted = "Dotted",
-  None = "None",
+  Solid = "solid",
+  Dashed = "dashed",
+  Dotted = "dotted",
+  None = "none",
 }
 
 export class ButtonBuilder extends UIComponent {
-  protected _builder: any;
-
   constructor(label: string) {
     super();
-    const wasm = getWasmModule();
-    this._builder = new wasm.ButtonBuilder(label);
+    this._builder = this.createWasmBuilder("Button", label);
   }
 
   onTap(handlerIdOrCallback: string | Function): ButtonBuilder {
@@ -46,91 +42,92 @@ export class ButtonBuilder extends UIComponent {
 
       (window as any)[handlerId] = handlerIdOrCallback;
 
-      this._builder = this._builder.on_tap(handlerId);
+      return this.setBuilderProp("on_tap", handlerId);
     } else {
-      this._builder = this._builder.on_tap(handlerIdOrCallback);
+      return this.setBuilderProp("on_tap", handlerIdOrCallback);
     }
-
-    return this;
   }
 
   style(style: ButtonStyle): ButtonBuilder {
-    this._builder = this._builder.style(style);
-    return this;
+    return this.setBuilderProp("style", style);
   }
 
   size(size: ButtonSize): ButtonBuilder {
-    this._builder = this._builder.size(size);
-    return this;
+    return this.setBuilderProp("size", size);
   }
 
   backgroundColor(color: ColorType): ButtonBuilder {
     const colorString =
       typeof color === "string" ? color : new Color(color).toCssString();
 
-    this._builder = this._builder.background_color(colorString);
-    return this;
+    return this.setBuilderProp("background_color", colorString);
   }
 
   textColor(color: ColorType): ButtonBuilder {
     const colorString =
       typeof color === "string" ? color : new Color(color).toCssString();
 
-    this._builder = this._builder.text_color(colorString);
-    return this;
+    return this.setBuilderProp("text_color", colorString);
   }
 
   cornerRadius(radius: number): ButtonBuilder {
-    this._builder = this._builder.corner_radius(radius);
-    return this;
+    return this.setBuilderProp("corner_radius", radius);
   }
 
   padding(padding: number): ButtonBuilder {
-    this._builder = this._builder.padding(padding);
-    return this;
+    return this.setBuilderProp("padding", padding);
   }
 
   icon(iconName: string, position: string = "leading"): ButtonBuilder {
-    this._builder = this._builder.icon(iconName, position);
-    return this;
+    return this.setBuilderProp("icon", [iconName, position]);
   }
 
   border(width: number, style: BorderStyle, color: ColorType): ButtonBuilder {
     const colorString =
       typeof color === "string" ? color : new Color(color).toCssString();
 
-    this._builder = this._builder.border(width, colorString, style);
-    return this;
+    return this.setBuilderProp("border", [width, colorString, style]);
   }
 
   disabled(isDisabled: boolean): ButtonBuilder {
-    this._builder = this._builder.disabled(isDisabled);
-    return this;
+    return this.setBuilderProp("disabled", isDisabled);
   }
 
   loading(isLoading: boolean): ButtonBuilder {
-    this._builder = this._builder.loading(isLoading);
-    return this;
+    return this.setBuilderProp("loading", [isLoading, "spinner", null, false]);
   }
 
   fontSize(size: number): ButtonBuilder {
-    this._builder = this._builder.text_style(null, null, null, size, null);
-    return this;
+    return this.setBuilderProp("text_style", [null, null, size]);
   }
 
   fontWeight(weight: string): ButtonBuilder {
-    this._builder = this._builder.text_style(null, null, weight, null, null);
-    return this;
+    return this.setBuilderProp("text_style", [null, null, null, weight, null]);
   }
 
-  async build(): Promise<UI> {
-    try {
-      const result = this._builder.build();
-      return UI.fromJSON(result);
-    } catch (error) {
-      console.error("Error building Button component:", error);
-      throw error;
-    }
+  elevation(value: number): ButtonBuilder {
+    return this.setBuilderProp("elevation", value);
+  }
+
+  shadow(
+    radius: number,
+    color: ColorType,
+    offsetX: number = 0,
+    offsetY: number = 0
+  ): ButtonBuilder {
+    const colorString =
+      typeof color === "string" ? color : new Color(color).toCssString();
+
+    return this.setBuilderProp("shadow", [
+      radius,
+      colorString,
+      offsetX,
+      offsetY,
+    ]);
+  }
+
+  opacity(value: number): ButtonBuilder {
+    return this.setBuilderProp("opacity", value);
   }
 
   static async create(label: string): Promise<ButtonBuilder> {

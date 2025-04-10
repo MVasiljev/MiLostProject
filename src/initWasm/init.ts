@@ -20,10 +20,9 @@ export async function initWasm(): Promise<void> {
 
     for (const path of possiblePaths) {
       try {
-        // Dynamically import the WASM module
-        const wasm = await import(/* @vite-ignore */ path);
+        const wasm = await import(path);
         if (wasm && wasm.default) {
-          await wasm.default(); // Initialize the WASM module
+          await wasm.default();
           wasmModule = wasm;
           initialized = true;
           return;
@@ -33,7 +32,6 @@ export async function initWasm(): Promise<void> {
       }
     }
 
-    // If all paths fail, throw the last encountered error
     throw new Error(
       `Failed to initialize WASM module. Last error: ${
         lastError?.message || "Unknown error"

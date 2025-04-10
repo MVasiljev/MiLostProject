@@ -3,8 +3,9 @@ import {
   getWasmModule,
   isWasmInitialized,
 } from "../../initWasm/init.js";
+import { callWasmStaticMethod } from "../../initWasm/lib.js";
 import { UI } from "../ui.js";
-import { EventBus } from "./eventSystem.js";
+import { setupEventListeners } from "./setupEventListeners.js";
 
 export interface MiLostRendererOptions {
   component: UI | string;
@@ -24,7 +25,6 @@ export async function MiLost({
       await initWasm();
     }
 
-    const wasm = getWasmModule();
     const json = typeof component === "string" ? component : component.toJSON();
 
     mountPoint.innerHTML = "";
@@ -43,9 +43,25 @@ export async function MiLost({
     metadataContainer.style.display = "none";
     mountPoint.appendChild(metadataContainer);
 
-    await wasm.render_to_canvas_element(canvasId, json);
+    await callWasmStaticMethod(
+      "render_to_canvas_element",
+      "",
+      [canvasId, json, width, height],
+      () => {
+        throw new Error("Failed to render component to canvas");
+      }
+    );
 
-    const renderNode = JSON.parse(await wasm.render_component(json));
+    const renderNodeJson = await callWasmStaticMethod<string>(
+      "get_render_node",
+      "",
+      [json],
+      () => {
+        throw new Error("Failed to get render node");
+      }
+    );
+
+    const renderNode = JSON.parse(renderNodeJson);
 
     metadataContainer.setAttribute(
       "data-render-node",
@@ -62,105 +78,4 @@ export function mountMiLostRenderer(
   options: MiLostRendererOptions
 ): Promise<void> {
   return MiLost(options);
-}
-
-function setupEventListeners(canvas: HTMLCanvasElement, renderNode: any): void {
-  if (containsInteractiveElements(renderNode)) {
-    canvas.addEventListener("click", (event) => {
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-
-      const clickedNode = findNodeAtPoint(renderNode, x, y);
-      if (clickedNode && clickedNode.resolved_props.on_tap) {
-        handleNodeClick(clickedNode);
-      }
-    });
-
-    let longPressTimer: number | null = null;
-
-    canvas.addEventListener("mousedown", (event) => {
-      const rect = canvas.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-
-      longPressTimer = window.setTimeout(() => {
-        const node = findNodeAtPoint(renderNode, x, y);
-        if (node && node.resolved_props.on_long_press) {
-          const handlerId = node.resolved_props.on_long_press;
-          EventBus.getInstance().trigger(handlerId, { x, y });
-        }
-      }, 500);
-    });
-
-    canvas.addEventListener("mouseup", () => {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
-      }
-    });
-  }
-}
-
-function containsInteractiveElements(node: any): boolean {
-  if (
-    node.type_name === "Button" ||
-    (node.resolved_props &&
-      (node.resolved_props.on_tap || node.resolved_props.on_long_press))
-  ) {
-    return true;
-  }
-
-  if (node.children && node.children.length > 0) {
-    return node.children.some((child: any) =>
-      containsInteractiveElements(child)
-    );
-  }
-
-  return false;
-}
-
-function findNodeAtPoint(node: any, x: number, y: number): any | null {
-  const nodeX = parseFloat(node.resolved_props?.x || "0");
-  const nodeY = parseFloat(node.resolved_props?.y || "0");
-  const nodeWidth = parseFloat(node.resolved_props?.width || "0");
-  const nodeHeight = parseFloat(node.resolved_props?.height || "0");
-
-  const isInBounds =
-    x >= nodeX &&
-    x <= nodeX + nodeWidth &&
-    y >= nodeY &&
-    y <= nodeY + nodeHeight;
-
-  if (!isInBounds) {
-    return null;
-  }
-
-  if (node.children && node.children.length > 0) {
-    const reversedChildren = [...node.children].reverse();
-
-    for (const child of reversedChildren) {
-      const hitChild = findNodeAtPoint(child, x, y);
-      if (hitChild) {
-        return hitChild;
-      }
-    }
-  }
-
-  if (
-    node.type_name === "Button" ||
-    node.resolved_props?.on_tap ||
-    node.resolved_props?.on_long_press
-  ) {
-    return node;
-  }
-
-  return null;
-}
-
-function handleNodeClick(node: any): void {
-  if (node.resolved_props.on_tap) {
-    const handlerId = node.resolved_props.on_tap;
-    EventBus.getInstance().trigger(handlerId, {});
-  }
 }

@@ -1,13 +1,11 @@
-import { Task } from "../../concurrency";
-import { AppError, Ok, Err } from "../../core";
-import { Str } from "../../types";
-import {
-  isWasmInitialized,
-  initWasm,
-  getWasmModule,
-} from "../../initWasm/init";
-import { UI } from "../ui";
-import { setupEventListeners } from "./setupEventListeners";
+import { Task } from "../../concurrency/task.js";
+import { Ok, Err } from "../../core/result.js";
+import { Str } from "../../types/string.js";
+import { initWasm, isWasmInitialized } from "../../initWasm/init.js";
+import { callWasmStaticMethod } from "../../initWasm/lib.js";
+import { UI } from "../ui.js";
+import { setupEventListeners } from "./setupEventListeners.js";
+import { AppError } from "../../core/error.js";
 
 export interface MiLostRendererOptions {
   component: UI | string;
@@ -25,7 +23,6 @@ export function renderWithMiLostTask(
         await initWasm();
       }
 
-      const wasm = getWasmModule();
       const {
         component,
         mountPoint,
@@ -34,7 +31,7 @@ export function renderWithMiLostTask(
       } = options;
 
       const json =
-        typeof component === "string" ? component : JSON.stringify(component);
+        typeof component === "string" ? component : component.toJSON();
 
       mountPoint.innerHTML = "";
 
@@ -51,9 +48,26 @@ export function renderWithMiLostTask(
       metadataContainer.style.display = "none";
       mountPoint.appendChild(metadataContainer);
 
-      await wasm.render_to_canvas_element(canvasId, json);
+      callWasmStaticMethod(
+        "render_to_canvas_element",
+        "",
+        [canvasId, json, width, height],
+        () => {
+          throw new Error("Failed to render component to canvas");
+        }
+      );
 
-      const renderNode = JSON.parse(await wasm.render_component(json));
+      const renderNodeJson = callWasmStaticMethod<string>(
+        "get_render_node",
+        "",
+        [json],
+        () => {
+          throw new Error("Failed to get render node");
+        }
+      );
+
+      const renderNode = JSON.parse(renderNodeJson);
+
       metadataContainer.setAttribute(
         "data-render-node",
         JSON.stringify(renderNode)

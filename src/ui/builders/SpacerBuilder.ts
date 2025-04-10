@@ -1,49 +1,65 @@
-import { getWasmModule } from "../../initWasm/init";
-import { UIComponent } from "../core";
-import { UI } from "../ui";
+import { UIComponent } from "../core/UIComponent.js";
+import { Color } from "../core/color/ColorSystem.js";
+import { ColorType } from "../types.js";
 
 export class SpacerBuilder extends UIComponent {
-  protected _builder: any;
-
   constructor() {
     super();
-    const wasm = getWasmModule();
-    this._builder = new wasm.SpacerBuilder();
+    this._builder = this.createWasmBuilder("Spacer");
   }
 
   fixed(size: number): SpacerBuilder {
-    this._builder = this._builder.fixed(size);
-    return this;
+    return this.setBuilderProp("fixed", size);
   }
 
   flexible(grow: number): SpacerBuilder {
-    this._builder = this._builder.flexible(grow);
-    return this;
+    return this.setBuilderProp("flexible", grow);
   }
 
-  min(size: number): SpacerBuilder {
-    this._builder = this._builder.min(size);
-    return this;
+  minimum(size: number): SpacerBuilder {
+    return this.setBuilderProp("minimum", size);
   }
 
-  max(size: number): SpacerBuilder {
-    this._builder = this._builder.max(size);
-    return this;
+  maximum(size: number): SpacerBuilder {
+    return this.setBuilderProp("maximum", size);
   }
 
-  accessibilityLabel(label: string): SpacerBuilder {
-    this._builder = this._builder.accessibility_label(label);
-    return this;
+  background(color: ColorType): SpacerBuilder {
+    const colorString =
+      typeof color === "string" ? color : new Color(color).toCssString();
+    return this.setBuilderProp("background", colorString);
   }
 
-  async build(): Promise<UI> {
-    try {
-      const result = this._builder.build();
-      return UI.fromJSON(result);
-    } catch (error) {
-      console.error("Error building Spacer component:", error);
-      throw error;
-    }
+  opacity(value: number): SpacerBuilder {
+    return this.setBuilderProp("opacity", value);
+  }
+
+  border(
+    width: number,
+    color: ColorType,
+    radius?: number,
+    style?: string
+  ): SpacerBuilder {
+    const colorString =
+      typeof color === "string" ? color : new Color(color).toCssString();
+    return this.setBuilderProp("border", [width, colorString, radius, style]);
+  }
+
+  edgeInsets(
+    top: number,
+    right: number,
+    bottom: number,
+    left: number
+  ): SpacerBuilder {
+    return this.setBuilderProp("edge_insets", [top, right, bottom, left]);
+  }
+
+  accessibility(
+    label?: string,
+    hint?: string,
+    isElement?: boolean
+  ): SpacerBuilder {
+    return this.setBuilderProp("accessibility", [label, hint, isElement]);
   }
 
   static async create(): Promise<SpacerBuilder> {

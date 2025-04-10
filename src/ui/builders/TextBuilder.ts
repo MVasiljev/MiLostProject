@@ -1,68 +1,83 @@
-import { getWasmModule } from "../../initWasm/init";
-import { UIComponent, Color } from "../core";
-import { ColorType } from "../types";
-import { UI } from "../ui";
+import { UIComponent } from "../core/UIComponent.js";
+import { Color } from "../core/color/ColorSystem.js";
+import { ColorType } from "../types.js";
 
 export type TextAlignment = "left" | "center" | "right" | "justify";
 
 export class TextBuilder extends UIComponent {
-  protected _builder: any;
-
   constructor(content: string) {
     super();
-    const wasm = getWasmModule();
-    this._builder = new wasm.TextBuilder(content);
+    this._builder = this.createWasmBuilder("Text", content);
   }
 
   color(color: ColorType): TextBuilder {
     const colorString =
       typeof color === "string" ? color : new Color(color).toCssString();
 
-    this._builder = this._builder.color(colorString);
-    return this;
+    return this.setBuilderProp("color", colorString);
   }
 
   fontSize(size: number): TextBuilder {
-    this._builder = this._builder.font_size(size);
-    return this;
+    return this.setBuilderProp("font_size", size);
   }
 
   fontWeight(weight: string): TextBuilder {
-    this._builder = this._builder.font_weight(weight);
-    return this;
+    return this.setBuilderProp("font_weight", weight);
   }
 
   fontFamily(family: string): TextBuilder {
-    this._builder = this._builder.font_family(family);
-    return this;
+    return this.setBuilderProp("font_family", family);
   }
 
   textAlign(align: TextAlignment): TextBuilder {
-    this._builder = this._builder.text_align(align);
-    return this;
+    return this.setBuilderProp("text_align", align);
   }
 
   fontStyle(style: string): TextBuilder {
-    this._builder = this._builder.font_style(style);
-    return this;
+    return this.setBuilderProp("font_style", style);
   }
 
   backgroundColor(color: ColorType): TextBuilder {
     const colorString =
       typeof color === "string" ? color : new Color(color).toCssString();
 
-    this._builder = this._builder.background_color(colorString);
-    return this;
+    return this.setBuilderProp("background_color", colorString);
   }
 
-  async build(): Promise<UI> {
-    try {
-      const result = this._builder.build();
-      return UI.fromJSON(result);
-    } catch (error) {
-      console.error("Error building Text component:", error);
-      throw error;
-    }
+  lineHeight(height: number): TextBuilder {
+    return this.setBuilderProp("line_height", height);
+  }
+
+  letterSpacing(spacing: number): TextBuilder {
+    return this.setBuilderProp("letter_spacing", spacing);
+  }
+
+  maxLines(lines: number): TextBuilder {
+    return this.setBuilderProp("max_lines", lines);
+  }
+
+  padding(value: number): TextBuilder {
+    return this.setBuilderProp("padding", value);
+  }
+
+  opacity(value: number): TextBuilder {
+    return this.setBuilderProp("opacity", value);
+  }
+
+  underline(enabled: boolean = true): TextBuilder {
+    return this.setBuilderProp("underline", enabled);
+  }
+
+  strikethrough(enabled: boolean = true): TextBuilder {
+    return this.setBuilderProp("strikethrough", enabled);
+  }
+
+  italic(enabled: boolean = true): TextBuilder {
+    return this.setBuilderProp("italic", enabled);
+  }
+
+  truncationMode(mode: string): TextBuilder {
+    return this.setBuilderProp("truncation_mode", mode);
   }
 
   static async create(content: string): Promise<TextBuilder> {

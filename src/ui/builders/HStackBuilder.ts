@@ -1,99 +1,85 @@
-import { getWasmModule } from "../../initWasm/init";
-import {
-  UIComponent,
-  Color,
-  HStackAlignment,
-  EdgeInsets,
-  LayoutPriority,
-} from "../core";
-import { ColorType } from "../types";
-import { UI } from "../ui";
+import { UIComponent } from "../core/UIComponent.js";
+import { Color } from "../core/color/ColorSystem.js";
+import { EdgeInsets } from "../core/layout/EdgeInsets.js";
+import { ColorType } from "../types.js";
+import { UI } from "../ui.js";
+
+export enum HStackAlignment {
+  Top = "top",
+  Center = "center",
+  Bottom = "bottom",
+  FirstTextBaseline = "firstTextBaseline",
+  LastTextBaseline = "lastTextBaseline",
+}
 
 export class HStackBuilder extends UIComponent {
-  protected _builder: any;
-
   constructor() {
     super();
-    const wasm = getWasmModule();
-    this._builder = new wasm.HStackBuilder();
+    this._builder = this.createWasmBuilder("HStack");
   }
 
   spacing(value: number): HStackBuilder {
-    this._builder = this._builder.spacing(value);
-    return this;
+    return this.setBuilderProp("spacing", value);
   }
 
   padding(value: number): HStackBuilder {
-    this._builder = this._builder.padding(value);
-    return this;
+    return this.setBuilderProp("padding", value);
   }
 
   background(color: ColorType): HStackBuilder {
     const colorString =
       typeof color === "string" ? color : new Color(color).toCssString();
 
-    this._builder = this._builder.background(colorString);
-    return this;
+    return this.setBuilderProp("background", colorString);
   }
 
   alignment(alignment: HStackAlignment): HStackBuilder {
-    this._builder = this._builder.alignment(alignment);
-    return this;
+    return this.setBuilderProp("alignment", alignment);
   }
 
   edgeInsets(insets: EdgeInsets): HStackBuilder {
-    this._builder = this._builder.edge_insets(
+    return this.setBuilderProp("edge_insets", [
       insets.top,
       insets.right,
       insets.bottom,
-      insets.left
-    );
-    return this;
+      insets.left,
+    ]);
   }
 
   minWidth(value: number): HStackBuilder {
-    this._builder = this._builder.min_width(value);
-    return this;
+    return this.setBuilderProp("min_width", value);
   }
 
   idealWidth(value: number): HStackBuilder {
-    this._builder = this._builder.ideal_width(value);
-    return this;
+    return this.setBuilderProp("ideal_width", value);
   }
 
   maxWidth(value: number): HStackBuilder {
-    this._builder = this._builder.max_width(value);
-    return this;
+    return this.setBuilderProp("max_width", value);
   }
 
   minHeight(value: number): HStackBuilder {
-    this._builder = this._builder.min_height(value);
-    return this;
+    return this.setBuilderProp("min_height", value);
   }
 
   idealHeight(value: number): HStackBuilder {
-    this._builder = this._builder.ideal_height(value);
-    return this;
+    return this.setBuilderProp("ideal_height", value);
   }
 
   maxHeight(value: number): HStackBuilder {
-    this._builder = this._builder.max_height(value);
-    return this;
+    return this.setBuilderProp("max_height", value);
   }
 
   clipToBounds(value: boolean): HStackBuilder {
-    this._builder = this._builder.clip_to_bounds(value);
-    return this;
+    return this.setBuilderProp("clip_to_bounds", value);
   }
 
-  layoutPriority(priority: LayoutPriority | number): HStackBuilder {
-    this._builder = this._builder.layout_priority(priority);
-    return this;
+  layoutPriority(priority: number): HStackBuilder {
+    return this.setBuilderProp("layout_priority", priority);
   }
 
   equalSpacing(value: boolean): HStackBuilder {
-    this._builder = this._builder.equal_spacing(value);
-    return this;
+    return this.setBuilderProp("equal_spacing", value);
   }
 
   async child(component: UIComponent | UI): Promise<HStackBuilder> {
@@ -105,18 +91,8 @@ export class HStackBuilder extends UIComponent {
       json = await component.build().then((ui) => ui.toJSON());
     }
 
-    this._builder = this._builder.child(json);
+    this._builder = this._builder.add_children(json);
     return this;
-  }
-
-  async build(): Promise<UI> {
-    try {
-      const result = this._builder.build();
-      return UI.fromJSON(result);
-    } catch (error) {
-      console.error("Error building HStack component:", error);
-      throw error;
-    }
   }
 
   static async create(): Promise<HStackBuilder> {

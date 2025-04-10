@@ -1,8 +1,5 @@
-import {
-  initWasm,
-  getWasmModule,
-  isWasmInitialized,
-} from "../initWasm/init.js";
+import { initWasm, isWasmInitialized } from "../initWasm/init.js";
+import { callWasmStaticMethod } from "../initWasm/lib.js";
 
 export class UI {
   private readonly _json: string;
@@ -27,9 +24,18 @@ export class UI {
       await initWasm();
     }
 
-    const wasm = getWasmModule();
-    const result = wasm.UIParser.create_text(content, fontStyle, color);
-    return new UI(result);
+    const json = callWasmStaticMethod<string>(
+      "UIParser",
+      "create_text",
+      [content, fontStyle, color],
+      () => {
+        throw new Error(
+          "Failed to create text component - WASM function unavailable"
+        );
+      }
+    );
+
+    return new UI(json);
   }
 
   toJSON(): string {

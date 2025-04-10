@@ -1,8 +1,5 @@
-import {
-  initWasm,
-  getWasmModule,
-  isWasmInitialized,
-} from "../../initWasm/init.js";
+import { initWasm, isWasmInitialized } from "../../initWasm/init.js";
+import { createWasmInstance } from "../../initWasm/lib.js";
 
 export abstract class Component<T> {
   protected constructor() {
@@ -19,5 +16,11 @@ export abstract class Component<T> {
     if (!isWasmInitialized()) {
       await initWasm();
     }
+  }
+
+  protected createWasmBuilder<B>(className: string, ...args: any[]): B {
+    return createWasmInstance<B>(className, args, () => {
+      throw new Error(`Failed to create WASM instance of ${className}`);
+    });
   }
 }
