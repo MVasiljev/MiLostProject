@@ -1,5 +1,3 @@
-/// Core functionality for MiLost
-/// Will expand to include shared utilities used by multiple crates
 
 pub mod utils {
     pub fn placeholder() {
@@ -8,7 +6,6 @@ pub mod utils {
 
 pub mod config {
     pub struct Config {
-        // Placeholder fields
     }
     
     impl Config {
