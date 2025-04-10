@@ -141,6 +141,7 @@ function updateExportsInPackageJson() {
   if (fs.existsSync(pkgJsonPath)) {
     const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, "utf-8"));
 
+    // Force keep original wasm exports
     pkgJson.exports = {
       ".": {
         import: "./dist/index.js",
@@ -148,9 +149,8 @@ function updateExportsInPackageJson() {
         types: "./dist/index.d.ts",
       },
       "./wasm": {
-        import: "./dist/wasm-index.js",
-        require: "./dist/wasm-index.js",
-        types: "./dist/wasm-index.d.ts",
+        import: "./dist/wasm/milost_wasm.js",
+        types: "./dist/wasm/milost_wasm.d.ts",
       },
       "./wasm/*": "./dist/wasm/*",
     };

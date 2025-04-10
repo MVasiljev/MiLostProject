@@ -30,6 +30,27 @@ or
 yarn add milost
 ```
 
+## If using Vite
+
+Add this to vite.config.ts
+
+```
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+
+export default defineConfig({
+  plugins: [react()],
+  optimizeDeps: {
+    exclude: ["milost/wasm", "milost"],
+  },
+  esbuild: {
+    supported: {
+      "top-level-await": true,
+    },
+  },
+});
+```
+
 ## 🚀 Quick Start
 
 ```typescript
