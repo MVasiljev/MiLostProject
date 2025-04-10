@@ -195,7 +195,6 @@ function main() {
     buildTs();
     copyWasmToDist();
     updateExportsInPackageJson();
-    // createTestHtml();
     createHtaccess();
   } else {
     console.log("Usage: node build.js [--clean|--wasm|--ts|--all]");

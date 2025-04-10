@@ -52,5 +52,9 @@
       "types": "./dist/wasm-index.d.ts"
     },
     "./wasm/*": "./dist/wasm/*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MVasiljev/MiLostProject"
   }
 }
