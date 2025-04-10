@@ -1,18 +1,15 @@
-import {
-  initWasm,
-  getWasmModule,
-  isWasmInitialized,
-} from "../../initWasm/init.js";
-import { BaseNodeBuilder } from "./BaseNodeBuilder";
-import { ButtonNodeBuilder } from "./ButtonNodeBuilder";
-import { DividerNodeBuilder } from "./DividerNodeBuilder";
-import { HStackNodeBuilder } from "./HStackNodeBuilder";
-import { ImageNodeBuilder } from "./ImageNodeBuilder";
-import { SpacerNodeBuilder } from "./SpacerNodeBuilder";
-import { TextNodeBuilder } from "./TextNodeBuilder";
-import { VStackNodeBuilder } from "./VStackNodeBuilder";
-import { ZStackNodeBuilder } from "./ZStackNodeBuilder";
+import { initWasm, isWasmInitialized } from "../../initWasm/init.js";
+import { WasmConnector } from "../../initWasm/wasm-connector.js";
 import { UI } from "../ui.js";
+import { BaseNodeBuilder } from "./BaseNodeBuilder.js";
+import { ButtonNodeBuilder } from "./ButtonNodeBuilder.js";
+import { DividerNodeBuilder } from "./DividerNodeBuilder.js";
+import { HStackNodeBuilder } from "./HStackNodeBuilder.js";
+import { ImageNodeBuilder } from "./ImageNodeBuilder.js";
+import { SpacerNodeBuilder } from "./SpacerNodeBuilder.js";
+import { TextNodeBuilder } from "./TextNodeBuilder.js";
+import { VStackNodeBuilder } from "./VStackNodeBuilder.js";
+import { ZStackNodeBuilder } from "./ZStackNodeBuilder.js";
 
 type SpecificNodeBuilder =
   | ButtonNodeBuilder
@@ -28,7 +25,15 @@ export async function renderNodeTree(
   vnode: BaseNodeBuilder | SpecificNodeBuilder
 ): Promise<UI> {
   if (!isWasmInitialized()) {
-    await initWasm();
+    try {
+      await initWasm();
+
+      if (!WasmConnector.isInitialized()) {
+        await WasmConnector.initialize();
+      }
+    } catch (error) {
+      console.warn("Failed to initialize WASM:", error);
+    }
   }
 
   const convertedNode =
@@ -54,7 +59,13 @@ export async function renderNodeTree(
     return built;
   } catch (error) {
     console.error(`Error rendering node type ${convertedNode.type}:`, error);
-    throw error;
+
+    const fallbackJson = JSON.stringify({
+      type: convertedNode.type,
+      error: `Failed to render: ${error}`,
+    });
+
+    return await UI.fromJSON(fallbackJson);
   }
 }
 
@@ -195,196 +206,119 @@ function createImageNodeBuilder(baseNode: BaseNodeBuilder): ImageNodeBuilder {
 }
 
 async function createBuilderFromType(vnode: SpecificNodeBuilder) {
-  const wasm = getWasmModule();
   const { type, props } = vnode;
 
   try {
+    if (!WasmConnector.isInitialized()) {
+      await WasmConnector.initialize();
+    }
+
+    let builder: any;
+
     switch (type) {
       case "VStack": {
-        const builder =
-          typeof wasm.create_vertical_stack === "function"
-            ? wasm.create_vertical_stack()
-            : typeof wasm.VStackBuilder === "function"
-            ? wasm.VStackBuilder()
-            : null;
-
+        builder = WasmConnector.createComponent("VStack");
         if (!builder) {
-          throw new Error("VStack builder not found in WASM module");
+          builder = WasmConnector.createComponent("VStackBuilder");
         }
-
-        return await applyStackProps(builder, props);
+        break;
       }
       case "HStack": {
-        const builder =
-          typeof wasm.create_horizontal_stack === "function"
-            ? wasm.create_horizontal_stack()
-            : typeof wasm.HStackBuilder === "function"
-            ? wasm.HStackBuilder()
-            : null;
-
+        builder = WasmConnector.createComponent("HStack");
         if (!builder) {
-          throw new Error("HStack builder not found in WASM module");
+          builder = WasmConnector.createComponent("HStackBuilder");
         }
-
-        return await applyStackProps(builder, props);
+        break;
       }
       case "ZStack": {
-        const builder =
-          typeof wasm.create_zstack === "function"
-            ? wasm.create_zstack()
-            : typeof wasm.ZStackBuilder === "function"
-            ? wasm.ZStackBuilder()
-            : null;
-
+        builder = WasmConnector.createComponent("ZStack");
         if (!builder) {
-          throw new Error("ZStack builder not found in WASM module");
+          builder = WasmConnector.createComponent("ZStackBuilder");
         }
-
-        return await applyStackProps(builder, props);
+        break;
       }
       case "Text": {
-        // Use TextBuilder with content parameter instead of constructor
-        const builder =
-          typeof wasm.TextBuilder === "function"
-            ? wasm.TextBuilder(props.text ?? "")
-            : null;
-
+        builder = WasmConnector.createComponent("Text", [props.text || ""]);
         if (!builder) {
-          throw new Error("Text builder not found in WASM module");
+          builder = WasmConnector.createComponent("TextBuilder", [
+            props.text || "",
+          ]);
         }
-
-        return await applyTextProps(builder, props);
+        break;
       }
       case "Button": {
-        // Use ButtonBuilder with label parameter instead of constructor
-        const builder =
-          typeof wasm.ButtonBuilder === "function"
-            ? wasm.ButtonBuilder(props.label ?? "")
-            : null;
-
+        builder = WasmConnector.createComponent("Button", [props.label || ""]);
         if (!builder) {
-          throw new Error("Button builder not found in WASM module");
+          builder = WasmConnector.createComponent("ButtonBuilder", [
+            props.label || "",
+          ]);
         }
-
-        return await applyButtonProps(builder, props);
+        break;
       }
       case "Spacer": {
-        const builder =
-          typeof wasm.SpacerBuilder === "function"
-            ? wasm.SpacerBuilder()
-            : typeof wasm.default_flexible_spacer === "function"
-            ? wasm.default_flexible_spacer(1)
-            : null;
-
+        builder = WasmConnector.createComponent("Spacer");
         if (!builder) {
-          throw new Error("Spacer builder not found in WASM module");
+          builder = WasmConnector.createComponent("SpacerBuilder");
         }
-
-        return await applySpacerProps(builder, props);
+        break;
       }
       case "Divider": {
-        const builder =
-          typeof wasm.DividerBuilder === "function"
-            ? wasm.DividerBuilder()
-            : typeof wasm.light_divider === "function"
-            ? wasm.light_divider()
-            : null;
-
+        builder = WasmConnector.createComponent("Divider");
         if (!builder) {
-          throw new Error("Divider builder not found in WASM module");
+          builder = WasmConnector.createComponent("DividerBuilder");
+          if (!builder) {
+            builder = WasmConnector.callStaticMethod("light_divider", []);
+          }
         }
-
-        return await applyDividerProps(builder, props);
+        break;
       }
       case "Image": {
-        // Use ImageBuilder with src parameter instead of constructor
-        const builder =
-          typeof wasm.ImageBuilder === "function"
-            ? wasm.ImageBuilder(props.src ?? "")
-            : null;
-
+        builder = WasmConnector.createComponent("Image", [props.src || ""]);
         if (!builder) {
-          throw new Error("Image builder not found in WASM module");
+          builder = WasmConnector.createComponent("ImageComponent", [
+            props.src || "",
+          ]);
+          if (!builder) {
+            builder = WasmConnector.createComponent("ImageBuilder", [
+              props.src || "",
+            ]);
+          }
         }
-
-        return await applyImageProps(builder, props);
+        break;
       }
       default:
         throw new Error(`Unknown node type: ${type}`);
     }
+
+    if (!builder) {
+      throw new Error(`${type} builder not found in WASM module`);
+    }
+
+    for (const [key, value] of Object.entries(props)) {
+      if (value === undefined) {
+        continue;
+      }
+
+      try {
+        if (key === "onTap" && typeof value === "function") {
+          const handlerId = `btn_${Date.now()}_${Math.floor(
+            Math.random() * 1000
+          )}`;
+          (window as any)[handlerId] = value;
+
+          WasmConnector.callMethod(builder, "on_tap", [handlerId]);
+          continue;
+        }
+
+        builder = WasmConnector.callMethod(builder, key, [value]);
+      } catch (error) {
+        console.warn(`Error applying prop ${key}:`, error);
+      }
+    }
+
+    return builder;
   } catch (error) {
     console.error(`Error creating builder for ${type}:`, error);
     throw error;
   }
-}
-
-async function applyStackProps(builder: any, props: Record<string, any>) {
-  return applyPropsToWasmBuilder(builder, props);
-}
-
-async function applyTextProps(builder: any, props: Record<string, any>) {
-  return applyPropsToWasmBuilder(builder, props);
-}
-
-async function applyButtonProps(builder: any, props: Record<string, any>) {
-  return applyPropsToWasmBuilder(builder, props);
-}
-
-async function applySpacerProps(builder: any, props: Record<string, any>) {
-  return applyPropsToWasmBuilder(builder, props);
-}
-
-async function applyDividerProps(builder: any, props: Record<string, any>) {
-  return applyPropsToWasmBuilder(builder, props);
-}
-
-async function applyImageProps(builder: any, props: Record<string, any>) {
-  return applyPropsToWasmBuilder(builder, props);
-}
-
-async function applyPropsToWasmBuilder(
-  builder: any,
-  props: Record<string, any>
-) {
-  // Return early if builder is null or invalid
-  if (!builder) {
-    console.error("Builder is null or invalid");
-    throw new Error("Builder is null or invalid");
-  }
-
-  for (const [key, value] of Object.entries(props)) {
-    if (value === undefined) {
-      continue;
-    }
-
-    try {
-      if (key === "onTap" && typeof value === "function") {
-        const handlerId = `btn_${Date.now()}_${Math.floor(
-          Math.random() * 1000
-        )}`;
-        (window as any)[handlerId] = value;
-
-        if (typeof builder.on_tap === "function") {
-          builder = builder.on_tap(handlerId);
-        }
-        continue;
-      }
-
-      // Try different key formats
-      const camelKey = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-      const snakeKey = camelKey.replace(/([A-Z])/g, "_$1").toLowerCase();
-
-      if (typeof builder[key] === "function") {
-        builder = builder[key](value);
-      } else if (typeof builder[camelKey] === "function") {
-        builder = builder[camelKey](value);
-      } else if (typeof builder[snakeKey] === "function") {
-        builder = builder[snakeKey](value);
-      }
-    } catch (error) {
-      console.error(`Error applying prop ${key}:`, error);
-    }
-  }
-
-  return builder;
 }

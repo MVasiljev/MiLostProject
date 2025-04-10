@@ -8,11 +8,24 @@ export class UI {
     this._json = json;
   }
 
-  static async fromJSON(json: string): Promise<UI> {
+  private static async ensureWasmInitialized(): Promise<void> {
     if (!isWasmInitialized()) {
-      await initWasm();
+      try {
+        await initWasm();
+      } catch (error) {
+        console.warn(`WASM initialization failed: ${error}`);
+      }
     }
-    return new UI(json);
+  }
+
+  static async fromJSON(json: string): Promise<UI> {
+    try {
+      await this.ensureWasmInitialized();
+      return new UI(json);
+    } catch (error) {
+      console.warn(`UI.fromJSON fallback used: ${error}`);
+      return new UI(json);
+    }
   }
 
   static async createText(
@@ -20,22 +33,31 @@ export class UI {
     fontStyle: string,
     color: string
   ): Promise<UI> {
-    if (!isWasmInitialized()) {
-      await initWasm();
+    try {
+      await this.ensureWasmInitialized();
+
+      const json = callWasmStaticMethod<string>(
+        "UIParser",
+        "create_text",
+        [content, fontStyle, color],
+        () => {
+          throw new Error(
+            "Failed to create text component - WASM function unavailable"
+          );
+        }
+      );
+
+      return new UI(json);
+    } catch (error) {
+      console.warn(`UI.createText fallback used: ${error}`);
+      const fallbackJson = JSON.stringify({
+        type: "Text",
+        content,
+        fontStyle,
+        color,
+      });
+      return new UI(fallbackJson);
     }
-
-    const json = callWasmStaticMethod<string>(
-      "UIParser",
-      "create_text",
-      [content, fontStyle, color],
-      () => {
-        throw new Error(
-          "Failed to create text component - WASM function unavailable"
-        );
-      }
-    );
-
-    return new UI(json);
   }
 
   toJSON(): string {
@@ -54,7 +76,7 @@ export class UI {
     try {
       return JSON.parse(this._json);
     } catch (err) {
-      console.error("Failed to parse UI JSON:", err);
+      console.warn("Failed to parse UI JSON:", err);
       return null;
     }
   }

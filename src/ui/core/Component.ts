@@ -1,26 +1,40 @@
+import { WasmConnector } from "../../initWasm/wasm-connector.js";
 import { initWasm, isWasmInitialized } from "../../initWasm/init.js";
-import { createWasmInstance } from "../../initWasm/lib.js";
 
 export abstract class Component<T> {
-  protected constructor() {
+  protected async initialize(): Promise<void> {
     if (!isWasmInitialized()) {
-      throw new Error(
-        "WASM module not initialized. Please call initWasm() first."
-      );
+      try {
+        await initWasm();
+      } catch (error) {
+        console.warn(`WASM initialization failed:`, error);
+      }
     }
   }
 
   abstract build(): Promise<T>;
 
-  static async initialize(): Promise<void> {
-    if (!isWasmInitialized()) {
-      await initWasm();
+  protected createWasmBuilder<B>(className: string, ...args: any[]): B {
+    try {
+      return WasmConnector.createComponent<B>(className, args);
+    } catch (error) {
+      console.warn(`WASM builder creation failed for ${className}:`, error);
+      throw error;
     }
   }
 
-  protected createWasmBuilder<B>(className: string, ...args: any[]): B {
-    return createWasmInstance<B>(className, args, () => {
-      throw new Error(`Failed to create WASM instance of ${className}`);
-    });
+  protected async safeWasmOperation<R>(
+    operation: () => Promise<R> | R,
+    fallback: () => R
+  ): Promise<R> {
+    try {
+      if (!isWasmInitialized()) {
+        await initWasm();
+      }
+      return await Promise.resolve(operation());
+    } catch (error) {
+      console.warn("WASM operation failed:", error);
+      return fallback();
+    }
   }
 }

@@ -1,26 +1,41 @@
 import { initWasm, isWasmInitialized } from "../../initWasm/init.js";
-import { callWasmStaticMethod } from "../../initWasm/lib.js";
+import { WasmConnector } from "../../initWasm/wasm-connector.js";
 
-export async function renderComponent(json: string): Promise<any> {
+async function ensureWasmInitialized(): Promise<void> {
   if (!isWasmInitialized()) {
-    await initWasm();
-  }
+    try {
+      await initWasm();
 
-  try {
-    const resultJson = callWasmStaticMethod<string>(
-      "get_render_node",
-      "",
-      [json],
-      () => {
-        throw new Error(
-          "Failed to render component - WASM function unavailable"
-        );
+      if (!WasmConnector.isInitialized()) {
+        await WasmConnector.initialize();
       }
-    );
-
-    return JSON.parse(resultJson);
-  } catch (error) {
-    console.error("Render error:", error);
-    throw error;
+    } catch (error) {
+      console.warn("WASM initialization failed:", error);
+    }
   }
 }
+
+const useWasmRender = () => {
+  const renderComponent = async (json: string) => {
+    await ensureWasmInitialized();
+
+    try {
+      const resultJson = WasmConnector.callStaticMethod<string>(
+        "get_render_node",
+        [json]
+      );
+
+      return JSON.parse(resultJson);
+    } catch (error) {
+      console.error("Render error:", error);
+      throw error;
+    }
+  };
+
+  return { renderComponent };
+};
+
+export const renderComponent = async (json: string): Promise<any> => {
+  const { renderComponent: render } = useWasmRender();
+  return render(json);
+};

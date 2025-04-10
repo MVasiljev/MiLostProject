@@ -377,6 +377,7 @@ export {
   EventBus,
   useEventRegistry,
   useButtonEvents,
+  mountMiLostRenderer,
 } from "./ui/index.js";
 
 initWasm().catch(console.error);
