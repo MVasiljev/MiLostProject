@@ -1,33 +1,73 @@
-import { Str } from "../types/string";
-import { AppError } from "../core/error";
-import { getWasmModule, isWasmInitialized } from "../initWasm/init";
+/**
+ * Contract Programming Utilities for MiLost
+ *
+ * Provides design by contract programming utilities with WebAssembly
+ * acceleration when available.
+ */
+import { AppError } from "../core/index.js";
+import {
+  registerModule,
+  WasmModule,
+  getWasmModule,
+} from "../initWasm/registry.js";
+import { Str } from "../types/string.js";
 
+/**
+ * Module definition for Contract WASM implementation
+ */
+const contractModule: WasmModule = {
+  name: "Contract",
+
+  initialize(wasmModule: any) {
+    console.log("Initializing Contract module with WASM...");
+
+    if (typeof wasmModule.Contract === "object") {
+      console.log("Found Contract module in WASM");
+
+      const methods = ["requires", "ensures", "contract"];
+
+      methods.forEach((method) => {
+        if (typeof wasmModule.Contract[method] === "function") {
+          console.log(`Found method: Contract.${method}`);
+        } else {
+          console.warn(`Missing method: Contract.${method}`);
+        }
+      });
+    } else {
+      console.warn("Contract module not found in WASM module");
+      throw new Error("Required WASM functions not found for Contract module");
+    }
+  },
+
+  fallback() {
+    console.log("Using JavaScript fallback for Contract module");
+  },
+};
+
+registerModule(contractModule);
+
+/**
+ * Custom error class for contract violations
+ */
 export class ContractError extends AppError {
   constructor(message: Str) {
     super(message);
   }
 }
 
-export async function initContracts(): Promise<void> {
-  if (!isWasmInitialized()) {
-    try {
-      await import("../initWasm/init").then((mod) => mod.initWasm());
-    } catch (error) {
-      console.warn(
-        `WASM module not available, using JS implementation: ${error}`
-      );
-    }
-  }
-}
-
+/**
+ * Enforce a precondition
+ * @param condition The condition to check
+ * @param errorMessage Optional error message
+ */
 export function requires<_T>(
   condition: boolean,
   errorMessage: Str = Str.fromRaw("Precondition failed")
 ): void {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Contract?.requires) {
     try {
-      const wasmModule = getWasmModule();
-      wasmModule.requires(condition, errorMessage.toString());
+      wasmModule.Contract.requires(condition, errorMessage.toString());
       return;
     } catch (err) {
       if (
@@ -48,14 +88,19 @@ export function requires<_T>(
   }
 }
 
+/**
+ * Enforce a postcondition
+ * @param condition The condition to check
+ * @param errorMessage Optional error message
+ */
 export function ensures<_T>(
   condition: boolean,
   errorMessage: Str = Str.fromRaw("Postcondition failed")
 ): void {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Contract?.ensures) {
     try {
-      const wasmModule = getWasmModule();
-      wasmModule.ensures(condition, errorMessage.toString());
+      wasmModule.Contract.ensures(condition, errorMessage.toString());
       return;
     } catch (err) {
       if (
@@ -76,6 +121,15 @@ export function ensures<_T>(
   }
 }
 
+/**
+ * Create a contracted function with pre and post conditions
+ * @param fn The original function
+ * @param precondition Optional precondition checker
+ * @param postcondition Optional postcondition checker
+ * @param preErrorMsg Optional precondition error message
+ * @param postErrorMsg Optional postcondition error message
+ * @returns A contracted function
+ */
 export function contract<T, R>(
   fn: (arg: T) => R,
   precondition?: (arg: T) => boolean,
@@ -83,11 +137,10 @@ export function contract<T, R>(
   preErrorMsg?: Str,
   postErrorMsg?: Str
 ): (arg: T) => R {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Contract?.contract) {
     try {
-      const wasmModule = getWasmModule();
-
-      const contractFn = wasmModule.contract(
+      const contractFn = wasmModule.Contract.contract(
         fn as any,
         precondition as any,
         postcondition as any,

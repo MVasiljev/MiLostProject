@@ -1,8 +1,17 @@
-import { ValidationError, Result, Ok, Err } from "../core/index";
-import { Brand } from "./branding";
-import { Str } from "./string";
-import { getWasmModule, isWasmInitialized } from "../initWasm/init";
-import { callWasmStaticMethod } from "../initWasm/lib";
+/**
+ * Primitive types and utility functions for MiLost
+ *
+ * Provides type-safe primitives with WebAssembly acceleration
+ * and comprehensive type validation.
+ */
+import {
+  registerModule,
+  WasmModule,
+  getWasmModule,
+} from "../initWasm/registry.js";
+import { ValidationError, Result, Ok, Err } from "../core/index.js";
+import { Brand } from "./branding.js";
+import { Str } from "./string.js";
 
 type RawNumber = number;
 
@@ -28,23 +37,132 @@ export type ulong = u64;
 export type float = f32;
 export type double = f64;
 
-export const limits = {
-  u8: [0, 255],
-  u16: [0, 65535],
-  u32: [0, 0xffffffff],
-  u64: [0, Number.MAX_SAFE_INTEGER],
-  usize: [0, Number.MAX_SAFE_INTEGER],
-  i8: [-128, 127],
-  i16: [-32768, 32767],
-  i32: [-2147483648, 2147483647],
-  i64: [Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER],
-  isize: [Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER],
-  f32: [-3.40282347e38, 3.40282347e38],
-  f64: [Number.MIN_VALUE, Number.MAX_VALUE],
-} as const;
+const primitivesModule: WasmModule = {
+  name: "Primitives",
+
+  initialize(wasmModule: any) {
+    console.log("Initializing Primitives module with WASM...");
+
+    if (typeof wasmModule.Primitives === "function") {
+      console.log("Found Primitives constructor in WASM module");
+      Primitives._useWasm = true;
+
+      const validationMethods = [
+        "validateU8",
+        "validateU16",
+        "validateU32",
+        "validateI8",
+        "validateI16",
+        "validateI32",
+        "validateU64",
+        "validateI64",
+        "validateF32",
+        "validateF64",
+      ];
+
+      const arithmeticMethods = [
+        "add_u8",
+        "add_u16",
+        "add_u32",
+        "sub_u32",
+        "mul_u32",
+        "div_u32",
+        "u8_to_u16",
+        "u8_to_u32",
+        "i8_to_i16",
+        "i8_to_i32",
+      ];
+
+      const formattingMethods = [
+        "format_bin",
+        "format_hex",
+        "format_oct",
+        "format_int",
+        "format_float",
+        "to_binary",
+        "to_hex",
+        "to_octal",
+      ];
+
+      const bitwiseMethods = [
+        "isPowerOfTwo",
+        "nextPowerOfTwo",
+        "leadingZeros",
+        "trailingZeros",
+        "countOnes",
+        "bitwise_and",
+        "bitwise_or",
+        "bitwise_xor",
+        "bitwise_not",
+        "shift_left",
+        "shift_right",
+      ];
+
+      const primitives = new wasmModule.Primitives();
+
+      [
+        ...validationMethods,
+        ...arithmeticMethods,
+        ...formattingMethods,
+        ...bitwiseMethods,
+      ].forEach((method) => {
+        if (typeof primitives[method] === "function") {
+          console.log(`Found method: Primitives.${method}`);
+        } else {
+          console.warn(`Missing method: Primitives.${method}`);
+        }
+      });
+    } else {
+      console.warn("Primitives constructor not found in WASM module");
+
+      if (
+        typeof wasmModule.PrimitivesModule === "object" &&
+        wasmModule.PrimitivesModule !== null
+      ) {
+        console.log("Found PrimitivesModule object, checking methods...");
+        Object.keys(wasmModule.PrimitivesModule).forEach((key) => {
+          console.log(`Found PrimitivesModule.${key}`);
+        });
+      }
+
+      throw new Error(
+        "Required WASM functions not found for Primitives module"
+      );
+    }
+  },
+
+  fallback() {
+    console.log("Using JavaScript fallback for Primitives module");
+    Primitives._useWasm = false;
+  },
+};
+
+registerModule(primitivesModule);
+
+/**
+ * Primitives utility class for WASM-accelerated primitive operations
+ */
+export class Primitives {
+  static _useWasm: boolean = false;
+
+  static readonly limits = {
+    u8: [0, 255],
+    u16: [0, 65535],
+    u32: [0, 0xffffffff],
+    u64: [0, Number.MAX_SAFE_INTEGER],
+    usize: [0, Number.MAX_SAFE_INTEGER],
+    i8: [-128, 127],
+    i16: [-32768, 32767],
+    i32: [-2147483648, 2147483647],
+    i64: [Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER],
+    isize: [Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER],
+    f32: [-3.40282347e38, 3.40282347e38],
+    f64: [Number.MIN_VALUE, Number.MAX_VALUE],
+  } as const;
+}
 
 export function validateU8(n: number): boolean {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -56,8 +174,73 @@ export function validateU8(n: number): boolean {
   return Number.isFinite(n) && Number.isInteger(n) && n >= 0 && n <= 255;
 }
 
+export function u8(v: RawNumber): u8 {
+  if (!validateU8(v)) {
+    throw new ValidationError(Str.fromRaw(`Invalid value for type u8: ${v}`));
+  }
+  return v as u8;
+}
+
+export function add_u8(a: u8, b: u8): Result<u8, ValidationError> {
+  if (Primitives._useWasm) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      const result = primitives.add_u8(a as number, b as number);
+
+      if (result === null || result === undefined) {
+        return Err(
+          new ValidationError(
+            Str.fromRaw(`Addition would overflow u8: ${a} + ${b}`)
+          )
+        );
+      }
+
+      return Ok(result as u8);
+    } catch (error) {
+      console.warn(`WASM add_u8 failed, using JS fallback: ${error}`);
+    }
+  }
+
+  const sum = (a as number) + (b as number);
+  if (sum > 255) {
+    return Err(
+      new ValidationError(
+        Str.fromRaw(`Addition would overflow u8: ${a} + ${b} = ${sum}`)
+      )
+    );
+  }
+  return Ok(u8(sum));
+}
+
+export function format_bin(v: u32): string {
+  if (Primitives._useWasm) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return primitives.format_bin(v as number);
+    } catch (error) {
+      console.warn(`WASM format_bin failed, using JS fallback: ${error}`);
+    }
+  }
+  return (v as number).toString(2);
+}
+
+export function bitwise_and(a: u32, b: u32): u32 {
+  if (Primitives._useWasm) {
+    try {
+      const wasmModule = getWasmModule();
+      const primitives = new wasmModule.Primitives();
+      return u32(primitives.bitwise_and(a as number, b as number));
+    } catch (error) {
+      console.warn(`WASM bitwise_and failed, using JS fallback: ${error}`);
+    }
+  }
+  return u32((a as number) & (b as number));
+}
+
 export function validateU16(n: number): boolean {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -70,7 +253,7 @@ export function validateU16(n: number): boolean {
 }
 
 export function validateU32(n: number): boolean {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -83,7 +266,7 @@ export function validateU32(n: number): boolean {
 }
 
 export function validateI8(n: number): boolean {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -96,7 +279,7 @@ export function validateI8(n: number): boolean {
 }
 
 export function validateI16(n: number): boolean {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -109,7 +292,7 @@ export function validateI16(n: number): boolean {
 }
 
 export function validateI32(n: number): boolean {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -124,13 +307,6 @@ export function validateI32(n: number): boolean {
     n >= -2147483648 &&
     n <= 2147483647
   );
-}
-
-export function u8(v: RawNumber): u8 {
-  if (!validateU8(v)) {
-    throw new ValidationError(Str.fromRaw(`Invalid value for type u8: ${v}`));
-  }
-  return v as u8;
 }
 
 export function u16(v: RawNumber): u16 {
@@ -148,7 +324,7 @@ export function u32(v: RawNumber): u32 {
 }
 
 export function u64(v: RawNumber): u64 {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -196,7 +372,7 @@ export function i32(v: RawNumber): i32 {
 }
 
 export function i64(v: RawNumber): i64 {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -223,7 +399,7 @@ export function i64(v: RawNumber): i64 {
 }
 
 export function f32(v: RawNumber): f32 {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -245,7 +421,7 @@ export function f32(v: RawNumber): f32 {
 }
 
 export function f64(v: RawNumber): f64 {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -266,40 +442,8 @@ export function f64(v: RawNumber): f64 {
   return v as f64;
 }
 
-export function add_u8(a: u8, b: u8): Result<u8, ValidationError> {
-  if (isWasmInitialized()) {
-    try {
-      const wasmModule = getWasmModule();
-      const primitives = new wasmModule.Primitives();
-      const result = primitives.add_u8(a as number, b as number);
-
-      if (result === null || result === undefined) {
-        return Err(
-          new ValidationError(
-            Str.fromRaw(`Addition would overflow u8: ${a} + ${b}`)
-          )
-        );
-      }
-
-      return Ok(result as u8);
-    } catch (error) {
-      console.warn(`WASM add_u8 failed, using JS fallback: ${error}`);
-    }
-  }
-
-  const sum = (a as number) + (b as number);
-  if (sum > 255) {
-    return Err(
-      new ValidationError(
-        Str.fromRaw(`Addition would overflow u8: ${a} + ${b} = ${sum}`)
-      )
-    );
-  }
-  return Ok(u8(sum));
-}
-
 export function add_u16(a: u16, b: u16): Result<u16, ValidationError> {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -331,7 +475,7 @@ export function add_u16(a: u16, b: u16): Result<u16, ValidationError> {
 }
 
 export function add_u32(a: u32, b: u32): Result<u32, ValidationError> {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -363,7 +507,7 @@ export function add_u32(a: u32, b: u32): Result<u32, ValidationError> {
 }
 
 export function sub_u32(a: u32, b: u32): Result<u32, ValidationError> {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -395,7 +539,7 @@ export function sub_u32(a: u32, b: u32): Result<u32, ValidationError> {
 }
 
 export function mul_u32(a: u32, b: u32): Result<u32, ValidationError> {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -429,7 +573,7 @@ export function mul_u32(a: u32, b: u32): Result<u32, ValidationError> {
 }
 
 export function div_u32(a: u32, b: u32): Result<u32, ValidationError> {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -456,7 +600,7 @@ export function div_u32(a: u32, b: u32): Result<u32, ValidationError> {
 }
 
 export function u8_to_u16(value: u8): u16 {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -469,7 +613,7 @@ export function u8_to_u16(value: u8): u16 {
 }
 
 export function u8_to_u32(value: u8): u32 {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -482,7 +626,7 @@ export function u8_to_u32(value: u8): u32 {
 }
 
 export function i8_to_i16(value: i8): i16 {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -495,7 +639,7 @@ export function i8_to_i16(value: i8): i16 {
 }
 
 export function i8_to_i32(value: i8): i32 {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -507,21 +651,8 @@ export function i8_to_i32(value: i8): i32 {
   return i32(value as number);
 }
 
-export function format_bin(v: u32): string {
-  if (isWasmInitialized()) {
-    try {
-      const wasmModule = getWasmModule();
-      const primitives = new wasmModule.Primitives();
-      return primitives.format_bin(v as number);
-    } catch (error) {
-      console.warn(`WASM format_bin failed, using JS fallback: ${error}`);
-    }
-  }
-  return (v as number).toString(2);
-}
-
 export function format_hex(v: u32): string {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -534,7 +665,7 @@ export function format_hex(v: u32): string {
 }
 
 export function format_oct(v: u32): string {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -547,7 +678,7 @@ export function format_oct(v: u32): string {
 }
 
 export function format_int(v: u32, radix: u8, pad: u8): string {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -561,7 +692,7 @@ export function format_int(v: u32, radix: u8, pad: u8): string {
 }
 
 export function format_float(v: f32, digits: u8 = u8(2)): string {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -574,7 +705,7 @@ export function format_float(v: f32, digits: u8 = u8(2)): string {
 }
 
 export function is_power_of_two(v: u32): boolean {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -588,7 +719,7 @@ export function is_power_of_two(v: u32): boolean {
 }
 
 export function next_power_of_two(v: u32): u32 {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -610,7 +741,7 @@ export function next_power_of_two(v: u32): u32 {
 }
 
 export function leading_zeros(v: u32): u32 {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -631,7 +762,7 @@ export function leading_zeros(v: u32): u32 {
 }
 
 export function trailing_zeros(v: u32): u32 {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -652,7 +783,7 @@ export function trailing_zeros(v: u32): u32 {
 }
 
 export function count_ones(v: u32): u32 {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -671,21 +802,8 @@ export function count_ones(v: u32): u32 {
   return u32(count);
 }
 
-export function bitwise_and(a: u32, b: u32): u32 {
-  if (isWasmInitialized()) {
-    try {
-      const wasmModule = getWasmModule();
-      const primitives = new wasmModule.Primitives();
-      return u32(primitives.bitwise_and(a as number, b as number));
-    } catch (error) {
-      console.warn(`WASM bitwise_and failed, using JS fallback: ${error}`);
-    }
-  }
-  return u32((a as number) & (b as number));
-}
-
 export function bitwise_or(a: u32, b: u32): u32 {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -696,9 +814,8 @@ export function bitwise_or(a: u32, b: u32): u32 {
   }
   return u32((a as number) | (b as number));
 }
-
 export function bitwise_xor(a: u32, b: u32): u32 {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -711,7 +828,7 @@ export function bitwise_xor(a: u32, b: u32): u32 {
 }
 
 export function bitwise_not(a: u32): u32 {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -724,7 +841,7 @@ export function bitwise_not(a: u32): u32 {
 }
 
 export function shift_left(a: u32, bits: u32): u32 {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -737,7 +854,7 @@ export function shift_left(a: u32, bits: u32): u32 {
 }
 
 export function shift_right(a: u32, bits: u32): u32 {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -750,7 +867,7 @@ export function shift_right(a: u32, bits: u32): u32 {
 }
 
 export function to_binary(value: i32): string {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -763,7 +880,7 @@ export function to_binary(value: i32): string {
 }
 
 export function to_hex(value: i32): string {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -776,7 +893,7 @@ export function to_hex(value: i32): string {
 }
 
 export function to_octal(value: i32): string {
-  if (isWasmInitialized()) {
+  if (Primitives._useWasm) {
     try {
       const wasmModule = getWasmModule();
       const primitives = new wasmModule.Primitives();
@@ -796,3 +913,4 @@ export const UInt = u32;
 export const ULong = u64;
 export const Float = f32;
 export const Double = f64;
+export const limits = Primitives.limits;

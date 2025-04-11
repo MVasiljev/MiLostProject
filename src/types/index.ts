@@ -32,7 +32,6 @@ export {
   BrandTypes,
   iterableToVec,
   Types,
-  initCommon,
 } from "./common";
 
 export { HashMap } from "./hash_map";

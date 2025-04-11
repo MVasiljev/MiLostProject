@@ -1,10 +1,12 @@
-export { MatchBuilder, build, __ } from "./match_builder";
+export { MatchBuilder, __ } from "./match_builder";
 
 export {
-  Patterns,
+  MatchPattern,
+  SomePattern,
+  NonePattern,
+  OkPattern,
+  ErrPattern,
+  _,
+  PatternMatcher,
   matchValue,
-  matchPattern,
-  matchType,
-  matchTag,
-  matchCases,
 } from "./matching";

@@ -1,15 +1,17 @@
+/**
+ * Resource management for MiLost
+ *
+ * Provides a Resource class for managing disposable resources with
+ * optional WebAssembly acceleration.
+ */
 import { Str } from "../types/string.js";
 import { AppError } from "../core/error.js";
 import { Option } from "../core/option.js";
 import {
+  registerModule,
+  WasmModule,
   getWasmModule,
-  initWasm,
-  isWasmInitialized,
-} from "../initWasm/init.js";
-import {
-  callWasmInstanceMethod,
-  callWasmStaticMethod,
-} from "../initWasm/lib.js";
+} from "../initWasm/registry.js";
 
 export class ResourceError extends AppError {
   constructor(message: Str) {
@@ -17,62 +19,98 @@ export class ResourceError extends AppError {
   }
 }
 
+/**
+ * Module definition for Resource WASM implementation
+ */
+const resourceModule: WasmModule = {
+  name: "Resource",
+
+  initialize(wasmModule: any) {
+    console.log("Initializing Resource module with WASM...");
+
+    if (typeof wasmModule.Resource === "function") {
+      console.log("Found Resource constructor in WASM module");
+      Resource._useWasm = true;
+
+      const staticMethods = ["new", "fromWasmResource", "withManagedResource"];
+      staticMethods.forEach((method) => {
+        if (typeof wasmModule.Resource[method] === "function") {
+          console.log(`Found static method: Resource.${method}`);
+        } else {
+          console.warn(`Missing static method: Resource.${method}`);
+        }
+      });
+
+      const instanceMethods = [
+        "use",
+        "useAsync",
+        "dispose",
+        "isDisposed",
+        "valueOrNone",
+        "toString",
+      ];
+      try {
+        const sampleResource = wasmModule.Resource.new(null, () => {});
+        instanceMethods.forEach((method) => {
+          if (typeof sampleResource[method] === "function") {
+            console.log(`Found instance method: Resource.prototype.${method}`);
+          } else {
+            console.warn(
+              `Missing instance method: Resource.prototype.${method}`
+            );
+          }
+        });
+      } catch (error) {
+        console.warn("Couldn't create sample Resource instance:", error);
+      }
+    } else {
+      throw new Error("Required WASM functions not found for Resource module");
+    }
+  },
+
+  fallback() {
+    console.log("Using JavaScript fallback for Resource module");
+    Resource._useWasm = false;
+  },
+};
+
+registerModule(resourceModule);
+
 export class Resource<T, E extends AppError = AppError> {
   private _value: T | null;
   private _disposed: boolean = false;
   private readonly _dispose: (value: T) => Promise<void> | void;
   private readonly _inner: any;
   private readonly _useWasm: boolean;
+  static _useWasm: boolean = false;
 
   static readonly _type = "Resource";
 
   private constructor(
     value: T,
     dispose: (value: T) => Promise<void> | void,
-    useWasm: boolean = true,
+    useWasm: boolean = Resource._useWasm,
     existingWasmResource?: any
   ) {
     this._value = value;
     this._dispose = dispose;
-    this._useWasm = useWasm && isWasmInitialized();
+    this._useWasm = useWasm;
 
     if (existingWasmResource) {
       this._inner = existingWasmResource;
     } else if (this._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        this._inner = callWasmStaticMethod(
-          "Resource",
-          "createManagedResource",
-          [value, this._createDisposeFn(dispose)],
-          () => null
-        );
-      } catch (err) {
-        console.warn(
-          `WASM Resource creation failed, falling back to JS implementation: ${err}`
-        );
-        this._useWasm = false;
-      }
-    }
-  }
-
-  private _createDisposeFn(
-    disposeFn: (value: T) => Promise<void> | void
-  ): Function {
-    return function (value: T) {
-      const result = disposeFn(value);
-      return result instanceof Promise ? result : Promise.resolve();
-    };
-  }
-
-  static async init(): Promise<void> {
-    if (!isWasmInitialized()) {
-      try {
-        await initWasm();
+        if (wasmModule && typeof wasmModule.Resource.new === "function") {
+          this._inner = wasmModule.Resource.new(value, dispose);
+        } else {
+          this._useWasm = false;
+        }
       } catch (error) {
         console.warn(
-          `WASM module not available, using JS implementation: ${error}`
+          `WASM Resource creation failed, using JS fallback: ${error}`
         );
+        this._useWasm = false;
       }
     }
   }
@@ -93,25 +131,14 @@ export class Resource<T, E extends AppError = AppError> {
   }
 
   use<R>(fn: (value: T) => R): R {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
-        return callWasmInstanceMethod(this._inner, "use", [fn], () => {
-          if (this._disposed || this._value === null) {
-            throw new ResourceError(Str.fromRaw("Resource has been disposed"));
-          }
-          return fn(this._value);
-        });
-      } catch (err) {
-        if (
-          err &&
-          typeof err === "object" &&
-          "name" in err &&
-          err.name === "ResourceError" &&
-          "message" in err
-        ) {
-          throw new ResourceError(Str.fromRaw(String(err.message)));
+        return this._inner.use(fn);
+      } catch (error) {
+        if (error instanceof Error && error.name === "ResourceError") {
+          throw new ResourceError(Str.fromRaw(error.message));
         }
-        console.warn(`WASM use failed, using JS fallback: ${err}`);
+        console.warn(`WASM use failed, using JS fallback: ${error}`);
       }
     }
 
@@ -123,32 +150,14 @@ export class Resource<T, E extends AppError = AppError> {
   }
 
   async useAsync<R>(fn: (value: T) => Promise<R>): Promise<R> {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
-        return await callWasmInstanceMethod(
-          this._inner,
-          "use",
-          [fn],
-          async () => {
-            if (this._disposed || this._value === null) {
-              throw new ResourceError(
-                Str.fromRaw("Resource has been disposed")
-              );
-            }
-            return fn(this._value);
-          }
-        );
-      } catch (err) {
-        if (
-          err &&
-          typeof err === "object" &&
-          "name" in err &&
-          err.name === "ResourceError" &&
-          "message" in err
-        ) {
-          throw new ResourceError(Str.fromRaw(String(err.message)));
+        return await this._inner.useAsync(fn);
+      } catch (error) {
+        if (error instanceof Error && error.name === "ResourceError") {
+          throw new ResourceError(Str.fromRaw(error.message));
         }
-        console.warn(`WASM useAsync failed, using JS fallback: ${err}`);
+        console.warn(`WASM useAsync failed, using JS fallback: ${error}`);
       }
     }
 
@@ -160,23 +169,14 @@ export class Resource<T, E extends AppError = AppError> {
   }
 
   async dispose(): Promise<void> {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
-        await callWasmInstanceMethod(this._inner, "dispose", [], async () => {
-          if (!this._disposed && this._value !== null) {
-            const disposeResult = this._dispose(this._value);
-            if (disposeResult instanceof Promise) {
-              await disposeResult;
-            }
-            this._disposed = true;
-            this._value = null;
-          }
-        });
+        await this._inner.dispose();
         this._disposed = true;
         this._value = null;
         return;
-      } catch (err) {
-        console.warn(`WASM dispose failed, using JS fallback: ${err}`);
+      } catch (error) {
+        console.warn(`WASM dispose failed, using JS fallback: ${error}`);
       }
     }
 
@@ -191,32 +191,25 @@ export class Resource<T, E extends AppError = AppError> {
   }
 
   get isDisposed(): boolean {
-    return callWasmInstanceMethod(
-      this._inner,
-      "isDisposed",
-      [],
-      () => this._disposed
-    );
+    if (this._useWasm && this._inner) {
+      try {
+        return this._inner.isDisposed();
+      } catch (error) {
+        console.warn(`WASM isDisposed failed, using JS fallback: ${error}`);
+      }
+    }
+    return this._disposed;
   }
 
   get valueOrNone(): Option<T> {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
-        const optionObj = callWasmInstanceMethod(
-          this._inner,
-          "valueOrNone",
-          [],
-          () => ({
-            isSome: !this._disposed && this._value !== null,
-            value: this._value,
-          })
-        );
-
-        return optionObj.isSome
-          ? Option.Some(optionObj.value as T)
+        const optionObj = this._inner.valueOrNone();
+        return optionObj.isSome()
+          ? Option.Some(optionObj.value())
           : Option.None<T>();
-      } catch (err) {
-        console.warn(`WASM valueOrNone failed, using JS fallback: ${err}`);
+      } catch (error) {
+        console.warn(`WASM valueOrNone failed, using JS fallback: ${error}`);
       }
     }
 
@@ -226,9 +219,14 @@ export class Resource<T, E extends AppError = AppError> {
   }
 
   toString(): Str {
-    return callWasmInstanceMethod(this._inner, "toString", [], () =>
-      Str.fromRaw(`[Resource ${this._disposed ? "disposed" : "active"}]`)
-    );
+    if (this._useWasm && this._inner) {
+      try {
+        return Str.fromRaw(this._inner.toString());
+      } catch (error) {
+        console.warn(`WASM toString failed, using JS fallback: ${error}`);
+      }
+    }
+    return Str.fromRaw(`[Resource ${this._disposed ? "disposed" : "active"}]`);
   }
 
   get [Symbol.toStringTag](): Str {
@@ -240,28 +238,17 @@ export async function withResource<T, R, E extends AppError = AppError>(
   resource: Resource<T, E>,
   fn: (value: T) => Promise<R> | R
 ): Promise<R> {
-  if (isWasmInitialized()) {
+  if (Resource._useWasm) {
     try {
       const wasmModule = getWasmModule();
-      const innerResource = (resource as any)._inner;
-
-      if (innerResource) {
-        return await callWasmStaticMethod(
-          "Resource",
-          "withManagedResource",
-          [innerResource, fn],
-          async () => {
-            try {
-              const result = await Promise.resolve(resource.use(fn));
-              return result;
-            } finally {
-              await resource.dispose();
-            }
-          }
-        );
+      if (
+        wasmModule &&
+        typeof wasmModule.Resource.withManagedResource === "function"
+      ) {
+        return await wasmModule.Resource.withManagedResource(resource, fn);
       }
-    } catch (err) {
-      console.warn(`WASM withResource failed, using JS fallback: ${err}`);
+    } catch (error) {
+      console.warn(`WASM withResource failed, using JS fallback: ${error}`);
     }
   }
 

@@ -1,16 +1,73 @@
-import { Str, u32 } from "../types";
+/**
+ * Error Handling Module for MiLost
+ *
+ * Provides a comprehensive error handling system with WebAssembly acceleration
+ * and fallback mechanisms.
+ */
 import {
-  initWasm,
+  registerModule,
+  WasmModule,
   getWasmModule,
-  isWasmInitialized,
-} from "../initWasm/init.js";
+  initWasm,
+} from "../initWasm/registry.js";
+import { u32 } from "../types/primitives.js";
+import { Str } from "../types/string.js";
+
+/**
+ * Module definition for Error WASM implementation
+ */
+const errorModule: WasmModule = {
+  name: "Errors",
+
+  initialize(wasmModule: any) {
+    console.log("Initializing Errors module with WASM...");
+
+    if (typeof wasmModule.Errors === "object") {
+      console.log("Found Errors module in WASM");
+
+      const errorCreationMethods = [
+        "createAppError",
+        "createValidationError",
+        "createNetworkError",
+        "createAuthenticationError",
+        "createNotFoundError",
+        "createUnauthorizedError",
+        "createForbiddenError",
+        "createDatabaseError",
+        "createServerError",
+        "createBusinessLogicError",
+        "createResourceConflictError",
+        "createConfigurationError",
+        "createRateLimitError",
+        "createErrorFactory",
+      ];
+
+      errorCreationMethods.forEach((method) => {
+        if (typeof wasmModule.Errors[method] === "function") {
+          console.log(`Found error creation method: Errors.${method}`);
+        } else {
+          console.warn(`Missing error creation method: Errors.${method}`);
+        }
+      });
+    } else {
+      console.warn("Errors module not found in WASM module");
+      throw new Error("Required WASM functions not found for Errors module");
+    }
+  },
+
+  fallback() {
+    console.log("Using JavaScript fallback for Errors module");
+  },
+};
+
+registerModule(errorModule);
 
 export class AppError extends Error {
   constructor(message: Str) {
-    if (isWasmInitialized()) {
+    const wasmModule = getWasmModule();
+    if (wasmModule?.Errors?.createAppError) {
       try {
-        const wasmModule = getWasmModule();
-        const wasmError = wasmModule.createAppError(message.unwrap());
+        const wasmError = wasmModule.Errors.createAppError(message.unwrap());
         super(wasmError.message);
         Object.setPrototypeOf(this, new.target.prototype);
         this.name = wasmError.name || this.constructor.name;
@@ -30,10 +87,12 @@ export class AppError extends Error {
 
 export class ValidationError extends AppError {
   constructor(message: Str) {
-    if (isWasmInitialized()) {
+    const wasmModule = getWasmModule();
+    if (wasmModule?.Errors?.createValidationError) {
       try {
-        const wasmModule = getWasmModule();
-        const wasmError = wasmModule.createValidationError(message.unwrap());
+        const wasmError = wasmModule.Errors.createValidationError(
+          message.unwrap()
+        );
         super(Str.fromRaw(wasmError.message));
         return;
       } catch (err) {
@@ -49,10 +108,12 @@ export class ValidationError extends AppError {
 
 export class NetworkError extends AppError {
   constructor(message: Str) {
-    if (isWasmInitialized()) {
+    const wasmModule = getWasmModule();
+    if (wasmModule?.Errors?.createNetworkError) {
       try {
-        const wasmModule = getWasmModule();
-        const wasmError = wasmModule.createNetworkError(message.unwrap());
+        const wasmError = wasmModule.Errors.createNetworkError(
+          message.unwrap()
+        );
         super(Str.fromRaw(wasmError.message));
         return;
       } catch (err) {
@@ -68,10 +129,10 @@ export class NetworkError extends AppError {
 
 export class AuthenticationError extends AppError {
   constructor(message: Str) {
-    if (isWasmInitialized()) {
+    const wasmModule = getWasmModule();
+    if (wasmModule?.Errors?.createAuthenticationError) {
       try {
-        const wasmModule = getWasmModule();
-        const wasmError = wasmModule.createAuthenticationError(
+        const wasmError = wasmModule.Errors.createAuthenticationError(
           message.unwrap()
         );
         super(Str.fromRaw(wasmError.message));
@@ -91,10 +152,10 @@ export class NotFoundError extends AppError {
   public resourceType?: Str;
 
   constructor(message: Str, resourceType?: Str) {
-    if (isWasmInitialized()) {
+    const wasmModule = getWasmModule();
+    if (wasmModule?.Errors?.createNotFoundError) {
       try {
-        const wasmModule = getWasmModule();
-        const wasmError = wasmModule.createNotFoundError(
+        const wasmError = wasmModule.Errors.createNotFoundError(
           message.unwrap(),
           resourceType ? resourceType.unwrap() : null
         );
@@ -115,10 +176,12 @@ export class NotFoundError extends AppError {
 
 export class UnauthorizedError extends AppError {
   constructor(message: Str) {
-    if (isWasmInitialized()) {
+    const wasmModule = getWasmModule();
+    if (wasmModule?.Errors?.createUnauthorizedError) {
       try {
-        const wasmModule = getWasmModule();
-        const wasmError = wasmModule.createUnauthorizedError(message.unwrap());
+        const wasmError = wasmModule.Errors.createUnauthorizedError(
+          message.unwrap()
+        );
         super(Str.fromRaw(wasmError.message));
         return;
       } catch (err) {
@@ -134,10 +197,12 @@ export class UnauthorizedError extends AppError {
 
 export class ForbiddenError extends AppError {
   constructor(message: Str) {
-    if (isWasmInitialized()) {
+    const wasmModule = getWasmModule();
+    if (wasmModule?.Errors?.createForbiddenError) {
       try {
-        const wasmModule = getWasmModule();
-        const wasmError = wasmModule.createForbiddenError(message.unwrap());
+        const wasmError = wasmModule.Errors.createForbiddenError(
+          message.unwrap()
+        );
         super(Str.fromRaw(wasmError.message));
         return;
       } catch (err) {
@@ -153,10 +218,12 @@ export class ForbiddenError extends AppError {
 
 export class DatabaseError extends AppError {
   constructor(message: Str) {
-    if (isWasmInitialized()) {
+    const wasmModule = getWasmModule();
+    if (wasmModule?.Errors?.createDatabaseError) {
       try {
-        const wasmModule = getWasmModule();
-        const wasmError = wasmModule.createDatabaseError(message.unwrap());
+        const wasmError = wasmModule.Errors.createDatabaseError(
+          message.unwrap()
+        );
         super(Str.fromRaw(wasmError.message));
         return;
       } catch (err) {
@@ -172,10 +239,10 @@ export class DatabaseError extends AppError {
 
 export class ServerError extends AppError {
   constructor(message: Str) {
-    if (isWasmInitialized()) {
+    const wasmModule = getWasmModule();
+    if (wasmModule?.Errors?.createServerError) {
       try {
-        const wasmModule = getWasmModule();
-        const wasmError = wasmModule.createServerError(message.unwrap());
+        const wasmError = wasmModule.Errors.createServerError(message.unwrap());
         super(Str.fromRaw(wasmError.message));
         return;
       } catch (err) {
@@ -192,10 +259,10 @@ export class ServerError extends AppError {
 export namespace DomainErrors {
   export class BusinessLogicError extends AppError {
     constructor(message: Str) {
-      if (isWasmInitialized()) {
+      const wasmModule = getWasmModule();
+      if (wasmModule?.Errors?.createBusinessLogicError) {
         try {
-          const wasmModule = getWasmModule();
-          const wasmError = wasmModule.createBusinessLogicError(
+          const wasmError = wasmModule.Errors.createBusinessLogicError(
             message.unwrap()
           );
           super(Str.fromRaw(wasmError.message));
@@ -213,10 +280,10 @@ export namespace DomainErrors {
 
   export class ResourceConflictError extends AppError {
     constructor(message: Str) {
-      if (isWasmInitialized()) {
+      const wasmModule = getWasmModule();
+      if (wasmModule?.Errors?.createResourceConflictError) {
         try {
-          const wasmModule = getWasmModule();
-          const wasmError = wasmModule.createResourceConflictError(
+          const wasmError = wasmModule.Errors.createResourceConflictError(
             message.unwrap()
           );
           super(Str.fromRaw(wasmError.message));
@@ -234,10 +301,10 @@ export namespace DomainErrors {
 
   export class ConfigurationError extends AppError {
     constructor(message: Str) {
-      if (isWasmInitialized()) {
+      const wasmModule = getWasmModule();
+      if (wasmModule?.Errors?.createConfigurationError) {
         try {
-          const wasmModule = getWasmModule();
-          const wasmError = wasmModule.createConfigurationError(
+          const wasmError = wasmModule.Errors.createConfigurationError(
             message.unwrap()
           );
           super(Str.fromRaw(wasmError.message));
@@ -257,10 +324,10 @@ export namespace DomainErrors {
     public retryAfterSeconds?: u32;
 
     constructor(message: Str, retryAfterSeconds?: u32) {
-      if (isWasmInitialized()) {
+      const wasmModule = getWasmModule();
+      if (wasmModule?.Errors?.createRateLimitError) {
         try {
-          const wasmModule = getWasmModule();
-          const wasmError = wasmModule.createRateLimitError(
+          const wasmError = wasmModule.Errors.createRateLimitError(
             message.unwrap(),
             retryAfterSeconds ? (retryAfterSeconds as unknown as u32) : null
           );
@@ -284,10 +351,10 @@ export function createErrorFactory<T extends AppError>(
   ErrorClass: new (message: Str, ...args: any[]) => T,
   defaultMessage: Str = Str.fromRaw("An error occurred")
 ) {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Errors?.createErrorFactory) {
     try {
-      const wasmModule = getWasmModule();
-      const factory = wasmModule.createErrorFactory(
+      const factory = wasmModule.Errors.createErrorFactory(
         ErrorClass.name,
         defaultMessage.unwrap()
       );
@@ -298,7 +365,6 @@ export function createErrorFactory<T extends AppError>(
             ? customMessage.unwrap()
             : defaultMessage.unwrap();
           const wasmError = factory.createAppError(message);
-          // Create an instance of the error class with the WASM-generated error info
           return new ErrorClass(Str.fromRaw(wasmError.message), ...args);
         } catch (err) {
           console.warn(`WASM error factory failed, using JS fallback: ${err}`);
@@ -313,16 +379,4 @@ export function createErrorFactory<T extends AppError>(
   return (customMessage?: Str, ...args: any[]): T => {
     return new ErrorClass(customMessage || defaultMessage, ...args);
   };
-}
-
-export async function initErrors(): Promise<void> {
-  if (!isWasmInitialized()) {
-    try {
-      await initWasm();
-    } catch (error) {
-      console.warn(
-        `WASM module not available, using JS implementation: ${error}`
-      );
-    }
-  }
 }

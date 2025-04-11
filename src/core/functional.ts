@@ -1,30 +1,91 @@
-import { HashMap, HashSet, Vec, Str, u32 } from "../types";
-import { Iter } from "./iter";
-import { ValidationError } from "./error";
-import { isWasmInitialized, getWasmModule, initWasm } from "../initWasm/init";
+/**
+ * Functional Utilities for MiLost
+ *
+ * Provides a comprehensive set of functional programming utilities
+ * with WebAssembly acceleration when available.
+ */
+import {
+  registerModule,
+  WasmModule,
+  getWasmModule,
+} from "../initWasm/registry.js";
+import { Iter } from "./iter.js";
+import { ValidationError } from "./error.js";
+import { HashMap } from "../types/hash_map.js";
+import { HashSet } from "../types/hash_set.js";
+import { Vec, u32 } from "../types/index.js";
+import { Str } from "../types/string.js";
 
-export async function initFunctional(): Promise<void> {
-  if (!isWasmInitialized()) {
-    try {
-      await initWasm();
-    } catch (error) {
-      console.warn(
-        `WASM module not available, using JS implementation: ${error}`
+/**
+ * Module definition for Functional WASM implementation
+ */
+const functionalModule: WasmModule = {
+  name: "Functional",
+
+  initialize(wasmModule: any) {
+    console.log("Initializing Functional module with WASM...");
+
+    if (typeof wasmModule.Functional === "object") {
+      console.log("Found Functional module in WASM");
+
+      const methods = [
+        "toHashMapRust",
+        "toHashSetRust",
+        "toVecRust",
+        "mapObjectRust",
+        "filterObjectRust",
+        "isMergeableObjectRust",
+        "pipeRust",
+        "composeRust",
+        "createCacheKeyRust",
+        "mapHasRust",
+        "mapGetRust",
+        "mapSetRust",
+        "shouldThrottleExecuteRust",
+        "noopRust",
+        "identityRust",
+        "notRust",
+        "allOfRust",
+        "anyOfRust",
+        "propAccessRust",
+        "propEqRust",
+        "zipWithRust",
+        "convergeRust",
+      ];
+
+      methods.forEach((method) => {
+        if (typeof wasmModule.Functional[method] === "function") {
+          console.log(`Found method: Functional.${method}`);
+        } else {
+          console.warn(`Missing method: Functional.${method}`);
+        }
+      });
+    } else {
+      console.warn("Functional module not found in WASM module");
+      throw new Error(
+        "Required WASM functions not found for Functional module"
       );
     }
-  }
-}
+  },
+
+  fallback() {
+    console.log("Using JavaScript fallback for Functional module");
+  },
+};
+
+// Register the module
+registerModule(functionalModule);
+
+export type StrKeyedRecord<V> = { [key: string]: V };
 
 export function toHashMap<T, K, V>(
   iterator: Iter<T>,
   keyValueFn: (item: T) => [K, V]
 ): HashMap<K, V> {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Functional?.toHashMapRust) {
     try {
-      const wasmModule = getWasmModule();
-      if (typeof wasmModule.toHashMapRust === "function") {
-        return wasmModule.toHashMapRust(iterator, keyValueFn);
-      }
+      return wasmModule.Functional.toHashMapRust(iterator, keyValueFn);
     } catch (err) {
       console.warn(`WASM toHashMap failed, using JS fallback: ${err}`);
     }
@@ -35,12 +96,10 @@ export function toHashMap<T, K, V>(
 }
 
 export function toHashSet<T>(iterator: Iter<T>): HashSet<T> {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Functional?.toHashSetRust) {
     try {
-      const wasmModule = getWasmModule();
-      if (typeof wasmModule.toHashSetRust === "function") {
-        return wasmModule.toHashSetRust(iterator);
-      }
+      return wasmModule.Functional.toHashSetRust(iterator);
     } catch (err) {
       console.warn(`WASM toHashSet failed, using JS fallback: ${err}`);
     }
@@ -50,12 +109,10 @@ export function toHashSet<T>(iterator: Iter<T>): HashSet<T> {
 }
 
 export function toVec<T>(iterator: Iter<T>): Vec<T> {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Functional?.toVecRust) {
     try {
-      const wasmModule = getWasmModule();
-      if (typeof wasmModule.toVecRust === "function") {
-        return wasmModule.toVecRust(iterator);
-      }
+      return wasmModule.Functional.toVecRust(iterator);
     } catch (err) {
       console.warn(`WASM toVec failed, using JS fallback: ${err}`);
     }
@@ -64,18 +121,14 @@ export function toVec<T>(iterator: Iter<T>): Vec<T> {
   return iterator.collect();
 }
 
-export type StrKeyedRecord<V> = { [key: string]: V };
-
 export function mapObject<T, U, K extends Str>(
   obj: StrKeyedRecord<T>,
   fn: (value: T, key: K) => U
 ): StrKeyedRecord<U> {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Functional?.mapObjectRust) {
     try {
-      const wasmModule = getWasmModule();
-      if (typeof wasmModule.mapObjectRust === "function") {
-        return wasmModule.mapObjectRust(obj, fn);
-      }
+      return wasmModule.Functional.mapObjectRust(obj, fn);
     } catch (err) {
       console.warn(`WASM mapObject failed, using JS fallback: ${err}`);
     }
@@ -94,12 +147,10 @@ export function filterObject<T, K extends Str>(
   obj: StrKeyedRecord<T>,
   predicate: (value: T, key: K) => boolean
 ): StrKeyedRecord<T> {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Functional?.filterObjectRust) {
     try {
-      const wasmModule = getWasmModule();
-      if (typeof wasmModule.filterObjectRust === "function") {
-        return wasmModule.filterObjectRust(obj, predicate);
-      }
+      return wasmModule.Functional.filterObjectRust(obj, predicate);
     } catch (err) {
       console.warn(`WASM filterObject failed, using JS fallback: ${err}`);
     }
@@ -136,16 +187,18 @@ export function mergeDeep<T extends object>(
 
   if (source === undefined) return target;
 
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Functional?.isMergeableObjectRust) {
     try {
-      const wasmModule = getWasmModule();
       if (
-        wasmModule.isMergeableObjectRust(target) &&
-        wasmModule.isMergeableObjectRust(source)
+        wasmModule.Functional.isMergeableObjectRust(target) &&
+        wasmModule.Functional.isMergeableObjectRust(source)
       ) {
         Object.keys(source).forEach((key) => {
           if (
-            wasmModule.isMergeableObjectRust(source[key as keyof typeof source])
+            wasmModule.Functional.isMergeableObjectRust(
+              source[key as keyof typeof source]
+            )
           ) {
             if (!target[key as keyof typeof target]) {
               Object.assign(target, { [key]: {} });
@@ -191,12 +244,10 @@ export function mergeDeep<T extends object>(
 }
 
 export function pipe<T>(...fns: ((arg: T) => T)[]): (arg: T) => T {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Functional?.pipeRust) {
     try {
-      const wasmModule = getWasmModule();
-      if (typeof wasmModule.pipeRust === "function") {
-        return (arg: T) => wasmModule.pipeRust(fns, arg);
-      }
+      return (arg: T) => wasmModule.Functional.pipeRust(fns, arg);
     } catch (err) {
       console.warn(`WASM pipe failed, using JS fallback: ${err}`);
     }
@@ -206,12 +257,10 @@ export function pipe<T>(...fns: ((arg: T) => T)[]): (arg: T) => T {
 }
 
 export function compose<T>(...fns: ((arg: T) => T)[]): (arg: T) => T {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Functional?.composeRust) {
     try {
-      const wasmModule = getWasmModule();
-      if (typeof wasmModule.composeRust === "function") {
-        return (arg: T) => wasmModule.composeRust(fns, arg);
-      }
+      return (arg: T) => wasmModule.Functional.composeRust(fns, arg);
     } catch (err) {
       console.warn(`WASM compose failed, using JS fallback: ${err}`);
     }
@@ -253,21 +302,21 @@ export function memoize<Args extends unknown[], Return>(
   return (...args: Args): Return => {
     let cacheKey: string;
 
-    if (isWasmInitialized()) {
+    const wasmModule = getWasmModule();
+    if (wasmModule?.Functional) {
       try {
-        const wasmModule = getWasmModule();
         if (keyFn) {
           cacheKey = keyFn(...args).unwrap();
         } else {
-          cacheKey = wasmModule.createCacheKeyRust(args);
+          cacheKey = wasmModule.Functional.createCacheKeyRust(args);
         }
 
-        if (wasmModule.mapHasRust(cache, cacheKey)) {
-          return wasmModule.mapGetRust(cache, cacheKey) as Return;
+        if (wasmModule.Functional.mapHasRust(cache, cacheKey)) {
+          return wasmModule.Functional.mapGetRust(cache, cacheKey) as Return;
         }
 
         const result = fn(...args);
-        wasmModule.mapSetRust(cache, cacheKey, result as any);
+        wasmModule.Functional.mapSetRust(cache, cacheKey, result as any);
         return result;
       } catch (err) {
         console.warn(`WASM memoize helpers failed, using JS fallback: ${err}`);
@@ -310,14 +359,13 @@ export function throttle<Args extends unknown[]>(
   let lastArgs: Args | null = null;
   const waitMs = wait as unknown as number;
 
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Functional?.shouldThrottleExecuteRust) {
     try {
-      const wasmModule = getWasmModule();
-
       return (...args: Args): void => {
         const now = Date.now();
 
-        if (wasmModule.shouldThrottleExecuteRust(lastCall, waitMs)) {
+        if (wasmModule.Functional.shouldThrottleExecuteRust(lastCall, waitMs)) {
           if (timeout !== null) {
             clearTimeout(timeout);
             timeout = null;
@@ -390,10 +438,10 @@ export function debounce<Args extends unknown[]>(
 }
 
 export function noop(): void {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Functional?.noopRust) {
     try {
-      const wasmModule = getWasmModule();
-      wasmModule.noopRust();
+      wasmModule.Functional.noopRust();
       return;
     } catch (err) {
       console.warn(`WASM noop failed, using JS fallback: ${err}`);
@@ -402,10 +450,10 @@ export function noop(): void {
 }
 
 export function identity<T>(value: T): T {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Functional?.identityRust) {
     try {
-      const wasmModule = getWasmModule();
-      return wasmModule.identityRust(value as any) as T;
+      return wasmModule.Functional.identityRust(value as any) as T;
     } catch (err) {
       console.warn(`WASM identity failed, using JS fallback: ${err}`);
     }
@@ -416,13 +464,12 @@ export function identity<T>(value: T): T {
 export function not<T>(
   predicate: (value: T) => boolean
 ): (value: T) => boolean {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Functional?.notRust) {
     try {
-      const wasmModule = getWasmModule();
-
       return (value: T): boolean => {
         const result = predicate(value);
-        return wasmModule.notRust(result);
+        return wasmModule.Functional.notRust(result);
       };
     } catch (err) {
       console.warn(`WASM not helpers failed, using JS fallback: ${err}`);
@@ -435,12 +482,10 @@ export function not<T>(
 export function allOf<T>(
   ...predicates: Array<(value: T) => boolean>
 ): (value: T) => boolean {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Functional?.allOfRust) {
     try {
-      const wasmModule = getWasmModule();
-      if (typeof wasmModule.allOfRust === "function") {
-        return (value: T) => wasmModule.allOfRust(predicates, value);
-      }
+      return (value: T) => wasmModule.Functional.allOfRust(predicates, value);
     } catch (err) {
       console.warn(`WASM allOf failed, using JS fallback: ${err}`);
     }
@@ -453,12 +498,10 @@ export function allOf<T>(
 export function anyOf<T>(
   ...predicates: Array<(value: T) => boolean>
 ): (value: T) => boolean {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Functional?.anyOfRust) {
     try {
-      const wasmModule = getWasmModule();
-      if (typeof wasmModule.anyOfRust === "function") {
-        return (value: T) => wasmModule.anyOfRust(predicates, value);
-      }
+      return (value: T) => wasmModule.Functional.anyOfRust(predicates, value);
     } catch (err) {
       console.warn(`WASM anyOf failed, using JS fallback: ${err}`);
     }
@@ -469,13 +512,12 @@ export function anyOf<T>(
 }
 
 export function prop<T, K extends keyof T>(key: K): (obj: T) => T[K] {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Functional?.propAccessRust) {
     try {
-      const wasmModule = getWasmModule();
-
       return (obj: T): T[K] => {
         try {
-          const result = wasmModule.propAccessRust(obj, key);
+          const result = wasmModule.Functional.propAccessRust(obj, key);
           return result as T[K];
         } catch (err) {
           throw new ValidationError(
@@ -503,13 +545,12 @@ export function propEq<T, K extends keyof T, V extends T[K]>(
   key: K,
   value: V
 ): (obj: T) => boolean {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Functional?.propEqRust) {
     try {
-      const wasmModule = getWasmModule();
-
       return (obj: T): boolean => {
         try {
-          return wasmModule.propEqRust(obj, key, value as any);
+          return wasmModule.Functional.propEqRust(obj, key, value as any);
         } catch (err) {
           throw new ValidationError(
             Str.fromRaw(
@@ -557,12 +598,10 @@ export function zipWith<T, U, R>(
   as: Vec<T>,
   bs: Vec<U>
 ): Vec<R> {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Functional?.zipWithRust) {
     try {
-      const wasmModule = getWasmModule();
-      if (typeof wasmModule.zipWithRust === "function") {
-        return wasmModule.zipWithRust(fn, as, bs);
-      }
+      return wasmModule.Functional.zipWithRust(fn, as, bs);
     } catch (err) {
       console.warn(`WASM zipWith failed, using JS fallback: ${err}`);
     }
@@ -591,12 +630,11 @@ export function converge<
   after: (results: Vec<unknown>) => Return,
   fns: { [K in keyof Results]: (...args: Args) => Results[K] }
 ): (...args: Args) => Return {
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Functional?.convergeRust) {
     try {
-      const wasmModule = getWasmModule();
-      if (typeof wasmModule.convergeRust === "function") {
-        return (...args: Args) => wasmModule.convergeRust(after, fns, args);
-      }
+      return (...args: Args) =>
+        wasmModule.Functional.convergeRust(after, fns, args);
     } catch (err) {
       console.warn(`WASM converge failed, using JS fallback: ${err}`);
     }

@@ -1,13 +1,57 @@
-import { Str } from "../types/string";
-import { ContractError } from "./contract";
-import { getWasmModule, isWasmInitialized } from "../initWasm/init";
+/**
+ * Invariant type implementation for MiLost
+ *
+ * Provides a type-safe, immutable Invariant type with WebAssembly
+ * acceleration when available.
+ */
+import {
+  registerModule,
+  WasmModule,
+  getWasmModule,
+} from "../initWasm/registry.js";
+import { Str } from "../types/string.js";
+import { ContractError } from "./contract.js";
+
+/**
+ * Module definition for Invariant WASM implementation
+ */
+const invariantModule: WasmModule = {
+  name: "Invariant",
+
+  initialize(wasmModule: any) {
+    console.log("Initializing Invariant module with WASM...");
+
+    if (typeof wasmModule.Invariant === "object") {
+      console.log("Found Invariant module in WASM");
+
+      const methods = ["createInvariant", "get", "map", "toString"];
+
+      methods.forEach((method) => {
+        if (typeof wasmModule.Invariant[method] === "function") {
+          console.log(`Found method: Invariant.${method}`);
+        } else {
+          console.warn(`Missing method: Invariant.${method}`);
+        }
+      });
+    } else {
+      console.warn("Invariant module not found in WASM module");
+      throw new Error("Required WASM functions not found for Invariant module");
+    }
+  },
+
+  fallback() {
+    console.log("Using JavaScript fallback for Invariant module");
+  },
+};
+
+registerModule(invariantModule);
 
 export class Invariant<T> {
   private readonly _value: T;
   private readonly _invariantFn: (value: T) => boolean;
   private readonly _errorMsg: Str;
-  private _inner: any;
-  private _useWasm: boolean;
+  private readonly _inner: any;
+  private readonly _useWasm: boolean;
 
   static readonly _type = "Invariant";
 
@@ -16,23 +60,24 @@ export class Invariant<T> {
     invariant: (value: T) => boolean,
     errorMessage: Str = Str.fromRaw("Invariant violated")
   ) {
-    this._value = value;
-    this._invariantFn = invariant;
-    this._errorMsg = errorMessage;
-    this._useWasm = isWasmInitialized();
-
     if (!invariant(value)) {
       throw new ContractError(errorMessage);
     }
 
-    if (this._useWasm) {
+    this._value = value;
+    this._invariantFn = invariant;
+    this._errorMsg = errorMessage;
+    this._useWasm = false;
+
+    const wasmModule = getWasmModule();
+    if (wasmModule?.Invariant) {
       try {
-        const wasmModule = getWasmModule();
-        this._inner = wasmModule.createInvariant(
+        this._inner = wasmModule.Invariant.createInvariant(
           value as any,
           this._invariantFn as any,
           this._errorMsg.toString()
         );
+        this._useWasm = true;
       } catch (err) {
         if (
           err &&
@@ -51,18 +96,13 @@ export class Invariant<T> {
     }
   }
 
-  static async init(): Promise<void> {
-    if (!isWasmInitialized()) {
-      try {
-        await import("../initWasm/init").then((mod) => mod.initWasm());
-      } catch (error) {
-        console.warn(
-          `WASM module not available, using JS implementation: ${error}`
-        );
-      }
-    }
-  }
-
+  /**
+   * Create a new Invariant
+   * @param value The value to create an Invariant for
+   * @param invariant The invariant condition function
+   * @param errorMessage Optional custom error message
+   * @returns A new Invariant instance
+   */
   static new<T>(
     value: T,
     invariant: (value: T) => boolean,
@@ -71,8 +111,12 @@ export class Invariant<T> {
     return new Invariant(value, invariant, errorMessage);
   }
 
+  /**
+   * Get the underlying value
+   * @returns The value of the Invariant
+   */
   get(): T {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         return this._inner.get() as T;
       } catch (err) {
@@ -82,12 +126,19 @@ export class Invariant<T> {
     return this._value;
   }
 
+  /**
+   * Transform the Invariant's value
+   * @param fn Transformation function
+   * @param newInvariant New invariant condition
+   * @param errorMessage Optional error message
+   * @returns A new Invariant with transformed value
+   */
   map<U>(
     fn: (value: T) => U,
     newInvariant: (value: U) => boolean,
     errorMessage?: Str
   ): Invariant<U> {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         const mappedInvariant = this._inner.map(
           fn as any,
@@ -118,8 +169,12 @@ export class Invariant<T> {
     return Invariant.new(newValue, newInvariant, errorMessage);
   }
 
+  /**
+   * Convert to string representation
+   * @returns A Str representation of the Invariant
+   */
   toString(): Str {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         return Str.fromRaw(this._inner.toString());
       } catch (err) {
@@ -129,6 +184,9 @@ export class Invariant<T> {
     return Str.fromRaw(`[Invariant]`);
   }
 
+  /**
+   * Get the Symbol.toStringTag
+   */
   get [Symbol.toStringTag](): Str {
     return Str.fromRaw(Invariant._type);
   }

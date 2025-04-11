@@ -1,20 +1,107 @@
-import { initWasm, getWasmModule, isWasmInitialized } from "../initWasm/init";
-import { Str } from "../types/string";
-import { u32 } from "../types/primitives";
-import { AppError, ValidationError } from "../core/error";
+/**
+ * Synchronization primitives for MiLost
+ *
+ * Provides Mutex, RwLock, and ArcMutex implementations with
+ * optional WebAssembly acceleration.
+ */
+import {
+  registerModule,
+  WasmModule,
+  getWasmModule,
+} from "../initWasm/registry.js";
+import { Str } from "../types/string.js";
+import { u32 } from "../types/primitives.js";
+import { AppError, ValidationError } from "../core/error.js";
+
+/**
+ * Module definition for synchronization primitives WASM implementation
+ */
+const syncPrimitivesModule: WasmModule = {
+  name: "SyncPrimitives",
+
+  initialize(wasmModule: any) {
+    console.log("Initializing SyncPrimitives module with WASM...");
+
+    const classes = ["Mutex", "RwLock", "ArcMutex"];
+    classes.forEach((className) => {
+      if (
+        typeof wasmModule[`Js${className}Num`] === "function" &&
+        typeof wasmModule[`Js${className}Str`] === "function"
+      ) {
+        console.log(`Found ${className} constructor in WASM module`);
+        (globalThis as any)[className]._useWasm = true;
+      } else {
+        console.warn(`${className} constructor not found in WASM module`);
+      }
+    });
+
+    const staticMethods = ["new"];
+    classes.forEach((className) => {
+      staticMethods.forEach((method) => {
+        if (typeof wasmModule[className][method] === "function") {
+          console.log(`Found static method: ${className}.${method}`);
+        } else {
+          console.warn(`Missing static method: ${className}.${method}`);
+        }
+      });
+    });
+
+    const instanceMethods = {
+      Mutex: ["lock", "get", "isLocked", "toString"],
+      RwLock: [
+        "read",
+        "releaseRead",
+        "write",
+        "getReaders",
+        "isWriteLocked",
+        "toString",
+      ],
+      ArcMutex: ["get", "set", "setAsync", "clone", "isLocked", "toString"],
+    };
+
+    for (const [className, methods] of Object.entries(instanceMethods)) {
+      try {
+        const sampleInstance = wasmModule[className].new(0);
+        methods.forEach((method) => {
+          if (typeof sampleInstance[method] === "function") {
+            console.log(
+              `Found instance method: ${className}.prototype.${method}`
+            );
+          } else {
+            console.warn(
+              `Missing instance method: ${className}.prototype.${method}`
+            );
+          }
+        });
+      } catch (error) {
+        console.warn(`Couldn't create sample ${className} instance:`, error);
+      }
+    }
+  },
+
+  fallback() {
+    console.log("Using JavaScript fallback for SyncPrimitives module");
+    (globalThis as any).Mutex._useWasm = false;
+    (globalThis as any).RwLock._useWasm = false;
+    (globalThis as any).ArcMutex._useWasm = false;
+  },
+};
+
+registerModule(syncPrimitivesModule);
 
 export class Mutex<T> {
   private readonly _inner: any;
   private readonly _useWasm: boolean;
   private _state: { value: T };
+  static _useWasm: boolean = false;
 
   private constructor(
     initialValue: T,
-    useWasm: boolean = true,
+    useWasm: boolean = (globalThis as any).Mutex._useWasm,
     existingWasmMutex?: any
   ) {
     this._state = { value: initialValue };
-    this._useWasm = useWasm && isWasmInitialized();
+    this._useWasm = useWasm;
 
     if (existingWasmMutex) {
       this._inner = existingWasmMutex;
@@ -26,9 +113,7 @@ export class Mutex<T> {
             ? new wasmModule.JsMutexNum(initialValue)
             : new wasmModule.JsMutexStr(String(initialValue));
       } catch (error) {
-        console.warn(
-          `WASM Mutex creation failed, falling back to JS implementation: ${error}`
-        );
+        console.warn(`WASM Mutex creation failed, using JS fallback: ${error}`);
         this._useWasm = false;
       }
     }
@@ -39,7 +124,7 @@ export class Mutex<T> {
   }
 
   async lock(updater: (prev: T) => T | Promise<T>): Promise<void> {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         const isLocked = this._inner.isLocked();
         if (isLocked) return;
@@ -75,7 +160,7 @@ export class Mutex<T> {
   }
 
   get(): T {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         return this._inner.get();
       } catch (error) {
@@ -86,7 +171,7 @@ export class Mutex<T> {
   }
 
   isLocked(): boolean {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         return this._inner.isLocked();
       } catch (error) {
@@ -97,7 +182,7 @@ export class Mutex<T> {
   }
 
   toString(): Str {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         return Str.fromRaw(this._inner.toString());
       } catch (error) {
@@ -116,14 +201,15 @@ export class RwLock<T> {
   private readonly _inner: any;
   private readonly _useWasm: boolean;
   private _state: { value: T };
+  static _useWasm: boolean = false;
 
   private constructor(
     initialValue: T,
-    useWasm: boolean = true,
+    useWasm: boolean = (globalThis as any).RwLock._useWasm,
     existingWasmRwLock?: any
   ) {
     this._state = { value: initialValue };
-    this._useWasm = useWasm && isWasmInitialized();
+    this._useWasm = useWasm;
 
     if (existingWasmRwLock) {
       this._inner = existingWasmRwLock;
@@ -136,7 +222,7 @@ export class RwLock<T> {
             : new wasmModule.JsRwLockStr(String(initialValue));
       } catch (error) {
         console.warn(
-          `WASM RwLock creation failed, falling back to JS implementation: ${error}`
+          `WASM RwLock creation failed, using JS fallback: ${error}`
         );
         this._useWasm = false;
       }
@@ -148,7 +234,7 @@ export class RwLock<T> {
   }
 
   read(): T {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         return this._inner.read();
       } catch (error) {
@@ -164,7 +250,7 @@ export class RwLock<T> {
   }
 
   releaseRead(): void {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         this._inner.releaseRead();
         return;
@@ -179,7 +265,7 @@ export class RwLock<T> {
   }
 
   write(updater: (prev: T) => T): void {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         this._inner.write(updater);
         return;
@@ -197,7 +283,7 @@ export class RwLock<T> {
   }
 
   getReaders(): u32 {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         return u32(this._inner.getReaders());
       } catch (error) {
@@ -208,7 +294,7 @@ export class RwLock<T> {
   }
 
   isWriteLocked(): boolean {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         return this._inner.isWriteLocked();
       } catch (error) {
@@ -219,7 +305,7 @@ export class RwLock<T> {
   }
 
   toString(): Str {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         return Str.fromRaw(this._inner.toString());
       } catch (error) {
@@ -240,14 +326,15 @@ export class ArcMutex<T> {
   private readonly _inner: any;
   private readonly _useWasm: boolean;
   private _state: { value: T };
+  static _useWasm: boolean = false;
 
   private constructor(
     initialValue: T,
-    useWasm: boolean = true,
+    useWasm: boolean = (globalThis as any).ArcMutex._useWasm,
     existingWasmArcMutex?: any
   ) {
     this._state = { value: initialValue };
-    this._useWasm = useWasm && isWasmInitialized();
+    this._useWasm = useWasm;
 
     if (existingWasmArcMutex) {
       this._inner = existingWasmArcMutex;
@@ -260,7 +347,7 @@ export class ArcMutex<T> {
             : new wasmModule.JsArcMutexStr(String(initialValue));
       } catch (error) {
         console.warn(
-          `WASM ArcMutex creation failed, falling back to JS implementation: ${error}`
+          `WASM ArcMutex creation failed, using JS fallback: ${error}`
         );
         this._useWasm = false;
       }
@@ -272,7 +359,7 @@ export class ArcMutex<T> {
   }
 
   get(): T {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         return this._inner.get();
       } catch (error) {
@@ -283,7 +370,7 @@ export class ArcMutex<T> {
   }
 
   set(updater: (prev: T) => T): void {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         this._inner.set(updater);
         return;
@@ -302,7 +389,7 @@ export class ArcMutex<T> {
     updater: (prev: T) => Promise<T>,
     options?: { retries?: u32; fallback?: (error: AppError) => T }
   ): Promise<void> {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         const retries = options?.retries
           ? (options.retries as unknown as number)
@@ -347,7 +434,7 @@ export class ArcMutex<T> {
   }
 
   clone(): ArcMutex<T> {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         const clonedWasmArcMutex = this._inner.clone();
         return new ArcMutex(this._state.value, true, clonedWasmArcMutex);
@@ -359,7 +446,7 @@ export class ArcMutex<T> {
   }
 
   isLocked(): boolean {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         return this._inner.isLocked();
       } catch (error) {
@@ -370,7 +457,7 @@ export class ArcMutex<T> {
   }
 
   toString(): Str {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         return Str.fromRaw(this._inner.toString());
       } catch (error) {
@@ -386,40 +473,13 @@ export class ArcMutex<T> {
 }
 
 export async function createMutex<T>(initialValue: T): Promise<Mutex<T>> {
-  if (!isWasmInitialized()) {
-    try {
-      await initWasm();
-    } catch (error) {
-      console.warn(
-        `WASM module not available, using JS implementation: ${error}`
-      );
-    }
-  }
   return Mutex.new(initialValue);
 }
 
 export async function createRwLock<T>(initialValue: T): Promise<RwLock<T>> {
-  if (!isWasmInitialized()) {
-    try {
-      await initWasm();
-    } catch (error) {
-      console.warn(
-        `WASM module not available, using JS implementation: ${error}`
-      );
-    }
-  }
   return RwLock.new(initialValue);
 }
 
 export async function createArcMutex<T>(initialValue: T): Promise<ArcMutex<T>> {
-  if (!isWasmInitialized()) {
-    try {
-      await initWasm();
-    } catch (error) {
-      console.warn(
-        `WASM module not available, using JS implementation: ${error}`
-      );
-    }
-  }
   return ArcMutex.new(initialValue);
 }

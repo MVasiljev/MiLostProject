@@ -2,7 +2,6 @@ export { Iter } from "./iter";
 export { Option } from "./option";
 export { Result, Ok, Err, tryFn, tryAsync, apiRequest } from "./result";
 export {
-  initFunctional,
   toHashMap,
   toHashSet,
   toVec,
@@ -42,5 +41,4 @@ export {
   ServerError,
   DomainErrors,
   createErrorFactory,
-  initErrors,
 } from "./error";
