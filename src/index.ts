@@ -1,3 +1,5 @@
+import { initWasm } from "./initWasm/index.js";
+
 export { AsyncUtils, async } from "./async/index.js";
 
 export {
@@ -281,6 +283,8 @@ export {
   callWasmInstanceMethod,
   callWasmStaticMethod,
   createWasmInstance,
+  getInitializationStatus,
+  registerModule,
 } from "./initWasm/index.js";
 
 export {
@@ -294,3 +298,7 @@ export { Sorting } from "./utils/index.js";
 export { Search } from "./utils/index.js";
 export { Compression } from "./utils/index.js";
 export { Crypto } from "./utils/index.js";
+
+initWasm().catch((err) => {
+  console.warn("MiLost WASM initialization failed, using JS fallbacks:", err);
+});
