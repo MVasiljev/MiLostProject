@@ -1,11 +1,16 @@
-import { Result, Ok, Err } from "../../core";
-import {
-  isWasmInitialized,
-  getWasmModule,
-  initWasm,
-} from "../../initWasm/init";
-import { callWasmStaticMethod } from "../../initWasm/lib";
+/**
+ * Compression Module for MiLost
+ *
+ * Provides compression algorithms with WebAssembly acceleration
+ * and JavaScript fallback capabilities.
+ */
 
+import { Result, Err, Ok } from "../../core";
+import { WasmModule, registerModule, getWasmModule } from "../../initWasm";
+
+/**
+ * Custom error for compression operations
+ */
 export class CompressionError extends Error {
   constructor(message: string) {
     super(message);
@@ -13,29 +18,92 @@ export class CompressionError extends Error {
   }
 }
 
+/**
+ * Result of Huffman compression
+ */
 export interface HuffmanCompressionResult {
   data: Uint8Array;
   tree: Uint8Array;
 }
 
+/**
+ * Module definition for Compression WASM implementation
+ */
+const compressionModule: WasmModule = {
+  name: "Compression",
+
+  initialize(wasmModule: any) {
+    console.log("Initializing Compression module with WASM...");
+
+    const staticMethods = [
+      "compressGzip",
+      "decompressGzip",
+      "compressZlib",
+      "decompressZlib",
+      "compressDeflate",
+      "decompressDeflate",
+      "compressLZ77",
+      "decompressLZ77",
+      "compressHuffman",
+      "decompressHuffman",
+    ];
+
+    let hasWasmMethods = true;
+    staticMethods.forEach((method) => {
+      const methodExists =
+        typeof wasmModule.Compressions?.[method] === "function" ||
+        typeof wasmModule[method] === "function";
+
+      if (methodExists) {
+        console.log(`Found compression method: ${method}`);
+      } else {
+        console.warn(`Missing compression method: ${method}`);
+        hasWasmMethods = false;
+      }
+    });
+
+    Compression._useWasm = hasWasmMethods;
+  },
+
+  fallback() {
+    console.log("Using JavaScript fallback for Compression");
+    Compression._useWasm = false;
+  },
+};
+
+registerModule(compressionModule);
+
+/**
+ * Compression class with WASM acceleration
+ */
 export class Compression {
-  private static _useWasm: boolean = true;
+  static _useWasm: boolean = true;
 
-  private static get useWasm(): boolean {
-    return Compression._useWasm && isWasmInitialized();
-  }
-
+  /**
+   * Initialize WASM module
+   */
   static async initialize(): Promise<void> {
-    if (!isWasmInitialized()) {
-      try {
-        await initWasm();
-      } catch (error) {
-        console.warn(`WASM initialization failed: ${error}`);
+    if (!Compression._useWasm) {
+      return;
+    }
+
+    try {
+      const wasmModule = getWasmModule();
+      if (
+        !wasmModule ||
+        (!wasmModule.Compressions && !wasmModule.compressGzip)
+      ) {
         Compression._useWasm = false;
       }
+    } catch (error) {
+      console.warn(`WASM initialization failed: ${error}`);
+      Compression._useWasm = false;
     }
   }
 
+  /**
+   * Compress data using Gzip
+   */
   static compressGzip(
     data: Uint8Array,
     level?: number
@@ -46,63 +114,51 @@ export class Compression {
       );
     }
 
-    if (Compression.useWasm) {
+    if (Compression._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (typeof wasmModule.Compressions?.compressGzip === "function") {
-          const result = wasmModule.Compressions.compressGzip(data, level);
+        const compressMethod =
+          wasmModule.Compressions?.compressGzip || wasmModule.compressGzip;
+
+        if (typeof compressMethod === "function") {
+          const result = compressMethod(data, level);
           return Ok(result);
         }
       } catch (error) {
         console.warn(`WASM compressGzip failed, using JS fallback: ${error}`);
-        return Err(new CompressionError(`Compression error: ${error}`));
       }
     }
 
-    try {
-      return callWasmStaticMethod(
-        "Compressions",
-        "compressGzip",
-        [data, level],
-        () => {
-          throw new Error("Gzip compression JS fallback not implemented");
-        }
-      );
-    } catch (error) {
-      return Err(new CompressionError(`Compression error: ${error}`));
-    }
+    return Err(new CompressionError("Gzip compression not available"));
   }
 
+  /**
+   * Decompress Gzip data
+   */
   static decompressGzip(
     data: Uint8Array
   ): Result<Uint8Array, CompressionError> {
-    if (Compression.useWasm) {
+    if (Compression._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (typeof wasmModule.Compressions?.decompressGzip === "function") {
-          const result = wasmModule.Compressions.decompressGzip(data);
+        const decompressMethod =
+          wasmModule.Compressions?.decompressGzip || wasmModule.decompressGzip;
+
+        if (typeof decompressMethod === "function") {
+          const result = decompressMethod(data);
           return Ok(result);
         }
       } catch (error) {
         console.warn(`WASM decompressGzip failed, using JS fallback: ${error}`);
-        return Err(new CompressionError(`Decompression error: ${error}`));
       }
     }
 
-    try {
-      return callWasmStaticMethod(
-        "Compressions",
-        "decompressGzip",
-        [data],
-        () => {
-          throw new Error("Gzip decompression JS fallback not implemented");
-        }
-      );
-    } catch (error) {
-      return Err(new CompressionError(`Decompression error: ${error}`));
-    }
+    return Err(new CompressionError("Gzip decompression not available"));
   }
 
+  /**
+   * Compress data using Zlib
+   */
   static compressZlib(
     data: Uint8Array,
     level?: number
@@ -113,63 +169,51 @@ export class Compression {
       );
     }
 
-    if (Compression.useWasm) {
+    if (Compression._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (typeof wasmModule.Compressions?.compressZlib === "function") {
-          const result = wasmModule.Compressions.compressZlib(data, level);
+        const compressMethod =
+          wasmModule.Compressions?.compressZlib || wasmModule.compressZlib;
+
+        if (typeof compressMethod === "function") {
+          const result = compressMethod(data, level);
           return Ok(result);
         }
       } catch (error) {
         console.warn(`WASM compressZlib failed, using JS fallback: ${error}`);
-        return Err(new CompressionError(`Compression error: ${error}`));
       }
     }
 
-    try {
-      return callWasmStaticMethod(
-        "Compressions",
-        "compressZlib",
-        [data, level],
-        () => {
-          throw new Error("Zlib compression JS fallback not implemented");
-        }
-      );
-    } catch (error) {
-      return Err(new CompressionError(`Compression error: ${error}`));
-    }
+    return Err(new CompressionError("Zlib compression not available"));
   }
 
+  /**
+   * Decompress Zlib data
+   */
   static decompressZlib(
     data: Uint8Array
   ): Result<Uint8Array, CompressionError> {
-    if (Compression.useWasm) {
+    if (Compression._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (typeof wasmModule.Compressions?.decompressZlib === "function") {
-          const result = wasmModule.Compressions.decompressZlib(data);
+        const decompressMethod =
+          wasmModule.Compressions?.decompressZlib || wasmModule.decompressZlib;
+
+        if (typeof decompressMethod === "function") {
+          const result = decompressMethod(data);
           return Ok(result);
         }
       } catch (error) {
         console.warn(`WASM decompressZlib failed, using JS fallback: ${error}`);
-        return Err(new CompressionError(`Decompression error: ${error}`));
       }
     }
 
-    try {
-      return callWasmStaticMethod(
-        "Compressions",
-        "decompressZlib",
-        [data],
-        () => {
-          throw new Error("Zlib decompression JS fallback not implemented");
-        }
-      );
-    } catch (error) {
-      return Err(new CompressionError(`Decompression error: ${error}`));
-    }
+    return Err(new CompressionError("Zlib decompression not available"));
   }
 
+  /**
+   * Compress data using Deflate
+   */
   static compressDeflate(
     data: Uint8Array,
     level?: number
@@ -180,117 +224,109 @@ export class Compression {
       );
     }
 
-    if (Compression.useWasm) {
+    if (Compression._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (typeof wasmModule.Compressions?.compressDeflate === "function") {
-          const result = wasmModule.Compressions.compressDeflate(data, level);
+        const compressMethod =
+          wasmModule.Compressions?.compressDeflate ||
+          wasmModule.compressDeflate;
+
+        if (typeof compressMethod === "function") {
+          const result = compressMethod(data, level);
           return Ok(result);
         }
       } catch (error) {
         console.warn(
           `WASM compressDeflate failed, using JS fallback: ${error}`
         );
-        return Err(new CompressionError(`Compression error: ${error}`));
       }
     }
 
-    try {
-      return callWasmStaticMethod(
-        "Compressions",
-        "compressDeflate",
-        [data, level],
-        () => {
-          throw new Error("Deflate compression JS fallback not implemented");
-        }
-      );
-    } catch (error) {
-      return Err(new CompressionError(`Compression error: ${error}`));
-    }
+    return Err(new CompressionError("Deflate compression not available"));
   }
 
+  /**
+   * Decompress Deflate data
+   */
   static decompressDeflate(
     data: Uint8Array
   ): Result<Uint8Array, CompressionError> {
-    if (Compression.useWasm) {
+    if (Compression._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (typeof wasmModule.Compressions?.decompressDeflate === "function") {
-          const result = wasmModule.Compressions.decompressDeflate(data);
+        const decompressMethod =
+          wasmModule.Compressions?.decompressDeflate ||
+          wasmModule.decompressDeflate;
+
+        if (typeof decompressMethod === "function") {
+          const result = decompressMethod(data);
           return Ok(result);
         }
       } catch (error) {
         console.warn(
           `WASM decompressDeflate failed, using JS fallback: ${error}`
         );
-        return Err(new CompressionError(`Decompression error: ${error}`));
       }
     }
 
-    try {
-      return callWasmStaticMethod(
-        "Compressions",
-        "decompressDeflate",
-        [data],
-        () => {
-          throw new Error("Deflate decompression JS fallback not implemented");
-        }
-      );
-    } catch (error) {
-      return Err(new CompressionError(`Decompression error: ${error}`));
-    }
+    return Err(new CompressionError("Deflate decompression not available"));
   }
 
+  /**
+   * Compress data using LZ77
+   */
   static compressLZ77(data: Uint8Array, windowSize?: number): Uint8Array {
-    if (Compression.useWasm) {
+    if (Compression._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (typeof wasmModule.Compressions?.compressLZ77 === "function") {
-          return wasmModule.Compressions.compressLZ77(data, windowSize);
+        const compressMethod =
+          wasmModule.Compressions?.compressLZ77 || wasmModule.compressLZ77;
+
+        if (typeof compressMethod === "function") {
+          return compressMethod(data, windowSize);
         }
       } catch (error) {
         console.warn(`WASM compressLZ77 failed, using JS fallback: ${error}`);
       }
     }
 
-    return callWasmStaticMethod(
-      "Compressions",
-      "compressLZ77",
-      [data, windowSize],
-      () => {
-        throw new Error("LZ77 compression JS fallback not implemented");
-      }
-    );
+    throw new CompressionError("LZ77 compression not available");
   }
 
+  /**
+   * Decompress LZ77 data
+   */
   static decompressLZ77(data: Uint8Array): Uint8Array {
-    if (Compression.useWasm) {
+    if (Compression._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (typeof wasmModule.Compressions?.decompressLZ77 === "function") {
-          return wasmModule.Compressions.decompressLZ77(data);
+        const decompressMethod =
+          wasmModule.Compressions?.decompressLZ77 || wasmModule.decompressLZ77;
+
+        if (typeof decompressMethod === "function") {
+          return decompressMethod(data);
         }
       } catch (error) {
         console.warn(`WASM decompressLZ77 failed, using JS fallback: ${error}`);
       }
     }
 
-    return callWasmStaticMethod(
-      "Compressions",
-      "decompressLZ77",
-      [data],
-      () => {
-        throw new Error("LZ77 decompression JS fallback not implemented");
-      }
-    );
+    throw new CompressionError("LZ77 decompression not available");
   }
 
+  /**
+   * Compress data using Huffman coding
+   */
   static compressHuffman(data: Uint8Array): HuffmanCompressionResult {
-    if (Compression.useWasm) {
+    if (Compression._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (typeof wasmModule.compressHuffman === "function") {
-          const result = wasmModule.compressHuffman(data);
+        const compressMethod =
+          wasmModule.Compressions?.compressHuffman ||
+          wasmModule.compressHuffman;
+
+        if (typeof compressMethod === "function") {
+          const result = compressMethod(data);
           return {
             data: result.data,
             tree: result.tree,
@@ -303,46 +339,35 @@ export class Compression {
       }
     }
 
-    return callWasmStaticMethod("compressHuffman", "", [data], () => {
-      throw new Error("Huffman compression JS fallback not implemented");
-    });
+    throw new CompressionError("Huffman compression not available");
   }
 
+  /**
+   * Decompress Huffman coded data
+   */
   static decompressHuffman(
     compressedData: Uint8Array,
     treeData: Uint8Array
   ): Result<Uint8Array, CompressionError> {
-    if (Compression.useWasm) {
+    if (Compression._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (typeof wasmModule.decompressHuffman === "function") {
-          const result = wasmModule.decompressHuffman(compressedData, treeData);
+        const decompressMethod =
+          wasmModule.Compressions?.decompressHuffman ||
+          wasmModule.decompressHuffman;
+
+        if (typeof decompressMethod === "function") {
+          const result = decompressMethod(compressedData, treeData);
           return Ok(result);
         }
       } catch (error) {
         console.warn(
           `WASM decompressHuffman failed, using JS fallback: ${error}`
         );
-        return Err(
-          new CompressionError(`Huffman decompression failed: ${error}`)
-        );
       }
     }
 
-    try {
-      return callWasmStaticMethod(
-        "decompressHuffman",
-        "",
-        [compressedData, treeData],
-        () => {
-          throw new Error("Huffman decompression JS fallback not implemented");
-        }
-      );
-    } catch (error) {
-      return Err(
-        new CompressionError(`Huffman decompression failed: ${error}`)
-      );
-    }
+    return Err(new CompressionError("Huffman decompression not available"));
   }
 }
 

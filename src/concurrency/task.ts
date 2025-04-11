@@ -1,14 +1,73 @@
-import { Str } from "../types/string";
-import { AppError } from "../core/error";
-import { Result, Ok, Err } from "../core/result";
-import { getWasmModule, isWasmInitialized } from "../initWasm/init";
+/**
+ * Task type implementation for MiLost
+ *
+ * Provides a type-safe, asynchronous task management system with WebAssembly
+ * acceleration when available.
+ */
+import { AppError } from "../core/index.js";
+import { Result, Err, Ok } from "../core/result.js";
+import {
+  registerModule,
+  WasmModule,
+  getWasmModule,
+} from "../initWasm/registry.js";
+import { Str } from "../types/string.js";
 
+/**
+ * Module definition for Task WASM implementation
+ */
+const taskModule: WasmModule = {
+  name: "Task",
+
+  initialize(wasmModule: any) {
+    console.log("Initializing Task module with WASM...");
+
+    if (typeof wasmModule.Task === "object") {
+      console.log("Found Task module in WASM");
+
+      const methods = [
+        "createTask",
+        "mapTask",
+        "flatMapTask",
+        "catchTask",
+        "run",
+        "cancel",
+        "isCancelled",
+        "toString",
+      ];
+
+      methods.forEach((method) => {
+        if (typeof wasmModule.Task[method] === "function") {
+          console.log(`Found method: Task.${method}`);
+        } else {
+          console.warn(`Missing method: Task.${method}`);
+        }
+      });
+    } else {
+      console.warn("Task module not found in WASM module");
+      throw new Error("Required WASM functions not found for Task module");
+    }
+  },
+
+  fallback() {
+    console.log("Using JavaScript fallback for Task module");
+  },
+};
+
+registerModule(taskModule);
+
+/**
+ * Custom error for task-related operations
+ */
 export class TaskError extends AppError {
   constructor(message: Str) {
     super(message);
   }
 }
 
+/**
+ * Asynchronous task management class
+ */
 export class Task<T, E extends AppError = AppError> {
   private readonly _promise: Promise<Result<T, E>>;
   private _isCancelled: boolean = false;
@@ -18,25 +77,31 @@ export class Task<T, E extends AppError = AppError> {
 
   static readonly _type = "Task";
 
+  /**
+   * Private constructor for Task
+   * @param promise Promise resolving to a Result
+   * @param controller Optional AbortController
+   */
   private constructor(
     promise: Promise<Result<T, E>>,
     controller?: AbortController
   ) {
     this._promise = promise;
-    this._useWasm = isWasmInitialized();
+    this._useWasm = false;
 
     if (controller) {
       this._controller = controller;
     }
 
-    if (this._useWasm) {
+    const wasmModule = getWasmModule();
+    if (wasmModule?.Task) {
       try {
-        const wasmModule = getWasmModule();
-        this._inner = wasmModule.createTask(promise as any);
+        this._inner = wasmModule.Task.createTask(promise as any);
 
         if (controller) {
           this._inner.setController(controller);
         }
+        this._useWasm = true;
       } catch (err) {
         console.warn(
           `WASM Task creation failed, using JS implementation: ${err}`
@@ -46,18 +111,11 @@ export class Task<T, E extends AppError = AppError> {
     }
   }
 
-  static async init(): Promise<void> {
-    if (!isWasmInitialized()) {
-      try {
-        await import("../initWasm/init").then((mod) => mod.initWasm());
-      } catch (error) {
-        console.warn(
-          `WASM module not available, using JS implementation: ${error}`
-        );
-      }
-    }
-  }
-
+  /**
+   * Create a new Task with an executor function
+   * @param executor Function to create the task
+   * @returns A new Task instance
+   */
   static new<T, E extends AppError = AppError>(
     executor: (signal: AbortSignal) => Promise<Result<T, E>>
   ): Task<T, E> {
@@ -76,14 +134,29 @@ export class Task<T, E extends AppError = AppError> {
     return new Task<T, E>(promise, controller);
   }
 
+  /**
+   * Create a resolved Task
+   * @param value The value to resolve with
+   * @returns A resolved Task
+   */
   static resolve<T, E extends AppError = AppError>(value: T): Task<T, E> {
     return new Task<T, E>(Promise.resolve(Ok(value)));
   }
 
+  /**
+   * Create a rejected Task
+   * @param error The error to reject with
+   * @returns A rejected Task
+   */
   static reject<T, E extends AppError = AppError>(error: E): Task<T, E> {
     return new Task<T, E>(Promise.resolve(Err(error)));
   }
 
+  /**
+   * Combine multiple Tasks
+   * @param tasks Array of Tasks to combine
+   * @returns A Task resolving to an array of results
+   */
   static all<T, E extends AppError = AppError>(
     tasks: Task<T, E>[]
   ): Task<T[], E> {
@@ -101,17 +174,25 @@ export class Task<T, E extends AppError = AppError> {
     );
   }
 
+  /**
+   * Transform the Task's value
+   * @param fn Transformation function
+   * @returns A new Task with transformed value
+   */
   map<U>(fn: (value: T) => U): Task<U, E> {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         const wasmModule = getWasmModule();
 
-        const mappedTask = wasmModule.mapTask(this._inner, (result: any) => {
-          if (result.isOk()) {
-            return Ok(fn(result.unwrap()));
+        const mappedTask = wasmModule.Task.mapTask(
+          this._inner,
+          (result: any) => {
+            if (result.isOk()) {
+              return Ok(fn(result.unwrap()));
+            }
+            return result;
           }
-          return result;
-        });
+        );
 
         return new Task<U, E>(mappedTask.run() as Promise<Result<U, E>>);
       } catch (err) {
@@ -128,12 +209,17 @@ export class Task<T, E extends AppError = AppError> {
     );
   }
 
+  /**
+   * Flat map the Task's value
+   * @param fn Transformation function returning a Task
+   * @returns A new Task
+   */
   flatMap<U>(fn: (value: T) => Task<U, E>): Task<U, E> {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         const wasmModule = getWasmModule();
 
-        const flatMappedTask = wasmModule.flatMapTask(
+        const flatMappedTask = wasmModule.Task.flatMapTask(
           this._inner,
           (result: any) => {
             if (result.isErr()) {
@@ -159,17 +245,25 @@ export class Task<T, E extends AppError = AppError> {
     );
   }
 
+  /**
+   * Handle errors in the Task
+   * @param fn Error handling function
+   * @returns A new Task with error handling
+   */
   catch<F extends AppError>(fn: (error: E) => Result<T, F>): Task<T, F> {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         const wasmModule = getWasmModule();
 
-        const catchTask = wasmModule.catchTask(this._inner, (result: any) => {
-          if (result.isErr()) {
-            return fn(result.getError());
+        const catchTask = wasmModule.Task.catchTask(
+          this._inner,
+          (result: any) => {
+            if (result.isErr()) {
+              return fn(result.getError());
+            }
+            return result;
           }
-          return result;
-        });
+        );
 
         return new Task<T, F>(catchTask.run() as Promise<Result<T, F>>);
       } catch (err) {
@@ -187,8 +281,12 @@ export class Task<T, E extends AppError = AppError> {
     );
   }
 
+  /**
+   * Run the Task
+   * @returns A Promise resolving to the Task's Result
+   */
   async run(): Promise<Result<T, E>> {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         return (await this._inner.run()) as Promise<Result<T, E>>;
       } catch (err) {
@@ -198,8 +296,11 @@ export class Task<T, E extends AppError = AppError> {
     return this._promise;
   }
 
+  /**
+   * Cancel the Task
+   */
   cancel(): void {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         this._inner.cancel();
         this._isCancelled = true;
@@ -215,8 +316,11 @@ export class Task<T, E extends AppError = AppError> {
     }
   }
 
+  /**
+   * Check if the Task is cancelled
+   */
   get isCancelled(): boolean {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         return this._inner.isCancelled();
       } catch (err) {
@@ -226,8 +330,12 @@ export class Task<T, E extends AppError = AppError> {
     return this._isCancelled;
   }
 
+  /**
+   * Convert to string representation
+   * @returns A Str representation of the Task
+   */
   toString(): Str {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         return Str.fromRaw(this._inner.toString());
       } catch (err) {
@@ -237,6 +345,9 @@ export class Task<T, E extends AppError = AppError> {
     return Str.fromRaw(`[Task ${this._isCancelled ? "cancelled" : "active"}]`);
   }
 
+  /**
+   * Get the Symbol.toStringTag
+   */
   get [Symbol.toStringTag](): Str {
     return Str.fromRaw(Task._type);
   }

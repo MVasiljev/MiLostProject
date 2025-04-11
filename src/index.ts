@@ -1,5 +1,3 @@
-import { initWasm } from "./initWasm/init.js";
-
 export { AsyncUtils, async } from "./async/index.js";
 
 export {
@@ -60,7 +58,6 @@ export { Task, TaskError } from "./concurrency/task.js";
 
 export {
   ContractError,
-  initContracts,
   requires,
   ensures,
   contract,
@@ -79,7 +76,6 @@ export {
   ServerError,
   DomainErrors,
   createErrorFactory,
-  initErrors,
 } from "./core/error.js";
 
 export { Result, Ok, Err, tryFn, tryAsync, apiRequest } from "./core/result.js";
@@ -89,7 +85,6 @@ export { Iter } from "./core/iter.js";
 export { Option } from "./core/option.js";
 
 export {
-  initFunctional,
   toHashMap,
   toHashSet,
   toVec,
@@ -143,15 +138,16 @@ export {
 } from "./memory/index.js";
 
 export {
-  Patterns,
+  MatchPattern,
+  SomePattern,
+  NonePattern,
+  OkPattern,
+  ErrPattern,
+  _,
+  PatternMatcher,
   MatchBuilder,
-  build,
   __,
   matchValue,
-  matchPattern,
-  matchType,
-  matchTag,
-  matchCases,
 } from "./patterns/index.js";
 
 export {
@@ -197,7 +193,6 @@ export {
   BrandTypes,
   iterableToVec,
   Types,
-  initCommon,
 } from "./types";
 
 export { Str } from "./types/string.js";
@@ -297,9 +292,5 @@ export {
 
 export { Sorting } from "./utils/index.js";
 export { Search } from "./utils/index.js";
-export { TextProcessing } from "./utils/index.js";
-export { ImageProcessing } from "./utils/index.js";
 export { Compression } from "./utils/index.js";
 export { Crypto } from "./utils/index.js";
-
-initWasm().catch(console.error);

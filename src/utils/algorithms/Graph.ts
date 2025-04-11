@@ -1,261 +1,439 @@
-import { AppError, Result, Ok, Err } from "../../core";
-import { Option } from "../../core/option";
-import { Str, f64, Vec } from "../../types";
-import {
-  initWasm,
-  getWasmModule,
-  isWasmInitialized,
-} from "../../initWasm/init.js";
+/**
+ * Graph Module for MiLost
+ *
+ * Provides a flexible graph data structure with WebAssembly acceleration
+ * and JavaScript fallback capabilities.
+ */
+import { AppError, Result, Ok } from "../../core";
+import { WasmModule, registerModule, getWasmModule } from "../../initWasm";
+import { Str, Vec, f64 } from "../../types";
+import { Option } from "../../index";
 
+/**
+ * Custom error for Graph operations
+ */
 export class GraphError extends AppError {
   constructor(message: Str) {
     super(message);
   }
 }
 
+/**
+ * Interface for graph edges
+ */
 export interface GraphEdge {
   from: Str;
   to: Str;
   weight: f64;
 }
 
+/**
+ * Interface for adjacency list entries
+ */
 export interface AdjacencyListEntry {
   vertex: Str;
   weight: f64;
 }
 
+/**
+ * Module definition for Graph WASM implementation
+ */
+const graphModule: WasmModule = {
+  name: "Graph",
+
+  initialize(wasmModule: any) {
+    console.log("Initializing Graph module with WASM...");
+
+    if (typeof wasmModule.Graph === "function") {
+      console.log("Found Graph constructor in WASM module");
+      Graph._useWasm = true;
+
+      const staticMethods = ["create", "new"];
+      staticMethods.forEach((method) => {
+        if (typeof wasmModule.Graph[method] === "function") {
+          console.log(`Found static method: Graph.${method}`);
+        } else {
+          console.warn(`Missing static method: Graph.${method}`);
+        }
+      });
+
+      const instanceMethods = [
+        "addVertex",
+        "addEdge",
+        "getVertices",
+        "getEdges",
+        "breadthFirstSearch",
+        "dijkstra",
+        "toString",
+      ];
+
+      try {
+        const sampleGraph = new wasmModule.Graph();
+        instanceMethods.forEach((method) => {
+          if (typeof sampleGraph[method] === "function") {
+            console.log(`Found instance method: Graph.prototype.${method}`);
+          } else {
+            console.warn(`Missing instance method: Graph.prototype.${method}`);
+          }
+        });
+      } catch (error) {
+        console.warn("Couldn't create sample Graph instance:", error);
+      }
+    } else {
+      throw new Error("Required WASM functions not found for Graph");
+    }
+  },
+
+  fallback() {
+    console.log("Using JavaScript fallback for Graph");
+    Graph._useWasm = false;
+  },
+};
+
+registerModule(graphModule);
+
+/**
+ * Graph class with WASM acceleration
+ */
 export class Graph {
-  private readonly _inner: any;
-  private readonly _useWasm: boolean;
-  private readonly _adjacencyList: Map<
-    string,
-    Array<{ to: string; weight: number }>
-  >;
-
   static readonly _type = "Graph";
+  static _useWasm: boolean = false;
 
-  private constructor(useWasm: boolean = true, existingWasmGraph?: any) {
-    this._useWasm = useWasm && isWasmInitialized();
+  private _inner: any;
+  private _adjacencyList: Map<string, Array<{ to: string; weight: number }>>;
+
+  /**
+   * Private constructor to control instance creation
+   */
+  private constructor(existingWasmGraph?: any) {
     this._adjacencyList = new Map();
 
     if (existingWasmGraph) {
       this._inner = existingWasmGraph;
-    } else if (this._useWasm) {
+    } else if (Graph._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (typeof wasmModule.Graph === "function") {
-          this._inner = new wasmModule.Graph();
-        } else {
-          console.warn(
-            "WASM Graph constructor not found, using JS implementation"
-          );
-          this._useWasm = false;
-        }
+        this._inner = new wasmModule.Graph();
       } catch (error) {
         console.warn(
           `WASM Graph creation failed, falling back to JS implementation: ${error}`
         );
-        this._useWasm = false;
+        this._inner = this.createJsGraph();
       }
+    } else {
+      this._inner = this.createJsGraph();
     }
   }
 
+  /**
+   * Create a JS fallback implementation of the graph
+   */
+  private createJsGraph(): any {
+    const adjacencyList = new Map<
+      string,
+      Array<{ to: string; weight: number }>
+    >();
+
+    return {
+      addVertex: (vertex: string) => {
+        if (!adjacencyList.has(vertex)) {
+          adjacencyList.set(vertex, []);
+        }
+      },
+
+      addEdge: (from: string, to: string, weight: number = 1) => {
+        if (!adjacencyList.has(from)) {
+          adjacencyList.set(from, []);
+        }
+        if (!adjacencyList.has(to)) {
+          adjacencyList.set(to, []);
+        }
+        adjacencyList.get(from)!.push({ to, weight });
+      },
+
+      getVertices: () => Array.from(adjacencyList.keys()),
+
+      getEdges: () => {
+        const edges: Array<[string, string, number]> = [];
+        for (const [from, neighbors] of adjacencyList.entries()) {
+          for (const { to, weight } of neighbors) {
+            edges.push([from, to, weight]);
+          }
+        }
+        return edges;
+      },
+
+      breadthFirstSearch: (start: string) => {
+        if (!adjacencyList.has(start)) return [];
+
+        const visited = new Set<string>();
+        const queue: string[] = [start];
+        const result: string[] = [];
+
+        visited.add(start);
+
+        while (queue.length > 0) {
+          const current = queue.shift()!;
+          result.push(current);
+
+          const neighbors = adjacencyList.get(current) || [];
+          for (const { to } of neighbors) {
+            if (!visited.has(to)) {
+              visited.add(to);
+              queue.push(to);
+            }
+          }
+        }
+
+        return result;
+      },
+
+      dijkstra: (start: string, end?: string) => {
+        if (!adjacencyList.has(start)) return null;
+        if (end && !adjacencyList.has(end)) return null;
+
+        const distances: { [key: string]: number } = {};
+        const previous: { [key: string]: string | null } = {};
+        const unvisited = new Set<string>();
+
+        for (const vertex of adjacencyList.keys()) {
+          distances[vertex] = vertex === start ? 0 : Infinity;
+          previous[vertex] = null;
+          unvisited.add(vertex);
+        }
+
+        while (unvisited.size > 0) {
+          let minVertex: string | null = null;
+          let minDistance = Infinity;
+
+          for (const vertex of unvisited) {
+            if (distances[vertex] < minDistance) {
+              minVertex = vertex;
+              minDistance = distances[vertex];
+            }
+          }
+
+          if (minVertex === null || minDistance === Infinity) break;
+          if (minVertex === end) break;
+
+          unvisited.delete(minVertex);
+
+          const neighbors = adjacencyList.get(minVertex) || [];
+          for (const { to, weight } of neighbors) {
+            if (unvisited.has(to)) {
+              const alt = distances[minVertex] + weight;
+              if (alt < distances[to]) {
+                distances[to] = alt;
+                previous[to] = minVertex;
+              }
+            }
+          }
+        }
+
+        return {
+          distances,
+          path: end ? reconstructPath(previous, start, end) : undefined,
+        };
+      },
+
+      toString: () => `[Graph vertices=${adjacencyList.size}]`,
+    };
+
+    function reconstructPath(
+      previous: { [key: string]: string | null },
+      start: string,
+      end: string
+    ): string[] | null {
+      const path: string[] = [];
+      let current = end;
+
+      while (current) {
+        path.unshift(current);
+        if (current === start) break;
+
+        const prev = previous[current];
+        if (!prev) return null;
+        current = prev;
+      }
+
+      return path;
+    }
+  }
+
+  /**
+   * Create a new graph instance
+   */
   static new(): Graph {
     return new Graph();
   }
 
+  /**
+   * Async graph creation method
+   */
   static async create(): Promise<Graph> {
-    if (!isWasmInitialized()) {
+    if (!Graph._useWasm) {
+      return new Graph();
+    }
+
+    const wasmModule = getWasmModule();
+    if (typeof wasmModule.Graph?.create === "function") {
       try {
-        await initWasm();
+        const wasmGraph = await wasmModule.Graph.create();
+        return new Graph(wasmGraph);
       } catch (error) {
-        console.warn(`WASM initialization failed: ${error}`);
+        console.warn(`WASM creation failed, using JS fallback: ${error}`);
+        return new Graph();
       }
     }
+
     return new Graph();
   }
 
+  /**
+   * Add a vertex to the graph
+   */
   addVertex(vertex: Str): Result<void, GraphError> {
     const vertexStr = vertex.unwrap();
 
-    if (this._useWasm) {
+    if (Graph._useWasm) {
       try {
-        if (typeof this._inner.addVertex === "function") {
-          this._inner.addVertex(vertexStr);
-          this._adjacencyList.set(vertexStr, []);
-          return Ok(undefined);
-        } else {
-          console.warn(
-            "WASM addVertex method not found, using JS implementation"
-          );
-        }
+        this._inner.addVertex(vertexStr);
       } catch (error) {
         console.warn(`WASM addVertex failed, using JS fallback: ${error}`);
       }
     }
 
-    this._adjacencyList.set(vertexStr, []);
+    this._inner.addVertex(vertexStr);
     return Ok(undefined);
   }
 
-  addEdge(from: Str, to: Str, weight?: f64): Result<void, GraphError> {
+  /**
+   * Add an edge to the graph
+   * @param graph The graph instance
+   * @param from Source vertex
+   * @param to Destination vertex
+   * @param weight Optional edge weight
+   * @returns Result of the edge addition
+   */
+  addEdge(
+    graph: any,
+    from: Str,
+    to: Str,
+    weight?: f64
+  ): Result<void, GraphError> {
     const fromStr = from.unwrap();
     const toStr = to.unwrap();
     const weightValue = weight ? Number(weight) : 1;
 
-    if (this._useWasm) {
-      try {
-        if (typeof this._inner.addEdge === "function") {
-          this._inner.addEdge(fromStr, toStr, weight);
-
-          if (!this._adjacencyList.has(fromStr)) {
-            this._adjacencyList.set(fromStr, []);
-          }
-          if (!this._adjacencyList.has(toStr)) {
-            this._adjacencyList.set(toStr, []);
-          }
-
-          this._adjacencyList.get(fromStr)!.push({
-            to: toStr,
-            weight: weightValue,
-          });
-
-          return Ok(undefined);
-        } else {
-          console.warn(
-            "WASM addEdge method not found, using JS implementation"
-          );
-        }
-      } catch (error) {
-        console.warn(`WASM addEdge failed, using JS fallback: ${error}`);
+    try {
+      const wasmModule = getWasmModule();
+      if (wasmModule?.Graph?.prototype?.addEdge) {
+        wasmModule.Graph.prototype.addEdge.call(
+          graph._inner,
+          fromStr,
+          toStr,
+          weightValue
+        );
       }
+    } catch (error) {
+      console.warn(`WASM addEdge failed, using JS fallback: ${error}`);
     }
 
-    if (!this._adjacencyList.has(fromStr)) {
-      this._adjacencyList.set(fromStr, []);
-    }
-    if (!this._adjacencyList.has(toStr)) {
-      this._adjacencyList.set(toStr, []);
-    }
-
-    this._adjacencyList.get(fromStr)!.push({
-      to: toStr,
-      weight: weightValue,
-    });
-
+    graph._inner.addEdge(fromStr, toStr, weightValue);
     return Ok(undefined);
   }
 
-  getVertices(): Vec<Str> {
-    if (this._useWasm) {
-      try {
-        if (typeof this._inner.getVertices === "function") {
-          const vertices = this._inner.getVertices();
-          return Vec.from(
-            Array.from(vertices).map((v: unknown) => Str.fromRaw(String(v)))
-          );
-        } else {
-          console.warn(
-            "WASM getVertices method not found, using JS implementation"
-          );
-        }
-      } catch (error) {
-        console.warn(`WASM getVertices failed, using JS fallback: ${error}`);
+  /**
+   * Get all vertices in the graph
+   * @param graph The graph instance
+   * @returns A vector of vertices
+   */
+  getVertices(graph: any): Vec<Str> {
+    let vertices: string[];
+
+    try {
+      const wasmModule = getWasmModule();
+      if (wasmModule?.Graph?.prototype?.getVertices) {
+        vertices = wasmModule.Graph.prototype.getVertices.call(graph._inner);
+      } else {
+        vertices = graph._inner.getVertices();
       }
+    } catch (error) {
+      console.warn(`WASM getVertices failed, using JS fallback: ${error}`);
+      vertices = graph._inner.getVertices();
+    }
+
+    return Vec.from(vertices.map((v) => Str.fromRaw(v)));
+  }
+
+  /**
+   * Get all edges in the graph
+   * @param graph The graph instance
+   * @returns A vector of graph edges
+   */
+  getEdges(graph: any): Vec<{ from: Str; to: Str; weight: f64 }> {
+    let edges: [string, string, number][];
+
+    try {
+      const wasmModule = getWasmModule();
+      if (wasmModule?.Graph?.prototype?.getEdges) {
+        edges = wasmModule.Graph.prototype.getEdges.call(graph._inner);
+      } else {
+        edges = graph._inner.getEdges();
+      }
+    } catch (error) {
+      console.warn(`WASM getEdges failed, using JS fallback: ${error}`);
+      edges = graph._inner.getEdges();
     }
 
     return Vec.from(
-      Array.from(this._adjacencyList.keys()).map((v) => Str.fromRaw(v))
+      edges.map(([from, to, weight]) => ({
+        from: Str.fromRaw(from),
+        to: Str.fromRaw(to),
+        weight: f64(weight),
+      }))
     );
   }
 
-  getEdges(): Vec<GraphEdge> {
-    if (this._useWasm) {
-      try {
-        if (typeof this._inner.getEdges === "function") {
-          const edges = this._inner.getEdges();
-          return Vec.from(
-            Array.from(edges).map((edge: unknown) => {
-              const edgeArr = Array.isArray(edge) ? edge : [];
-              return {
-                from: Str.fromRaw(String(edgeArr[0] || "")),
-                to: Str.fromRaw(String(edgeArr[1] || "")),
-                weight: f64(Number(edgeArr[2] || 0)),
-              };
-            })
-          );
-        } else {
-          console.warn(
-            "WASM getEdges method not found, using JS implementation"
-          );
-        }
-      } catch (error) {
-        console.warn(`WASM getEdges failed, using JS fallback: ${error}`);
-      }
-    }
-
-    const edges: GraphEdge[] = [];
-    for (const [from, adjList] of this._adjacencyList.entries()) {
-      for (const { to, weight } of adjList) {
-        edges.push({
-          from: Str.fromRaw(from),
-          to: Str.fromRaw(to),
-          weight: f64(weight),
-        });
-      }
-    }
-    return Vec.from(edges);
-  }
-
-  breadthFirstSearch(start: Str): Vec<Str> {
+  /**
+   * Perform breadth-first search starting from a vertex
+   * @param graph The graph instance
+   * @param start Starting vertex
+   * @returns A vector of visited vertices
+   */
+  breadthFirstSearch(graph: any, start: Str): Vec<Str> {
     const startStr = start.unwrap();
+    let result: string[];
 
-    if (this._useWasm) {
-      try {
-        if (typeof this._inner.breadthFirstSearch === "function") {
-          const result = this._inner.breadthFirstSearch(startStr);
-          return Vec.from(
-            Array.from(result).map((v: unknown) => Str.fromRaw(String(v)))
-          );
-        } else {
-          console.warn(
-            "WASM breadthFirstSearch method not found, using JS implementation"
-          );
-        }
-      } catch (error) {
-        console.warn(
-          `WASM breadthFirstSearch failed, using JS fallback: ${error}`
+    try {
+      const wasmModule = getWasmModule();
+      if (wasmModule?.Graph?.prototype?.breadthFirstSearch) {
+        result = wasmModule.Graph.prototype.breadthFirstSearch.call(
+          graph._inner,
+          startStr
         );
+      } else {
+        result = graph._inner.breadthFirstSearch(startStr);
       }
-    }
-
-    if (!this._adjacencyList.has(startStr)) {
-      return Vec.empty();
-    }
-
-    const visited = new Set<string>();
-    const queue: string[] = [startStr];
-    const result: string[] = [];
-
-    visited.add(startStr);
-
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      result.push(current);
-
-      const neighbors = this._adjacencyList.get(current) || [];
-      for (const { to } of neighbors) {
-        if (!visited.has(to)) {
-          visited.add(to);
-          queue.push(to);
-        }
-      }
+    } catch (error) {
+      console.warn(
+        `WASM breadthFirstSearch failed, using JS fallback: ${error}`
+      );
+      result = graph._inner.breadthFirstSearch(startStr);
     }
 
     return Vec.from(result.map((v) => Str.fromRaw(v)));
   }
 
+  /**
+   * Perform Dijkstra's shortest path algorithm
+   * @param graph The graph instance
+   * @param start Starting vertex
+   * @param end Optional ending vertex
+   * @returns Option of Result containing distances and optional path
+   */
   dijkstra(
+    graph: any,
     start: Str,
     end?: Str
   ): Option<
@@ -269,123 +447,41 @@ export class Graph {
   > {
     const startStr = start.unwrap();
     const endStr = end ? end.unwrap() : undefined;
+    let result: {
+      distances: { [key: string]: number };
+      path?: string[] | null;
+    } | null;
 
-    if (this._useWasm) {
-      try {
-        if (typeof this._inner.dijkstra === "function") {
-          const result = this._inner.dijkstra(startStr, endStr);
-
-          if (result === null || result === undefined) return Option.None();
-
-          return Option.Some(
-            Ok({
-              distances: Vec.from(
-                Object.entries(result.distances).map(([vertex, distance]) => [
-                  Str.fromRaw(vertex),
-                  distance === null
-                    ? Option.None()
-                    : Option.Some(f64(Number(distance))),
-                ])
-              ),
-              path: result.path
-                ? Option.Some(
-                    Vec.from(
-                      Array.from(result.path).map((v: unknown) =>
-                        Str.fromRaw(String(v))
-                      )
-                    )
-                  )
-                : Option.None(),
-            })
-          );
-        } else {
-          console.warn(
-            "WASM dijkstra method not found, using JS implementation"
-          );
-        }
-      } catch (error) {
-        console.warn(`WASM dijkstra failed, using JS fallback: ${error}`);
+    try {
+      const wasmModule = getWasmModule();
+      if (wasmModule?.Graph?.prototype?.dijkstra) {
+        result = wasmModule.Graph.prototype.dijkstra.call(
+          graph._inner,
+          startStr,
+          endStr
+        );
+      } else {
+        result = graph._inner.dijkstra(startStr, endStr);
       }
+    } catch (error) {
+      console.warn(`WASM dijkstra failed, using JS fallback: ${error}`);
+      result = graph._inner.dijkstra(startStr, endStr);
     }
 
-    if (!this._adjacencyList.has(startStr)) {
-      return Option.Some(
-        Err(new GraphError(Str.fromRaw(`Start vertex ${startStr} not found`)))
-      );
+    if (!result) {
+      return Option.None();
     }
 
-    if (endStr && !this._adjacencyList.has(endStr)) {
-      return Option.Some(
-        Err(new GraphError(Str.fromRaw(`End vertex ${endStr} not found`)))
-      );
-    }
+    const distanceEntries: [Str, Option<f64>][] = Object.entries(
+      result.distances
+    ).map(([vertex, distance]) => [
+      Str.fromRaw(vertex),
+      isFinite(distance) ? Option.Some(f64(distance)) : Option.None(),
+    ]);
 
-    const distances: { [key: string]: number } = {};
-    const previous: { [key: string]: string | null } = {};
-    const unvisited = new Set<string>();
-
-    for (const vertex of this._adjacencyList.keys()) {
-      distances[vertex] = vertex === startStr ? 0 : Infinity;
-      previous[vertex] = null;
-      unvisited.add(vertex);
-    }
-
-    while (unvisited.size > 0) {
-      let minVertex: string | null = null;
-      let minDistance = Infinity;
-
-      for (const vertex of unvisited) {
-        if (distances[vertex] < minDistance) {
-          minVertex = vertex;
-          minDistance = distances[vertex];
-        }
-      }
-
-      if (minVertex === null || minDistance === Infinity) {
-        break;
-      }
-
-      if (minVertex === endStr) {
-        break;
-      }
-
-      unvisited.delete(minVertex);
-
-      const neighbors = this._adjacencyList.get(minVertex) || [];
-      for (const { to, weight } of neighbors) {
-        if (unvisited.has(to)) {
-          const alt = distances[minVertex] + weight;
-          if (alt < distances[to]) {
-            distances[to] = alt;
-            previous[to] = minVertex;
-          }
-        }
-      }
-    }
-
-    const distanceEntries: [Str, Option<f64>][] = Object.entries(distances).map(
-      ([vertex, distance]) => [
-        Str.fromRaw(vertex),
-        isFinite(distance) ? Option.Some(f64(distance)) : Option.None(),
-      ]
-    );
-
-    let path: Option<Vec<Str>> = Option.None();
-    if (endStr && isFinite(distances[endStr])) {
-      const pathArray: string[] = [];
-      let current = endStr;
-
-      while (current) {
-        pathArray.unshift(current);
-        if (current === startStr) break;
-
-        const prev = previous[current];
-        if (!prev) break;
-        current = prev;
-      }
-
-      path = Option.Some(Vec.from(pathArray.map((v) => Str.fromRaw(v))));
-    }
+    const path: Option<Vec<Str>> = result.path
+      ? Option.Some(Vec.from(result.path.map((v) => Str.fromRaw(v))))
+      : Option.None();
 
     return Option.Some(
       Ok({
@@ -395,15 +491,33 @@ export class Graph {
     );
   }
 
-  toString(): Str {
-    return Str.fromRaw(`[Graph vertices=${this.getVertices().len()}]`);
-  }
+  /**
+   * Convert graph to string representation
+   * @param graph The graph instance
+   * @returns String representation of the graph
+   */
+  toString(graph: any): Str {
+    let strRepr: string;
 
-  get [Symbol.toStringTag](): Str {
-    return Str.fromRaw(Graph._type);
+    try {
+      const wasmModule = getWasmModule();
+      if (wasmModule?.Graph?.prototype?.toString) {
+        strRepr = wasmModule.Graph.prototype.toString.call(graph._inner);
+      } else {
+        strRepr = graph._inner.toString();
+      }
+    } catch (error) {
+      console.warn(`WASM toString failed, using JS fallback: ${error}`);
+      strRepr = graph._inner.toString();
+    }
+
+    return Str.fromRaw(strRepr);
   }
 }
 
+/**
+ * Convenience function to create a graph
+ */
 export async function createGraph(): Promise<Graph> {
   return Graph.create();
 }

@@ -1,150 +1,80 @@
-import {
-  isWasmInitialized,
-  getWasmModule,
-  initWasm,
-} from "../../initWasm/init";
-import { callWasmStaticMethod } from "../../initWasm/lib";
+/**
+ * Sorting Module for MiLost
+ *
+ * Provides sorting algorithms with WebAssembly acceleration
+ * and JavaScript fallback capabilities.
+ */
 
+import { WasmModule, registerModule, getWasmModule } from "../../initWasm";
+
+/**
+ * Comparator function type for sorting
+ */
 export type Comparator<T> = (a: T, b: T) => number;
 
+/**
+ * Module definition for Sorting WASM implementation
+ */
+const sortingModule: WasmModule = {
+  name: "Sorting",
+
+  initialize(wasmModule: any) {
+    console.log("Initializing Sorting module with WASM...");
+
+    if (wasmModule.Sorting) {
+      console.log("Found Sorting object in WASM module");
+      Sorting._useWasm = true;
+
+      const staticMethods = ["quickSort", "mergeSort", "heapSort", "isSorted"];
+
+      staticMethods.forEach((method) => {
+        if (typeof wasmModule.Sorting[method] === "function") {
+          console.log(`Found static method: Sorting.${method}`);
+        } else {
+          console.warn(`Missing static method: Sorting.${method}`);
+        }
+      });
+    } else {
+      throw new Error("Required WASM functions not found for Sorting");
+    }
+  },
+
+  fallback() {
+    console.log("Using JavaScript fallback for Sorting");
+    Sorting._useWasm = false;
+  },
+};
+
+registerModule(sortingModule);
+
+/**
+ * Sorting class with WASM acceleration
+ */
 export class Sorting {
-  private static _useWasm: boolean = true;
+  static _useWasm: boolean = true;
 
-  private static get useWasm(): boolean {
-    return Sorting._useWasm && isWasmInitialized();
-  }
-
+  /**
+   * Initialize WASM module
+   */
   static async initialize(): Promise<void> {
-    if (!isWasmInitialized()) {
-      try {
-        await initWasm();
-      } catch (error) {
-        console.warn(`WASM initialization failed: ${error}`);
+    if (!Sorting._useWasm) {
+      return;
+    }
+
+    try {
+      const wasmModule = getWasmModule();
+      if (!wasmModule || !wasmModule.Sorting) {
         Sorting._useWasm = false;
       }
+    } catch (error) {
+      console.warn(`WASM initialization failed: ${error}`);
+      Sorting._useWasm = false;
     }
   }
 
-  static quickSort<T>(arr: T[], comparator?: Comparator<T>): T[] {
-    if (arr.length <= 1) {
-      return [...arr];
-    }
-
-    if (Sorting.useWasm) {
-      try {
-        const wasmModule = getWasmModule();
-        if (typeof wasmModule.Sorting?.quickSort === "function") {
-          const jsArray = new Array(...arr);
-          const sorted = wasmModule.Sorting.quickSort(jsArray, comparator);
-          return Array.from(sorted);
-        }
-      } catch (error) {
-        console.warn(`WASM quickSort failed, using JS fallback: ${error}`);
-      }
-    }
-
-    return callWasmStaticMethod(
-      "Sorting",
-      "quickSort",
-      [arr, comparator],
-      () => {
-        const compare = comparator || Sorting.defaultCompare;
-        return Sorting.quickSortFallback([...arr], compare);
-      }
-    );
-  }
-
-  static mergeSort<T>(arr: T[], comparator?: Comparator<T>): T[] {
-    if (arr.length <= 1) {
-      return [...arr];
-    }
-
-    if (Sorting.useWasm) {
-      try {
-        const wasmModule = getWasmModule();
-        if (typeof wasmModule.Sorting?.mergeSort === "function") {
-          const jsArray = new Array(...arr);
-          const sorted = wasmModule.Sorting.mergeSort(jsArray, comparator);
-          return Array.from(sorted);
-        }
-      } catch (error) {
-        console.warn(`WASM mergeSort failed, using JS fallback: ${error}`);
-      }
-    }
-
-    return callWasmStaticMethod(
-      "Sorting",
-      "mergeSort",
-      [arr, comparator],
-      () => {
-        const compare = comparator || Sorting.defaultCompare;
-        return Sorting.mergeSortFallback([...arr], compare);
-      }
-    );
-  }
-
-  static heapSort<T>(arr: T[], comparator?: Comparator<T>): T[] {
-    if (arr.length <= 1) {
-      return [...arr];
-    }
-
-    if (Sorting.useWasm) {
-      try {
-        const wasmModule = getWasmModule();
-        if (typeof wasmModule.Sorting?.heapSort === "function") {
-          const jsArray = new Array(...arr);
-          const sorted = wasmModule.Sorting.heapSort(jsArray, comparator);
-          return Array.from(sorted);
-        }
-      } catch (error) {
-        console.warn(`WASM heapSort failed, using JS fallback: ${error}`);
-      }
-    }
-
-    return callWasmStaticMethod(
-      "Sorting",
-      "heapSort",
-      [arr, comparator],
-      () => {
-        const compare = comparator || Sorting.defaultCompare;
-        return Sorting.heapSortFallback([...arr], compare);
-      }
-    );
-  }
-
-  static isSorted<T>(arr: T[], comparator?: Comparator<T>): boolean {
-    if (arr.length <= 1) {
-      return true;
-    }
-
-    if (Sorting.useWasm) {
-      try {
-        const wasmModule = getWasmModule();
-        if (typeof wasmModule.Sorting?.isSorted === "function") {
-          const jsArray = new Array(...arr);
-          return wasmModule.Sorting.isSorted(jsArray, comparator);
-        }
-      } catch (error) {
-        console.warn(`WASM isSorted failed, using JS fallback: ${error}`);
-      }
-    }
-
-    return callWasmStaticMethod(
-      "Sorting",
-      "isSorted",
-      [arr, comparator],
-      () => {
-        const compare = comparator || Sorting.defaultCompare;
-        for (let i = 0; i < arr.length - 1; i++) {
-          if (compare(arr[i], arr[i + 1]) > 0) {
-            return false;
-          }
-        }
-        return true;
-      }
-    );
-  }
-
+  /**
+   * Default comparison function
+   */
   private static defaultCompare<T>(a: T, b: T): number {
     if (a === b) return 0;
 
@@ -160,6 +90,113 @@ export class Sorting {
     return 0;
   }
 
+  /**
+   * Quick Sort algorithm
+   */
+  static quickSort<T>(arr: T[], comparator?: Comparator<T>): T[] {
+    if (arr.length <= 1) {
+      return [...arr];
+    }
+
+    if (Sorting._useWasm) {
+      try {
+        const wasmModule = getWasmModule();
+        if (wasmModule?.Sorting?.quickSort) {
+          const jsArray = new Array(...arr);
+          const sorted = wasmModule.Sorting.quickSort(jsArray, comparator);
+          return Array.from(sorted);
+        }
+      } catch (error) {
+        console.warn(`WASM quickSort failed, using JS fallback: ${error}`);
+      }
+    }
+
+    const compare = comparator || Sorting.defaultCompare;
+    return Sorting.quickSortFallback([...arr], compare);
+  }
+
+  /**
+   * Merge Sort algorithm
+   */
+  static mergeSort<T>(arr: T[], comparator?: Comparator<T>): T[] {
+    if (arr.length <= 1) {
+      return [...arr];
+    }
+
+    if (Sorting._useWasm) {
+      try {
+        const wasmModule = getWasmModule();
+        if (wasmModule?.Sorting?.mergeSort) {
+          const jsArray = new Array(...arr);
+          const sorted = wasmModule.Sorting.mergeSort(jsArray, comparator);
+          return Array.from(sorted);
+        }
+      } catch (error) {
+        console.warn(`WASM mergeSort failed, using JS fallback: ${error}`);
+      }
+    }
+
+    const compare = comparator || Sorting.defaultCompare;
+    return Sorting.mergeSortFallback([...arr], compare);
+  }
+
+  /**
+   * Heap Sort algorithm
+   */
+  static heapSort<T>(arr: T[], comparator?: Comparator<T>): T[] {
+    if (arr.length <= 1) {
+      return [...arr];
+    }
+
+    if (Sorting._useWasm) {
+      try {
+        const wasmModule = getWasmModule();
+        if (wasmModule?.Sorting?.heapSort) {
+          const jsArray = new Array(...arr);
+          const sorted = wasmModule.Sorting.heapSort(jsArray, comparator);
+          return Array.from(sorted);
+        }
+      } catch (error) {
+        console.warn(`WASM heapSort failed, using JS fallback: ${error}`);
+      }
+    }
+
+    const compare = comparator || Sorting.defaultCompare;
+    return Sorting.heapSortFallback([...arr], compare);
+  }
+
+  /**
+   * Check if array is sorted
+   */
+  static isSorted<T>(arr: T[], comparator?: Comparator<T>): boolean {
+    if (arr.length <= 1) {
+      return true;
+    }
+
+    if (Sorting._useWasm) {
+      try {
+        const wasmModule = getWasmModule();
+        if (wasmModule?.Sorting?.isSorted) {
+          const jsArray = new Array(...arr);
+          return wasmModule.Sorting.isSorted(jsArray, comparator);
+        }
+      } catch (error) {
+        console.warn(`WASM isSorted failed, using JS fallback: ${error}`);
+      }
+    }
+
+    const compare = comparator || Sorting.defaultCompare;
+    for (let i = 0; i < arr.length - 1; i++) {
+      if (compare(arr[i], arr[i + 1]) > 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Quick Sort fallback implementation
+   */
   private static quickSortFallback<T>(arr: T[], compare: Comparator<T>): T[] {
     if (arr.length <= 1) {
       return arr;
@@ -188,6 +225,9 @@ export class Sorting {
     ];
   }
 
+  /**
+   * Merge Sort fallback implementation
+   */
   private static mergeSortFallback<T>(arr: T[], compare: Comparator<T>): T[] {
     if (arr.length <= 1) {
       return arr;
@@ -200,6 +240,9 @@ export class Sorting {
     return Sorting.merge(left, right, compare);
   }
 
+  /**
+   * Merge helper function for Merge Sort
+   */
   private static merge<T>(left: T[], right: T[], compare: Comparator<T>): T[] {
     const result: T[] = [];
     let leftIndex = 0;
@@ -218,6 +261,9 @@ export class Sorting {
     return result.concat(left.slice(leftIndex), right.slice(rightIndex));
   }
 
+  /**
+   * Heap Sort fallback implementation
+   */
   private static heapSortFallback<T>(arr: T[], compare: Comparator<T>): T[] {
     const n = arr.length;
 
@@ -233,6 +279,9 @@ export class Sorting {
     return arr;
   }
 
+  /**
+   * Heapify helper function for Heap Sort
+   */
   private static heapify<T>(
     arr: T[],
     n: number,

@@ -1,31 +1,108 @@
+/**
+ * Search Module for MiLost
+ *
+ * Provides search algorithms with WebAssembly acceleration
+ * and JavaScript fallback capabilities.
+ */
 import {
-  isWasmInitialized,
+  WasmModule,
+  registerModule,
   getWasmModule,
-  initWasm,
-} from "../../initWasm/init";
-import { callWasmStaticMethod } from "../../initWasm/lib";
-import { Comparator } from "./sorting";
+} from "../../initWasm/registry.js";
+import { Comparator } from "./sorting.js";
 
+/**
+ * Predicate function type for searching
+ */
 export type Predicate<T> = (value: T) => boolean;
 
+/**
+ * Module definition for Search WASM implementation
+ */
+const searchModule: WasmModule = {
+  name: "Search",
+
+  initialize(wasmModule: any) {
+    console.log("Initializing Search module with WASM...");
+
+    if (wasmModule.Search) {
+      console.log("Found Search object in WASM module");
+      Search._useWasm = true;
+
+      const staticMethods = [
+        "binarySearch",
+        "linearSearch",
+        "findIndex",
+        "findAll",
+        "kmpSearch",
+      ];
+
+      staticMethods.forEach((method) => {
+        if (typeof wasmModule.Search[method] === "function") {
+          console.log(`Found static method: Search.${method}`);
+        } else {
+          console.warn(`Missing static method: Search.${method}`);
+        }
+      });
+    } else {
+      throw new Error("Required WASM functions not found for Search");
+    }
+  },
+
+  fallback() {
+    console.log("Using JavaScript fallback for Search");
+    Search._useWasm = false;
+  },
+};
+
+registerModule(searchModule);
+
+/**
+ * Search class with WASM acceleration
+ */
 export class Search {
-  private static _useWasm: boolean = true;
+  static _useWasm: boolean = true;
 
-  private static get useWasm(): boolean {
-    return Search._useWasm && isWasmInitialized();
-  }
-
+  /**
+   * Initialize WASM module
+   */
   static async initialize(): Promise<void> {
-    if (!isWasmInitialized()) {
-      try {
-        await initWasm();
-      } catch (error) {
-        console.warn(`WASM initialization failed: ${error}`);
+    if (!Search._useWasm) {
+      return;
+    }
+
+    try {
+      const wasmModule = getWasmModule();
+      if (!wasmModule || !wasmModule.Search) {
         Search._useWasm = false;
       }
+    } catch (error) {
+      console.warn(`WASM initialization failed: ${error}`);
+      Search._useWasm = false;
     }
   }
 
+  /**
+   * Default comparison function
+   */
+  private static defaultCompare<T>(a: T, b: T): number {
+    if (a === b) return 0;
+
+    const aVal = (a as any).valueOf();
+    const bVal = (b as any).valueOf();
+
+    if (aVal === undefined && bVal === undefined) return 0;
+    if (aVal === undefined) return 1;
+    if (bVal === undefined) return -1;
+
+    if (aVal < bVal) return -1;
+    if (aVal > bVal) return 1;
+    return 0;
+  }
+
+  /**
+   * Binary search algorithm
+   */
   static binarySearch<T>(
     arr: T[],
     target: T,
@@ -35,10 +112,10 @@ export class Search {
       return -1;
     }
 
-    if (Search.useWasm) {
+    if (Search._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (typeof wasmModule.Search?.binarySearch === "function") {
+        if (wasmModule?.Search?.binarySearch) {
           const jsArray = new Array(...arr);
           return wasmModule.Search.binarySearch(jsArray, target, comparator);
         }
@@ -47,47 +124,43 @@ export class Search {
       }
     }
 
-    return callWasmStaticMethod(
-      "Search",
-      "binarySearch",
-      [arr, target, comparator],
-      () => {
-        const compare = comparator || Search.defaultCompare;
-        let low = 0;
-        let high = arr.length - 1;
+    const compare = comparator || Search.defaultCompare;
+    let low = 0;
+    let high = arr.length - 1;
 
-        while (low <= high) {
-          const mid = Math.floor(low + (high - low) / 2);
-          const midVal = arr[mid];
+    while (low <= high) {
+      const mid = Math.floor(low + (high - low) / 2);
+      const midVal = arr[mid];
 
-          const result = compare(midVal, target);
+      const result = compare(midVal, target);
 
-          if (result === 0) {
-            return mid;
-          } else if (result < 0) {
-            low = mid + 1;
-          } else {
-            if (mid === 0) {
-              break;
-            }
-            high = mid - 1;
-          }
+      if (result === 0) {
+        return mid;
+      } else if (result < 0) {
+        low = mid + 1;
+      } else {
+        if (mid === 0) {
+          break;
         }
-
-        return -1;
+        high = mid - 1;
       }
-    );
+    }
+
+    return -1;
   }
 
+  /**
+   * Linear search algorithm
+   */
   static linearSearch<T>(
     arr: T[],
     target: T,
     comparator?: Comparator<T>
   ): number {
-    if (Search.useWasm) {
+    if (Search._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (typeof wasmModule.Search?.linearSearch === "function") {
+        if (wasmModule?.Search?.linearSearch) {
           const jsArray = new Array(...arr);
           return wasmModule.Search.linearSearch(jsArray, target, comparator);
         }
@@ -96,29 +169,25 @@ export class Search {
       }
     }
 
-    return callWasmStaticMethod(
-      "Search",
-      "linearSearch",
-      [arr, target, comparator],
-      () => {
-        const compare = comparator || ((a, b) => (Object.is(a, b) ? 0 : 1));
+    const compare = comparator || ((a, b) => (Object.is(a, b) ? 0 : 1));
 
-        for (let i = 0; i < arr.length; i++) {
-          if (compare(arr[i], target) === 0) {
-            return i;
-          }
-        }
-
-        return -1;
+    for (let i = 0; i < arr.length; i++) {
+      if (compare(arr[i], target) === 0) {
+        return i;
       }
-    );
+    }
+
+    return -1;
   }
 
+  /**
+   * Find index by predicate
+   */
   static findIndex<T>(arr: T[], predicate: Predicate<T>): number {
-    if (Search.useWasm) {
+    if (Search._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (typeof wasmModule.Search?.findIndex === "function") {
+        if (wasmModule?.Search?.findIndex) {
           const jsArray = new Array(...arr);
           return wasmModule.Search.findIndex(jsArray, predicate);
         }
@@ -127,22 +196,23 @@ export class Search {
       }
     }
 
-    return callWasmStaticMethod("Search", "findIndex", [arr, predicate], () => {
-      for (let i = 0; i < arr.length; i++) {
-        if (predicate(arr[i])) {
-          return i;
-        }
+    for (let i = 0; i < arr.length; i++) {
+      if (predicate(arr[i])) {
+        return i;
       }
+    }
 
-      return -1;
-    });
+    return -1;
   }
 
+  /**
+   * Find all elements matching predicate
+   */
   static findAll<T>(arr: T[], predicate: Predicate<T>): T[] {
-    if (Search.useWasm) {
+    if (Search._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (typeof wasmModule.Search?.findAll === "function") {
+        if (wasmModule?.Search?.findAll) {
           const jsArray = new Array(...arr);
           const result = wasmModule.Search.findAll(jsArray, predicate);
           return Array.from(result);
@@ -152,19 +222,20 @@ export class Search {
       }
     }
 
-    return callWasmStaticMethod("Search", "findAll", [arr, predicate], () => {
-      const result: T[] = [];
+    const result: T[] = [];
 
-      for (let i = 0; i < arr.length; i++) {
-        if (predicate(arr[i])) {
-          result.push(arr[i]);
-        }
+    for (let i = 0; i < arr.length; i++) {
+      if (predicate(arr[i])) {
+        result.push(arr[i]);
       }
+    }
 
-      return result;
-    });
+    return result;
   }
 
+  /**
+   * KMP string search algorithm
+   */
   static kmpSearch(haystack: string, needle: string): number {
     if (needle.length === 0) {
       return 0;
@@ -174,10 +245,10 @@ export class Search {
       return -1;
     }
 
-    if (Search.useWasm) {
+    if (Search._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (typeof wasmModule.Search?.kmpSearch === "function") {
+        if (wasmModule?.Search?.kmpSearch) {
           return wasmModule.Search.kmpSearch(haystack, needle);
         }
       } catch (error) {
@@ -185,37 +256,33 @@ export class Search {
       }
     }
 
-    return callWasmStaticMethod(
-      "Search",
-      "kmpSearch",
-      [haystack, needle],
-      () => {
-        const lps = Search.computeLPS(needle);
-        let i = 0;
-        let j = 0;
+    const lps = Search.computeLPS(needle);
+    let i = 0;
+    let j = 0;
 
-        while (i < haystack.length) {
-          if (needle[j] === haystack[i]) {
-            i++;
-            j++;
-          }
-
-          if (j === needle.length) {
-            return i - j;
-          } else if (i < haystack.length && needle[j] !== haystack[i]) {
-            if (j !== 0) {
-              j = lps[j - 1];
-            } else {
-              i++;
-            }
-          }
-        }
-
-        return -1;
+    while (i < haystack.length) {
+      if (needle[j] === haystack[i]) {
+        i++;
+        j++;
       }
-    );
+
+      if (j === needle.length) {
+        return i - j;
+      } else if (i < haystack.length && needle[j] !== haystack[i]) {
+        if (j !== 0) {
+          j = lps[j - 1];
+        } else {
+          i++;
+        }
+      }
+    }
+
+    return -1;
   }
 
+  /**
+   * Compute Longest Proper Prefix which is also Suffix (LPS)
+   */
   private static computeLPS(pattern: string): number[] {
     const lps = new Array(pattern.length).fill(0);
     let len = 0;
@@ -237,21 +304,6 @@ export class Search {
     }
 
     return lps;
-  }
-
-  private static defaultCompare<T>(a: T, b: T): number {
-    if (a === b) return 0;
-
-    const aVal = (a as any).valueOf();
-    const bVal = (b as any).valueOf();
-
-    if (aVal === undefined && bVal === undefined) return 0;
-    if (aVal === undefined) return 1;
-    if (bVal === undefined) return -1;
-
-    if (aVal < bVal) return -1;
-    if (aVal > bVal) return 1;
-    return 0;
   }
 }
 

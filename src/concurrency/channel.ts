@@ -1,15 +1,72 @@
-import { Str } from "../types/string";
-import { AppError } from "../core/error";
-import { Option } from "../core/option";
-import { u32 } from "../types/primitives";
-import { getWasmModule, isWasmInitialized } from "../initWasm/init";
+/**
+ * Channel type implementation for MiLost
+ *
+ * Provides a type-safe, asynchronous channel communication system with
+ * WebAssembly acceleration when available.
+ */
+import { AppError } from "../core/index.js";
+import {
+  registerModule,
+  WasmModule,
+  getWasmModule,
+} from "../initWasm/registry.js";
+import { u32 } from "../types/index.js";
+import { Str } from "../types/string.js";
+import { Option } from "../core/option.js";
 
+/**
+ * Module definition for Channel WASM implementation
+ */
+const channelModule: WasmModule = {
+  name: "Channel",
+
+  initialize(wasmModule: any) {
+    console.log("Initializing Channel module with WASM...");
+
+    if (typeof wasmModule.Channel === "object") {
+      console.log("Found Channel module in WASM");
+
+      const methods = [
+        "createChannel",
+        "send",
+        "trySend",
+        "receive",
+        "tryReceive",
+        "close",
+      ];
+
+      methods.forEach((method) => {
+        if (typeof wasmModule.Channel[method] === "function") {
+          console.log(`Found method: Channel.${method}`);
+        } else {
+          console.warn(`Missing method: Channel.${method}`);
+        }
+      });
+    } else {
+      console.warn("Channel module not found in WASM module");
+      throw new Error("Required WASM functions not found for Channel module");
+    }
+  },
+
+  fallback() {
+    console.log("Using JavaScript fallback for Channel module");
+  },
+};
+
+registerModule(channelModule);
+
+/**
+ * Custom error for channel-related operations
+ */
 export class ChannelError extends AppError {
   constructor(message: Str) {
     super(message);
   }
 }
 
+/**
+ * Sender half of a channel
+ */
 export class Sender<T> {
   private _channel: Channel<T>;
   private _inner: any;
@@ -19,15 +76,28 @@ export class Sender<T> {
 
   constructor(channel: Channel<T>, wasmSender?: any) {
     this._channel = channel;
-    this._useWasm = isWasmInitialized() && !!wasmSender;
+    this._useWasm = false;
 
-    if (this._useWasm) {
-      this._inner = wasmSender;
+    const wasmModule = getWasmModule();
+    if (wasmModule?.Channel && wasmSender) {
+      try {
+        this._inner = wasmSender;
+        this._useWasm = true;
+      } catch (err) {
+        console.warn(
+          `WASM Sender creation failed, using JS implementation: ${err}`
+        );
+        this._useWasm = false;
+      }
     }
   }
 
+  /**
+   * Send a value through the channel
+   * @param value The value to send
+   */
   async send(value: T): Promise<void> {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         await this._inner.send(value);
         return;
@@ -48,8 +118,13 @@ export class Sender<T> {
     await this._channel.send(value);
   }
 
+  /**
+   * Try to send a value without blocking
+   * @param value The value to send
+   * @returns True if send was successful
+   */
   async trySend(value: T): Promise<boolean> {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         return await this._inner.trySend(value);
       } catch (err) {
@@ -60,8 +135,11 @@ export class Sender<T> {
     return this._channel.trySend(value);
   }
 
+  /**
+   * Close the channel
+   */
   close(): void {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         this._inner.close();
         return;
@@ -73,8 +151,11 @@ export class Sender<T> {
     this._channel.close();
   }
 
+  /**
+   * Check if the channel is closed
+   */
   get closed(): boolean {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         return this._inner.closed;
       } catch (err) {
@@ -87,15 +168,25 @@ export class Sender<T> {
     return this._channel.closed;
   }
 
+  /**
+   * Convert to string representation
+   * @returns A Str representation of the Sender
+   */
   toString(): Str {
     return Str.fromRaw(`[Sender ${this.closed ? "closed" : "active"}]`);
   }
 
+  /**
+   * Get the Symbol.toStringTag
+   */
   get [Symbol.toStringTag](): Str {
     return Str.fromRaw(Sender._type);
   }
 }
 
+/**
+ * Receiver half of a channel
+ */
 export class Receiver<T> {
   private _channel: Channel<T>;
   private _inner: any;
@@ -105,15 +196,28 @@ export class Receiver<T> {
 
   constructor(channel: Channel<T>, wasmReceiver?: any) {
     this._channel = channel;
-    this._useWasm = isWasmInitialized() && !!wasmReceiver;
+    this._useWasm = false;
 
-    if (this._useWasm) {
-      this._inner = wasmReceiver;
+    const wasmModule = getWasmModule();
+    if (wasmModule?.Channel && wasmReceiver) {
+      try {
+        this._inner = wasmReceiver;
+        this._useWasm = true;
+      } catch (err) {
+        console.warn(
+          `WASM Receiver creation failed, using JS implementation: ${err}`
+        );
+        this._useWasm = false;
+      }
     }
   }
 
+  /**
+   * Receive a value from the channel
+   * @returns An Option containing the received value
+   */
   async receive(): Promise<Option<T>> {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         const result = await this._inner.receive();
 
@@ -134,8 +238,12 @@ export class Receiver<T> {
     return this._channel.receive();
   }
 
+  /**
+   * Try to receive a value without blocking
+   * @returns An Option containing the received value
+   */
   tryReceive(): Option<T> {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         const result = this._inner.tryReceive();
         if (result && typeof result === "object" && "isSome" in result) {
@@ -152,8 +260,11 @@ export class Receiver<T> {
     return this._channel.tryReceive();
   }
 
+  /**
+   * Check if the channel is closed
+   */
   get closed(): boolean {
-    if (this._useWasm) {
+    if (this._useWasm && this._inner) {
       try {
         return this._inner.closed;
       } catch (err) {
@@ -166,15 +277,25 @@ export class Receiver<T> {
     return this._channel.closed;
   }
 
+  /**
+   * Convert to string representation
+   * @returns A Str representation of the Receiver
+   */
   toString(): Str {
     return Str.fromRaw(`[Receiver ${this.closed ? "closed" : "active"}]`);
   }
 
+  /**
+   * Get the Symbol.toStringTag
+   */
   get [Symbol.toStringTag](): Str {
     return Str.fromRaw(Receiver._type);
   }
 }
 
+/**
+ * Internal channel implementation
+ */
 class Channel<T> {
   private _queue: T[] = [];
   private _closed: boolean = false;
@@ -187,21 +308,33 @@ class Channel<T> {
 
   static readonly _type = "Channel";
 
+  /**
+   * Create a new Channel
+   * @param capacity Maximum number of items in the channel
+   * @param wasmChannel Optional WASM channel implementation
+   */
   constructor(capacity: u32 = u32(Infinity), wasmChannel?: any) {
     this._capacity = capacity as unknown as number;
-    this._useWasm = isWasmInitialized() && !!wasmChannel;
+    this._useWasm = false;
 
-    if (this._useWasm) {
-      this._inner = wasmChannel;
+    const wasmModule = getWasmModule();
+    if (wasmModule?.Channel && wasmChannel) {
+      try {
+        this._inner = wasmChannel;
+        this._useWasm = true;
+      } catch (err) {
+        console.warn(
+          `WASM Channel creation failed, using JS implementation: ${err}`
+        );
+        this._useWasm = false;
+      }
     }
   }
 
-  static async init(): Promise<void> {
-    if (!isWasmInitialized()) {
-      await import("../initWasm/init").then((mod) => mod.initWasm());
-    }
-  }
-
+  /**
+   * Send a value through the channel
+   * @param value The value to send
+   */
   async send(value: T): Promise<void> {
     if (this._closed) {
       throw new ChannelError(Str.fromRaw("Cannot send on closed channel"));
@@ -248,6 +381,11 @@ class Channel<T> {
     }
   }
 
+  /**
+   * Try to send a value without blocking
+   * @param value The value to send
+   * @returns True if send was successful
+   */
   trySend(value: T): boolean {
     if (this._closed || this._queue.length >= this._capacity) {
       return false;
@@ -272,6 +410,10 @@ class Channel<T> {
     }
   }
 
+  /**
+   * Receive a value from the channel
+   * @returns An Option containing the received value
+   */
   async receive(): Promise<Option<T>> {
     if (this._queue.length === 0) {
       if (this._closed) {
@@ -306,6 +448,10 @@ class Channel<T> {
     }
   }
 
+  /**
+   * Try to receive a value without blocking
+   * @returns An Option containing the received value
+   */
   tryReceive(): Option<T> {
     if (this._queue.length === 0) {
       return Option.None();
@@ -334,6 +480,9 @@ class Channel<T> {
     }
   }
 
+  /**
+   * Close the channel
+   */
   close(): void {
     this._closed = true;
 
@@ -355,28 +504,41 @@ class Channel<T> {
     }
   }
 
+  /**
+   * Check if the channel is closed
+   */
   get closed(): boolean {
     return this._closed;
   }
 
+  /**
+   * Convert to string representation
+   * @returns A Str representation of the Channel
+   */
   toString(): Str {
     return Str.fromRaw(`[Channel ${this._closed ? "closed" : "active"}]`);
   }
 
+  /**
+   * Get the Symbol.toStringTag
+   */
   get [Symbol.toStringTag](): Str {
     return Str.fromRaw(Channel._type);
   }
 }
 
+/**
+ * Create a new channel
+ * @param capacity Maximum number of items in the channel
+ * @returns A tuple of [Sender, Receiver]
+ */
 export async function createChannel<T>(
   capacity: u32 = u32(Infinity)
 ): Promise<[Sender<T>, Receiver<T>]> {
-  await Channel.init();
-
-  if (isWasmInitialized()) {
+  const wasmModule = getWasmModule();
+  if (wasmModule?.Channel?.createChannel) {
     try {
-      const wasmModule = getWasmModule();
-      const result = wasmModule.createChannel(capacity as any);
+      const result = wasmModule.Channel.createChannel(capacity as any);
 
       if (Array.isArray(result) && result.length === 2) {
         const wasmSender = result[0];
