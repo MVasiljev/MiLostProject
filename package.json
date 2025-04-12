@@ -26,7 +26,7 @@
   },
   "include": [
     "src",
-    "wasm-shim.d.ts"
+    "wasm"
   ],
   "keywords": [
     "milost",
