@@ -8,9 +8,9 @@
   "version": "0.1.0",
   "license": "MIT",
   "files": [
-    "milost_wasm_bg.wasm",
-    "milost_wasm.js",
-    "milost_wasm.d.ts",
+    "dist/milost_wasm_bg.wasm",
+    "dist/milost_wasm.js",
+    "dist/milost_wasm.d.ts",
     "dist/wasm/"
   ],
   "main": "milost_wasm.js",

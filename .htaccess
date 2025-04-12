@@ -1,22 +1,13 @@
-AddType application/javascript .js .mjs
+# Serve WebAssembly files with proper MIME type
 AddType application/wasm .wasm
+AddType application/javascript .js .mjs
 
+# CORS headers
 <IfModule mod_headers.c>
     Header set Access-Control-Allow-Origin "*"
     Header set X-Content-Type-Options "nosniff"
-</IfModule>
-
-<IfModule mod_expires.c>
-    ExpiresActive on
-    ExpiresDefault "access plus 1 month"
-    
-    ExpiresByType application/wasm "access plus 1 year"
-    ExpiresByType application/javascript "access plus 1 month"
-</IfModule>
-
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME}.js -f
-    RewriteRule ^(.*)$ $1.js [L]
+    # Ensure WASM files are served with correct Content-Type
+    <FilesMatch "\.wasm$">
+        Header set Content-Type "application/wasm"
+    </FilesMatch>
 </IfModule>

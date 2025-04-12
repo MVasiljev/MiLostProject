@@ -57,14 +57,17 @@
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
+    "./wasm/*": "./dist/wasm/*",
     "./wasm": {
       "import": "./dist/wasm/milost_wasm.js",
       "types": "./dist/wasm/milost_wasm.d.ts"
-    },
-    "./wasm/*": "./dist/wasm/*"
+    }
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/MVasiljev/MiLostProject"
+  },
+  "wasmInfo": {
+    "notes": "WebAssembly binary files need proper MIME types (application/wasm) to be served correctly."
   }
 }

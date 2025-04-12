@@ -27,9 +27,14 @@ async function loadWasmRuntime(): Promise<{
   initWasm: WasmInitFn;
   wasmUrl: string;
 }> {
-  const initWasm = (await import("milost/wasm/milost_wasm.js")).default;
-  // @ts-expect-error: dynamically available after build
-  const wasmUrl = (await import("milost/wasm/milost_wasm_bg.wasm?url")).default;
+  const wasmJsPath =
+    process.env.NODE_ENV === "production"
+      ? "/dist/wasm/milost_wasm.js"
+      : "/wasm/milost_wasm.js";
+  const initWasm = (await import(wasmJsPath)).default;
+  const isProduction = process.env.NODE_ENV === "production";
+  const basePath = isProduction ? "/dist/wasm" : "/wasm";
+  const wasmUrl = `${basePath}/milost_wasm_bg.wasm`;
 
   return { initWasm, wasmUrl };
 }

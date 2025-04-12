@@ -1,23 +1,33 @@
 #!/bin/bash
 
-if ! command -v wasm-pack &> /dev/null; then
-    echo "wasm-pack not found. Installing..."
-    cargo install wasm-pack
+set -e
+
+echo "🔧 Building MiLost WASM package..."
+cd "$(dirname "$0")"
+
+# Build the WASM with wasm-pack
+wasm-pack build --target web --release --out-dir ./pkg
+
+# Check that the WASM binary exists and is valid
+WASM_FILE="./pkg/milost_wasm_bg.wasm"
+
+if [ ! -f "$WASM_FILE" ]; then
+  echo "❌ Error: WASM file not found at $WASM_FILE"
+  exit 1
 fi
 
-echo "Building WASM package..."
-wasm-pack build --target web
+# Check magic number (should start with 00 61 73 6D = '\0asm')
+MAGIC_BYTES=$(xxd -p -l 4 "$WASM_FILE")
+if [[ "$MAGIC_BYTES" != "0061736d" ]]; then
+  echo "❌ Invalid WASM binary. Magic bytes: $MAGIC_BYTES"
+  exit 1
+fi
 
-PROJECT_ROOT=$(cd ../.. && pwd)
+echo "✅ Valid WASM binary confirmed"
 
-mkdir -p "$PROJECT_ROOT/example/dist/pkg"
+# Copy files to dist
+DIST_DIR="../../../dist/wasm"
+mkdir -p "$DIST_DIR"
+cp -r ./pkg/* "$DIST_DIR"
 
-echo "Copying WASM files to dist..."
-cp pkg/milost_wasm.js "$PROJECT_ROOT/example/dist/pkg/"
-cp pkg/milost_wasm_bg.wasm "$PROJECT_ROOT/example/dist/pkg/"
-cp pkg/milost_wasm.d.ts "$PROJECT_ROOT/example/dist/pkg/" 2>/dev/null
-
-echo "WASM files copied to example/dist/pkg:"
-ls -l "$PROJECT_ROOT/example/dist/pkg/"
-
-echo "WASM build complete!"
+echo "📦 Copied WASM build artifacts to $DIST_DIR"
