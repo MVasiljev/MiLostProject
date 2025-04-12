@@ -16,5 +16,9 @@
   "types": "milost_wasm.d.ts",
   "sideEffects": [
     "./snippets/*"
+  ],
+  "include": [
+    "src",
+    "wasm-shim.d.ts"
   ]
 }

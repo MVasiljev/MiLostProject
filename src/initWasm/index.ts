@@ -22,4 +22,15 @@ export {
 
 export { configureMiLostForDevelopment, getMiLostConfig } from "./milostDev.js";
 
+export {
+  configureMiLostForFramework,
+  getFrameworkWasmPath,
+  setupMiLostFramework,
+  MiLostFrameworkOptions,
+} from "./milostFramework.js";
+
+export { isWasmSupported } from "./init.js";
+
 export { initWasm as default } from "./registry.js";
+
+export type { MiLostConfig } from "./types.js";

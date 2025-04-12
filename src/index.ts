@@ -287,6 +287,8 @@ export {
   registerModule,
   configureMiLostForDevelopment,
   getMiLostConfig,
+  configureMiLostForFramework,
+  setupMiLostFramework,
 } from "./initWasm/index.js";
 
 export {

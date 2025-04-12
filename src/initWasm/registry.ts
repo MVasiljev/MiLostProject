@@ -7,6 +7,7 @@
  */
 
 import { loadWasmModule } from "./init.js";
+import "./types";
 
 /**
  * Interface for modules that need WASM initialization
@@ -199,15 +200,4 @@ function fallbackAllModules(): void {
     }
   });
   initializedModules = [];
-}
-
-declare global {
-  interface Window {
-    __MILOST_DEBUG__?: boolean;
-    __MILOST_CONFIG__?: {
-      isDevelopment?: boolean;
-      wasmBasePath?: string;
-      debug?: boolean;
-    };
-  }
 }

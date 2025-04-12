@@ -1,6 +1,6 @@
 {
   "name": "milost",
-  "version": "1.0.31",
+  "version": "1.0.33",
   "description": "A Rust-like TypeScript library with WebAssembly optimizations",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,7 +11,10 @@
     "dist/wasm/milost_wasm.js",
     "dist/wasm/milost_wasm.d.ts",
     "dist/wasm/milost_wasm_bg.wasm",
-    "dist/wasm/milost_wasm_bg.wasm.d.ts"
+    "dist/wasm/milost_wasm_bg.wasm.d.ts",
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "dist/**/*.wasm"
   ],
   "scripts": {
     "build:standalone": "bash scripts/build-standalone.sh",
@@ -21,6 +24,10 @@
     "build": "node scripts/build.js --all",
     "publish": "npm publish --access=public"
   },
+  "include": [
+    "src",
+    "wasm-shim.d.ts"
+  ],
   "keywords": [
     "milost",
     "react",

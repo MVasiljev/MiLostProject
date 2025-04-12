@@ -1,197 +1,214 @@
 /**
- * Core WebAssembly module loader for MiLost
- * This module handles the low-level loading of the WASM module
- * from various possible paths.
+ * WebAssembly initialization for MiLost
+ *
+ * This module handles loading and initializing the WebAssembly module,
+ * handling various browser compatibility issues and MIME type problems.
  */
 
-let wasmModule: any = null;
-let initialized = false;
-let loadPromise: Promise<any> | null = null;
+import { getFrameworkWasmPath } from "./milostFramework.js";
+import "./types";
 
-const isDevelopment =
-  process.env.NODE_ENV === "development" ||
-  (typeof window !== "undefined" && window.location?.hostname === "localhost");
-
-const possiblePaths = [
-  "./wasm/milost_wasm.js",
-  "./milost_wasm.js",
-  "../wasm/milost_wasm.js",
-  "../milost_wasm.js",
-  "/wasm/milost_wasm.js",
-  "/milost_wasm.js",
-  "milost/dist/initWasm/wasm/milost_wasm.js",
-  "milost/dist/wasm/milost_wasm.js",
-  "node_modules/milost/dist/initWasm/wasm/milost_wasm.js",
-];
-
-const developmentPaths = [
-  "./node_modules/milost/dist/wasm/milost_wasm.js",
-  "../../milost/dist/wasm/milost_wasm.js",
-  "../../node_modules/milost/dist/wasm/milost_wasm.js",
-  "../../../milost/dist/wasm/milost_wasm.js",
-];
-
-function getBaseUrl(): string {
-  if (typeof document !== "undefined") {
-    const scripts = document.getElementsByTagName("script");
-    for (let i = 0; i < scripts.length; i++) {
-      const src = scripts[i].src;
-      if (src && src.includes("milost")) {
-        const lastSlash = src.lastIndexOf("/");
-        if (lastSlash >= 0) {
-          return src.substring(0, lastSlash + 1);
-        }
-      }
-    }
-  }
-  return "";
+/**
+ * Checks if a path is a data URI
+ * @param {string} uri The URI to check
+ * @returns {boolean} True if the URI is a data URI
+ */
+function isDataURI(uri: string): boolean {
+  return String(uri).startsWith("data:");
 }
 
 /**
- * Loads the WebAssembly module from one of the possible paths.
- * This is an internal function used by the registry.
- *
- * @param customPath Optional custom path to try first
- * @returns A Promise that resolves to the loaded WASM module
+ * Fetch WebAssembly binary as an ArrayBuffer, handling MIME type issues
+ * @param {string} url The URL to fetch
+ * @returns {Promise<ArrayBuffer>} The WebAssembly binary as an ArrayBuffer
  */
-export async function loadWasmModule(customPath?: string): Promise<any> {
-  if (initialized && wasmModule) return wasmModule;
-  if (loadPromise) return loadPromise;
+async function fetchWasmBinary(url: string): Promise<ArrayBuffer> {
+  try {
+    const response = await fetch(url, {
+      credentials: "same-origin",
+      headers: {
+        Accept: "application/wasm,application/octet-stream,*/*",
+      },
+    });
 
-  console.log("Loading core WASM module...");
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
-  const config =
-    typeof window !== "undefined" ? window.__MILOST_CONFIG__ : undefined;
-  const isDev =
-    config?.isDevelopment ||
-    process.env.NODE_ENV === "development" ||
-    (typeof window !== "undefined" &&
-      window.location?.hostname === "localhost");
+    return await response.arrayBuffer();
+  } catch (error) {
+    console.error(`Failed to fetch WebAssembly binary from ${url}:`, error);
+    throw error;
+  }
+}
 
-  let allPaths: string[] = [];
-
-  if (customPath) {
-    allPaths.push(customPath);
+/**
+ * Determine the WebAssembly file path based on configuration
+ *
+ * This preserves the existing path configuration logic while adding
+ * additional fallbacks and debug information.
+ *
+ * @param {string | undefined} wasmPath Optional custom path to the WASM file
+ * @returns {string} The resolved path to the WASM file
+ */
+function resolveWasmPath(wasmPath?: string): string {
+  if (wasmPath) {
+    return wasmPath;
   }
 
-  if (config?.wasmBasePath) {
-    allPaths.push(`${config.wasmBasePath}/milost_wasm.js`);
-    allPaths.push(`${config.wasmBasePath}/wasm/milost_wasm.js`);
+  const frameworkPath = getFrameworkWasmPath();
+  if (frameworkPath) {
+    return frameworkPath;
   }
 
-  const baseUrl = getBaseUrl();
-  if (baseUrl) {
-    allPaths.push(`${baseUrl}wasm/milost_wasm.js`);
-    allPaths.push(`${baseUrl}milost_wasm.js`);
+  if (typeof window !== "undefined" && window.__MILOST_CONFIG__) {
+    const config = window.__MILOST_CONFIG__;
+
+    if (config.wasmBasePath) {
+      return `${config.wasmBasePath}/milost_wasm_bg.wasm`;
+    }
+
+    if (config.isDevelopment) {
+      return "/dist/wasm/milost_wasm_bg.wasm";
+    }
   }
 
-  allPaths = [
-    ...allPaths,
-    ...possiblePaths,
-    ...(isDev ? developmentPaths : []),
-  ];
+  return "./milost_wasm_bg.wasm";
+}
 
-  console.log("Environment:", isDev ? "Development" : "Production");
-  console.log("Trying paths:", allPaths);
+/**
+ * Instantiate WebAssembly module from ArrayBuffer
+ * @param {ArrayBuffer} wasmBinary The WebAssembly binary
+ * @param {Record<string, any>} imports The imports object for the module
+ * @returns {Promise<WebAssembly.Instance>} The instantiated WebAssembly module
+ */
+async function instantiateArrayBuffer(
+  wasmBinary: ArrayBuffer,
+  imports: Record<string, any>
+): Promise<WebAssembly.Instance> {
+  try {
+    const source = new Uint8Array(wasmBinary);
+    if (
+      source.length < 8 ||
+      source[0] !== 0x00 ||
+      source[1] !== 0x61 ||
+      source[2] !== 0x73 ||
+      source[3] !== 0x6d
+    ) {
+      throw new Error("Invalid WebAssembly binary: magic number not found");
+    }
 
-  loadPromise = (async () => {
-    let lastError: Error | null = null;
+    const result = await WebAssembly.instantiate(source, imports);
+    return result.instance;
+  } catch (error) {
+    console.error("Failed to instantiate WebAssembly module:", error);
+    throw error;
+  }
+}
 
-    for (const path of allPaths) {
+/**
+ * Load the WebAssembly module
+ * @param {string | undefined} wasmPath Optional custom path to the wasm file
+ * @returns {Promise<any>} The WebAssembly module instance
+ */
+export async function loadWasmModule(wasmPath?: string): Promise<any> {
+  const resolvedPath = resolveWasmPath(wasmPath);
+  const debug =
+    typeof window !== "undefined" &&
+    (window.__MILOST_DEBUG__ ||
+      (window.__MILOST_CONFIG__ && window.__MILOST_CONFIG__.debug));
+
+  if (debug) {
+    console.log(`Loading WebAssembly module from: ${resolvedPath}`);
+  }
+
+  try {
+    const imports: Record<string, Record<string, any>> = {
+      env: {},
+      wasi_snapshot_preview1: {},
+    };
+
+    if (
+      typeof WebAssembly.instantiateStreaming === "function" &&
+      !isDataURI(resolvedPath)
+    ) {
       try {
-        console.log(`Attempting to load WASM from: ${path}`);
-        let wasm;
-
-        try {
-          wasm = await import(path);
-        } catch (importError) {
-          console.warn(`Dynamic import failed for ${path}:`, importError);
-
-          if (typeof fetch === "function" && typeof WebAssembly === "object") {
-            try {
-              const wasmPath = path.replace(".js", ".wasm");
-              console.log(`Trying direct WebAssembly fetch from: ${wasmPath}`);
-
-              const response = await fetch(wasmPath);
-              if (!response.ok)
-                throw new Error(`HTTP error! status: ${response.status}`);
-
-              const wasmBytes = await response.arrayBuffer();
-              const wasmResult = await WebAssembly.instantiate(wasmBytes);
-
-              wasm = wasmResult.instance.exports;
-              console.log(
-                `Successfully loaded WASM via fetch from: ${wasmPath}`
-              );
-            } catch (fetchError) {
-              console.warn(`WebAssembly fetch failed for ${path}:`, fetchError);
-              throw fetchError;
-            }
-          } else {
-            throw importError;
-          }
+        if (debug) {
+          console.log("Using WebAssembly.instantiateStreaming");
         }
 
-        if (wasm && (wasm.default || wasm.__esModule)) {
-          console.log(`Found WASM module at: ${path}`);
+        const response = await fetch(resolvedPath, {
+          credentials: "same-origin",
+          headers: {
+            Accept: "application/wasm,application/octet-stream,*/*",
+          },
+        });
 
-          if (typeof wasm.default === "function") {
-            console.log("Initializing module with default function");
-            await wasm.default();
-          } else if (typeof wasm.initWasm === "function") {
-            console.log("Initializing module with initWasm function");
-            await wasm.initWasm();
-          } else {
-            console.log(
-              "No initialization function found, assuming module is self-initializing"
+        if (!response.ok) {
+          if (debug) {
+            console.warn(
+              `Failed to fetch WebAssembly module: ${response.status} ${response.statusText}`
+            );
+          }
+          throw new Error(
+            `Failed to fetch WebAssembly module: ${response.status}`
+          );
+        }
+
+        const contentType = response.headers.get("Content-Type");
+        if (debug) {
+          console.log(`Received Content-Type: ${contentType}`);
+        }
+
+        if (
+          !contentType ||
+          (!contentType.includes("application/wasm") &&
+            !contentType.includes("application/octet-stream"))
+        ) {
+          if (debug) {
+            console.warn(
+              "Incorrect MIME type for WebAssembly, falling back to ArrayBuffer instantiation"
             );
           }
 
-          wasmModule = wasm;
-          initialized = true;
-
-          console.log("WASM module loaded. Available exports:");
-          const exports = Object.keys(wasm);
-          exports.slice(0, 20).forEach((name) => console.log(`- ${name}`));
-
-          if (exports.length > 20) {
-            console.log(`...and ${exports.length - 20} more exports`);
-          }
-
-          return wasm;
-        } else if (wasm) {
-          console.log(`Found direct WASM exports at: ${path}`);
-          wasmModule = wasm;
-          initialized = true;
-
-          console.log("WASM module loaded. Available exports:");
-          const exports = Object.keys(wasm);
-          exports.slice(0, 20).forEach((name) => console.log(`- ${name}`));
-
-          if (exports.length > 20) {
-            console.log(`...and ${exports.length - 20} more exports`);
-          }
-
-          return wasm;
-        } else {
-          console.warn(
-            `Module found at ${path}, but it doesn't have expected structure`
-          );
+          const responseClone = response.clone();
+          const wasmBinary = await responseClone.arrayBuffer();
+          return await instantiateArrayBuffer(wasmBinary, imports);
         }
+
+        const result = await WebAssembly.instantiateStreaming(
+          response,
+          imports
+        );
+        return result.instance;
       } catch (error) {
-        console.warn(`Failed to load WASM from path: ${path}`);
-        lastError = error as Error;
+        if (debug) {
+          console.warn("WebAssembly streaming instantiation failed:", error);
+          console.log("Falling back to ArrayBuffer instantiation");
+        }
       }
     }
 
-    const errorMsg = `Failed to load WASM module. Tried paths: ${allPaths.join(
-      ", "
-    )}. Last error: ${lastError?.message || "Unknown error"}`;
-    console.error(errorMsg);
+    if (debug) {
+      console.log("Using ArrayBuffer instantiation");
+    }
 
-    loadPromise = null;
-    throw new Error(errorMsg);
-  })();
+    const wasmBinary = await fetchWasmBinary(resolvedPath);
+    return await instantiateArrayBuffer(wasmBinary, imports);
+  } catch (error) {
+    console.error("Failed to load WebAssembly module:", error);
+    return null;
+  }
+}
 
-  return loadPromise;
+/**
+ * Check if WebAssembly is supported in the current environment
+ * @returns {boolean} True if WebAssembly is supported
+ */
+export function isWasmSupported(): boolean {
+  return (
+    typeof WebAssembly === "object" &&
+    typeof WebAssembly.instantiate === "function" &&
+    typeof WebAssembly.compile === "function"
+  );
 }

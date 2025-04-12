@@ -4,16 +4,7 @@
  * This file contains utilities to help with MiLost development and debugging.
  */
 
-declare global {
-  interface Window {
-    __MILOST_DEBUG__?: boolean;
-    __MILOST_CONFIG__?: {
-      isDevelopment?: boolean;
-      debug?: boolean;
-      wasmBasePath?: string;
-    };
-  }
-}
+import "./types";
 
 /**
  * Configure MiLost for development environment
