@@ -1,5 +1,8 @@
-import { initWasm } from "./initWasm/index.js";
-
+import {
+  initWasm as lowLevelInitWasm,
+  initWasm as initializeMiLostModules,
+  getInitializationStatus,
+} from "./initWasm/index.js";
 export { AsyncUtils, async } from "./async/index.js";
 
 export {
@@ -303,6 +306,11 @@ export { Search } from "./utils/index.js";
 export { Compression } from "./utils/index.js";
 export { Crypto } from "./utils/index.js";
 
-initWasm().catch((err) => {
-  console.warn("MiLost WASM initialization failed, using JS fallbacks:", err);
-});
+lowLevelInitWasm()
+  .then(() => initializeMiLostModules())
+  .then(() => {
+    console.log("✅ MiLost fully initialized");
+  })
+  .catch((err) => {
+    console.warn("MiLost WASM initialization failed, using JS fallbacks:", err);
+  });

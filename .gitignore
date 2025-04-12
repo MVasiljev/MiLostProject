@@ -10,6 +10,7 @@
 .project
 
 # Build artifacts
+/package
 /dist/
 /build/
 /example/

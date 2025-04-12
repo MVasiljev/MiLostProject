@@ -10,13 +10,17 @@
   "files": [
     "milost_wasm_bg.wasm",
     "milost_wasm.js",
-    "milost_wasm.d.ts"
+    "milost_wasm.d.ts",
+    "dist/wasm/"
   ],
   "main": "milost_wasm.js",
   "types": "milost_wasm.d.ts",
   "sideEffects": [
     "./snippets/*"
   ],
+  "exports": {
+    "./wasm/*": "./dist/wasm/*"
+  },
   "include": [
     "src",
     "wasm-shim.d.ts"

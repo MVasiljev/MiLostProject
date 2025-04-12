@@ -21,13 +21,12 @@ let initialized = false;
 
 declare const __webpack_public_path__: string | undefined;
 
-type WasmInitFn = (input?: RequestInfo | URL) => Promise<any>;
+type WasmInitFn = (input?: any) => Promise<any>;
 
 async function loadWasmRuntime(): Promise<{
   initWasm: WasmInitFn;
   wasmUrl: string;
 }> {
-  // Dynamically import WASM JS glue and binary URL
   const initWasm = (await import("milost/wasm/milost_wasm.js")).default;
   // @ts-expect-error: dynamically available after build
   const wasmUrl = (await import("milost/wasm/milost_wasm_bg.wasm?url")).default;
@@ -142,7 +141,10 @@ export async function setupMiLostFramework(
       console.debug("Resolved wasmUrl:", wasmUrl);
     }
 
-    await initWasm(wasmUrl);
+    // ✅ Safe init: always buffer-based
+    const response = await fetch(wasmUrl);
+    const buffer = await response.arrayBuffer();
+    await initWasm(buffer);
 
     const success = await initializeWasm({
       wasmPath: wasmUrl,
