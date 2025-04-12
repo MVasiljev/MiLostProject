@@ -32,6 +32,7 @@ const modules: WasmModule[] = [];
 let isInitialized = false;
 let wasmModuleInstance: any = null;
 let initializedModules: string[] = [];
+let initializationError: Error | null = null;
 
 /**
  * Register a module for initialization
@@ -50,11 +51,13 @@ export function getInitializationStatus(): {
   isInitialized: boolean;
   registeredModules: string[];
   initializedModules: string[];
+  error: Error | null;
 } {
   return {
     isInitialized,
     registeredModules: modules.map((m) => m.name),
     initializedModules,
+    error: initializationError,
   };
 }
 
@@ -80,8 +83,14 @@ export function isWasmInitialized(): boolean {
  * @returns Promise that resolves to true if all modules were initialized successfully
  */
 export async function initWasm(
-  options: { throwOnError?: boolean } = {}
+  options: {
+    throwOnError?: boolean;
+    wasmPath?: string;
+    debug?: boolean;
+  } = {}
 ): Promise<boolean> {
+  const { throwOnError = false, wasmPath, debug = false } = options;
+
   if (isInitialized) {
     console.log("WASM already initialized");
     return true;
@@ -89,8 +98,12 @@ export async function initWasm(
 
   console.log(`Initializing WASM with ${modules.length} registered modules...`);
 
+  if (debug && typeof window !== "undefined") {
+    window.__MILOST_DEBUG__ = true;
+  }
+
   try {
-    wasmModuleInstance = await loadWasmModule();
+    wasmModuleInstance = await loadWasmModule(wasmPath);
 
     if (!wasmModuleInstance) {
       console.warn(
@@ -98,18 +111,21 @@ export async function initWasm(
       );
       fallbackAllModules();
       isInitialized = true;
+      initializationError = new Error("Core WASM module loading failed");
       return false;
     }
 
     console.log("Core WASM module loaded successfully");
 
-    console.log("Available WASM exports:");
-    const exports = Object.keys(wasmModuleInstance).slice(0, 20);
-    console.log(exports.join(", "));
-    if (Object.keys(wasmModuleInstance).length > 20) {
-      console.log(
-        `...and ${Object.keys(wasmModuleInstance).length - 20} more exports`
-      );
+    if (debug) {
+      console.log("Available WASM exports:");
+      const exports = Object.keys(wasmModuleInstance).slice(0, 20);
+      console.log(exports.join(", "));
+      if (Object.keys(wasmModuleInstance).length > 20) {
+        console.log(
+          `...and ${Object.keys(wasmModuleInstance).length - 20} more exports`
+        );
+      }
     }
 
     initializedModules = [];
@@ -150,14 +166,16 @@ export async function initWasm(
       );
     }
 
+    initializationError = null;
     return success;
   } catch (error) {
     console.error("Fatal error during WASM initialization:", error);
 
     fallbackAllModules();
     isInitialized = true;
+    initializationError = error as Error;
 
-    if (options.throwOnError) {
+    if (throwOnError) {
       throw error;
     }
 
@@ -181,4 +199,15 @@ function fallbackAllModules(): void {
     }
   });
   initializedModules = [];
+}
+
+declare global {
+  interface Window {
+    __MILOST_DEBUG__?: boolean;
+    __MILOST_CONFIG__?: {
+      isDevelopment?: boolean;
+      wasmBasePath?: string;
+      debug?: boolean;
+    };
+  }
 }

@@ -5,7 +5,6 @@
  * It coordinates the initialization of WASM modules and provides utilities for
  * working with WASM instances.
  */
-
 export {
   initWasm,
   registerModule,
@@ -20,5 +19,7 @@ export {
   callWasmStaticMethod,
   createWasmInstance,
 } from "./lib.js";
+
+export { configureMiLostForDevelopment, getMiLostConfig } from "./milostDev.js";
 
 export { initWasm as default } from "./registry.js";

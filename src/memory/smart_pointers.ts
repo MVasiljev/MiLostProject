@@ -11,6 +11,12 @@ import {
   getWasmModule,
 } from "../initWasm/registry.js";
 
+let useRcWasm = false;
+let useWeakWasm = false;
+let useRefCellWasm = false;
+let useRcRefCellWasm = false;
+let useArcWasm = false;
+
 /**
  * Module definition for smart pointers WASM implementation
  */
@@ -24,7 +30,12 @@ const smartPointersModule: WasmModule = {
     classes.forEach((className) => {
       if (typeof wasmModule[className] === "function") {
         console.log(`Found ${className} constructor in WASM module`);
-        (globalThis as any)[className]._useWasm = true;
+
+        if (className === "Rc") useRcWasm = true;
+        else if (className === "Weak") useWeakWasm = true;
+        else if (className === "RefCell") useRefCellWasm = true;
+        else if (className === "RcRefCell") useRcRefCellWasm = true;
+        else if (className === "Arc") useArcWasm = true;
       } else {
         console.warn(`${className} constructor not found in WASM module`);
       }
@@ -33,7 +44,10 @@ const smartPointersModule: WasmModule = {
     const staticMethods = ["new"];
     classes.forEach((className) => {
       staticMethods.forEach((method) => {
-        if (typeof wasmModule[className][method] === "function") {
+        if (
+          wasmModule[className] &&
+          typeof wasmModule[className][method] === "function"
+        ) {
           console.log(`Found static method: ${className}.${method}`);
         } else {
           console.warn(`Missing static method: ${className}.${method}`);
@@ -58,18 +72,27 @@ const smartPointersModule: WasmModule = {
 
     for (const [className, methods] of Object.entries(instanceMethods)) {
       try {
-        const sampleInstance = wasmModule[className].new(0);
-        methods.forEach((method) => {
-          if (typeof sampleInstance[method] === "function") {
-            console.log(
-              `Found instance method: ${className}.prototype.${method}`
-            );
-          } else {
-            console.warn(
-              `Missing instance method: ${className}.prototype.${method}`
-            );
-          }
-        });
+        if (
+          wasmModule[className] &&
+          typeof wasmModule[className].new === "function"
+        ) {
+          const sampleInstance = wasmModule[className].new(0);
+          methods.forEach((method) => {
+            if (typeof sampleInstance[method] === "function") {
+              console.log(
+                `Found instance method: ${className}.prototype.${method}`
+              );
+            } else {
+              console.warn(
+                `Missing instance method: ${className}.prototype.${method}`
+              );
+            }
+          });
+        } else {
+          console.warn(
+            `Could not create sample ${className} instance: Constructor not available`
+          );
+        }
       } catch (error) {
         console.warn(`Couldn't create sample ${className} instance:`, error);
       }
@@ -78,11 +101,11 @@ const smartPointersModule: WasmModule = {
 
   fallback() {
     console.log("Using JavaScript fallback for SmartPointers module");
-    (globalThis as any).Rc._useWasm = false;
-    (globalThis as any).Weak._useWasm = false;
-    (globalThis as any).RefCell._useWasm = false;
-    (globalThis as any).RcRefCell._useWasm = false;
-    (globalThis as any).Arc._useWasm = false;
+    useRcWasm = false;
+    useWeakWasm = false;
+    useRefCellWasm = false;
+    useRcRefCellWasm = false;
+    useArcWasm = false;
   },
 };
 
@@ -92,11 +115,18 @@ export class Rc<T> {
   private readonly _inner: any;
   private readonly _useWasm: boolean;
   private readonly _value: T;
-  static _useWasm: boolean = false;
+
+  static get _useWasm(): boolean {
+    return useRcWasm;
+  }
+
+  static set _useWasm(value: boolean) {
+    useRcWasm = value;
+  }
 
   private constructor(
     initialValue: T,
-    useWasm: boolean = (globalThis as any).Rc._useWasm,
+    useWasm: boolean = Rc._useWasm,
     existingWasmRc?: any
   ) {
     this._value = initialValue;
@@ -107,7 +137,7 @@ export class Rc<T> {
     } else if (this._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (wasmModule && typeof wasmModule.Rc.new === "function") {
+        if (wasmModule && typeof wasmModule.Rc?.new === "function") {
           this._inner = wasmModule.Rc.new(initialValue);
         } else {
           this._useWasm = false;
@@ -198,11 +228,18 @@ export class Weak<T> {
   private readonly _inner: any;
   private readonly _useWasm: boolean;
   private readonly _value: T;
-  static _useWasm: boolean = false;
+
+  static get _useWasm(): boolean {
+    return useWeakWasm;
+  }
+
+  static set _useWasm(value: boolean) {
+    useWeakWasm = value;
+  }
 
   private constructor(
     initialValue: T,
-    useWasm: boolean = (globalThis as any).Weak._useWasm,
+    useWasm: boolean = Weak._useWasm,
     existingWasmWeak?: any
   ) {
     this._value = initialValue;
@@ -213,7 +250,7 @@ export class Weak<T> {
     } else if (this._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (wasmModule && typeof wasmModule.Weak.new === "function") {
+        if (wasmModule && typeof wasmModule.Weak?.new === "function") {
           this._inner = wasmModule.Weak.new(initialValue);
         } else {
           this._useWasm = false;
@@ -271,11 +308,18 @@ export class RefCell<T> {
   private readonly _inner: any;
   private readonly _useWasm: boolean;
   private readonly _value: T;
-  static _useWasm: boolean = false;
+
+  static get _useWasm(): boolean {
+    return useRefCellWasm;
+  }
+
+  static set _useWasm(value: boolean) {
+    useRefCellWasm = value;
+  }
 
   private constructor(
     initialValue: T,
-    useWasm: boolean = (globalThis as any).RefCell._useWasm,
+    useWasm: boolean = RefCell._useWasm,
     existingWasmRefCell?: any
   ) {
     this._value = initialValue;
@@ -286,7 +330,7 @@ export class RefCell<T> {
     } else if (this._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (wasmModule && typeof wasmModule.RefCell.new === "function") {
+        if (wasmModule && typeof wasmModule.RefCell?.new === "function") {
           this._inner = wasmModule.RefCell.new(initialValue);
         } else {
           this._useWasm = false;
@@ -346,11 +390,18 @@ export class RcRefCell<T> {
   private readonly _inner: any;
   private readonly _useWasm: boolean;
   private readonly _value: T;
-  static _useWasm: boolean = false;
+
+  static get _useWasm(): boolean {
+    return useRcRefCellWasm;
+  }
+
+  static set _useWasm(value: boolean) {
+    useRcRefCellWasm = value;
+  }
 
   private constructor(
     initialValue: T,
-    useWasm: boolean = (globalThis as any).RcRefCell._useWasm,
+    useWasm: boolean = RcRefCell._useWasm,
     existingWasmRcRefCell?: any
   ) {
     this._value = initialValue;
@@ -361,7 +412,7 @@ export class RcRefCell<T> {
     } else if (this._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (wasmModule && typeof wasmModule.RcRefCell.new === "function") {
+        if (wasmModule && typeof wasmModule.RcRefCell?.new === "function") {
           this._inner = wasmModule.RcRefCell.new(initialValue);
         } else {
           this._useWasm = false;
@@ -454,11 +505,18 @@ export class Arc<T> {
   private readonly _inner: any;
   private readonly _useWasm: boolean;
   private readonly _value: T;
-  static _useWasm: boolean = false;
+
+  static get _useWasm(): boolean {
+    return useArcWasm;
+  }
+
+  static set _useWasm(value: boolean) {
+    useArcWasm = value;
+  }
 
   private constructor(
     initialValue: T,
-    useWasm: boolean = (globalThis as any).Arc._useWasm,
+    useWasm: boolean = Arc._useWasm,
     existingWasmArc?: any
   ) {
     this._value = initialValue;
@@ -469,7 +527,7 @@ export class Arc<T> {
     } else if (this._useWasm) {
       try {
         const wasmModule = getWasmModule();
-        if (wasmModule && typeof wasmModule.Arc.new === "function") {
+        if (wasmModule && typeof wasmModule.Arc?.new === "function") {
           this._inner = wasmModule.Arc.new(initialValue);
         } else {
           this._useWasm = false;

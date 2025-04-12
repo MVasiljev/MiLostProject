@@ -285,6 +285,8 @@ export {
   createWasmInstance,
   getInitializationStatus,
   registerModule,
+  configureMiLostForDevelopment,
+  getMiLostConfig,
 } from "./initWasm/index.js";
 
 export {

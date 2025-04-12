@@ -13,6 +13,10 @@ import { Str } from "../types/string.js";
 import { u32 } from "../types/primitives.js";
 import { AppError, ValidationError } from "../core/error.js";
 
+let useMutexWasm = false;
+let useRwLockWasm = false;
+let useArcMutexWasm = false;
+
 /**
  * Module definition for synchronization primitives WASM implementation
  */
@@ -29,7 +33,10 @@ const syncPrimitivesModule: WasmModule = {
         typeof wasmModule[`Js${className}Str`] === "function"
       ) {
         console.log(`Found ${className} constructor in WASM module`);
-        (globalThis as any)[className]._useWasm = true;
+
+        if (className === "Mutex") useMutexWasm = true;
+        else if (className === "RwLock") useRwLockWasm = true;
+        else if (className === "ArcMutex") useArcMutexWasm = true;
       } else {
         console.warn(`${className} constructor not found in WASM module`);
       }
@@ -38,7 +45,7 @@ const syncPrimitivesModule: WasmModule = {
     const staticMethods = ["new"];
     classes.forEach((className) => {
       staticMethods.forEach((method) => {
-        if (typeof wasmModule[className][method] === "function") {
+        if (typeof wasmModule[className]?.[method] === "function") {
           console.log(`Found static method: ${className}.${method}`);
         } else {
           console.warn(`Missing static method: ${className}.${method}`);
@@ -61,18 +68,24 @@ const syncPrimitivesModule: WasmModule = {
 
     for (const [className, methods] of Object.entries(instanceMethods)) {
       try {
-        const sampleInstance = wasmModule[className].new(0);
-        methods.forEach((method) => {
-          if (typeof sampleInstance[method] === "function") {
-            console.log(
-              `Found instance method: ${className}.prototype.${method}`
-            );
-          } else {
-            console.warn(
-              `Missing instance method: ${className}.prototype.${method}`
-            );
-          }
-        });
+        const sampleInstance = wasmModule[className]?.new?.(0);
+        if (sampleInstance) {
+          methods.forEach((method) => {
+            if (typeof sampleInstance[method] === "function") {
+              console.log(
+                `Found instance method: ${className}.prototype.${method}`
+              );
+            } else {
+              console.warn(
+                `Missing instance method: ${className}.prototype.${method}`
+              );
+            }
+          });
+        } else {
+          console.warn(
+            `Couldn't create sample ${className} instance: constructor not found`
+          );
+        }
       } catch (error) {
         console.warn(`Couldn't create sample ${className} instance:`, error);
       }
@@ -81,9 +94,10 @@ const syncPrimitivesModule: WasmModule = {
 
   fallback() {
     console.log("Using JavaScript fallback for SyncPrimitives module");
-    (globalThis as any).Mutex._useWasm = false;
-    (globalThis as any).RwLock._useWasm = false;
-    (globalThis as any).ArcMutex._useWasm = false;
+
+    useMutexWasm = false;
+    useRwLockWasm = false;
+    useArcMutexWasm = false;
   },
 };
 
@@ -93,11 +107,18 @@ export class Mutex<T> {
   private readonly _inner: any;
   private readonly _useWasm: boolean;
   private _state: { value: T };
-  static _useWasm: boolean = false;
+
+  static get _useWasm(): boolean {
+    return useMutexWasm;
+  }
+
+  static set _useWasm(value: boolean) {
+    useMutexWasm = value;
+  }
 
   private constructor(
     initialValue: T,
-    useWasm: boolean = (globalThis as any).Mutex._useWasm,
+    useWasm: boolean = Mutex._useWasm,
     existingWasmMutex?: any
   ) {
     this._state = { value: initialValue };
@@ -201,11 +222,18 @@ export class RwLock<T> {
   private readonly _inner: any;
   private readonly _useWasm: boolean;
   private _state: { value: T };
-  static _useWasm: boolean = false;
+
+  static get _useWasm(): boolean {
+    return useRwLockWasm;
+  }
+
+  static set _useWasm(value: boolean) {
+    useRwLockWasm = value;
+  }
 
   private constructor(
     initialValue: T,
-    useWasm: boolean = (globalThis as any).RwLock._useWasm,
+    useWasm: boolean = RwLock._useWasm,
     existingWasmRwLock?: any
   ) {
     this._state = { value: initialValue };
@@ -326,11 +354,18 @@ export class ArcMutex<T> {
   private readonly _inner: any;
   private readonly _useWasm: boolean;
   private _state: { value: T };
-  static _useWasm: boolean = false;
+
+  static get _useWasm(): boolean {
+    return useArcMutexWasm;
+  }
+
+  static set _useWasm(value: boolean) {
+    useArcMutexWasm = value;
+  }
 
   private constructor(
     initialValue: T,
-    useWasm: boolean = (globalThis as any).ArcMutex._useWasm,
+    useWasm: boolean = ArcMutex._useWasm,
     existingWasmArcMutex?: any
   ) {
     this._state = { value: initialValue };
