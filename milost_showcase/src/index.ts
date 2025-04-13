@@ -1,53 +1,59 @@
-import { fileURLToPath, pathToFileURL } from "url";
-import path from "path";
-import fs from "fs/promises";
 import express from "express";
-
-import {
-  initWasm,
-  getWasmModule,
-  isWasmInitialized,
-  setExternalWasmInstance,
-} from "milost";
+import path from "path";
+import { fileURLToPath } from "url";
+import { loadWasm, getWasmStatus } from "./utils/wasm-loader.js";
+import stringRoutes from "./routes/string.js";
+import welcomeView from "./views/welcome.js";
+import debugView from "./views/debug.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const publicDir = path.join(__dirname, "../public");
 
-// ❗ Go UP out of src/, then into node_modules
-const wasmBinaryPath = path.resolve(
-  __dirname,
-  "../node_modules/milost/dist/wasm/milost_wasm_bg.wasm"
-);
+console.log("📁 Serving static files from:", publicDir);
 
-const wasmJsPath = path.resolve(
-  __dirname,
-  "../node_modules/milost/dist/wasm/milost_wasm.js"
-);
+async function startServer() {
+  try {
+    console.log("Initializing MiLost WASM...");
+    const wasmResult = await loadWasm();
+    console.log("WASM initialization complete:", wasmResult);
 
-async function loadWasm() {
-  const wasmInit = (await import(pathToFileURL(wasmJsPath).href)).default;
-  const binary = await fs.readFile(wasmBinaryPath);
-  const instance = await wasmInit(binary);
+    const app = express();
+    const port = process.env.PORT || 3000;
 
-  setExternalWasmInstance(instance);
-  await initWasm({ skipWasmLoading: true, debug: true });
+    const distDir = path.join(__dirname, "../dist");
+    app.use(express.static(path.join(__dirname, "../public")));
+    app.use(express.static(path.join(__dirname, "../dist")));
+    app.use(express.json());
 
-  console.log("✅ WASM Initialized:", isWasmInitialized());
-  console.log("📦 Exports:", Object.keys(getWasmModule()).slice(0, 10));
+    app.get("/api/status", (req, res) => {
+      const status = getWasmStatus();
+      res.json(status);
+    });
+
+    app.use("/api/string", stringRoutes);
+    app.get("/welcome", welcomeView.renderWelcomePage);
+    app.get("/debug-info", debugView.renderDebugPage);
+
+    app.get("/", (req, res) => {
+      res.sendFile(path.join(publicDir, "index.html"));
+    });
+
+    app.use((req, res, next) => {
+      console.log("➡️ Incoming request:", req.method, req.originalUrl);
+      next();
+    });
+
+    app.listen(port, () => {
+      console.log(`🚀 Server running at http://localhost:${port}`);
+      console.log(`📄 Welcome page: http://localhost:${port}/welcome`);
+      console.log(`🔍 Debug info: http://localhost:${port}/debug-info`);
+      console.log(`🧪 API status: http://localhost:${port}/api/status`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
 }
 
-await loadWasm();
-
-const app = express();
-const port = 3000;
-
-app.get("/status", (req, res) => {
-  res.json({
-    wasmReady: isWasmInitialized(),
-    exports: Object.keys(getWasmModule()).slice(0, 10),
-  });
-});
-
-app.listen(port, () => {
-  console.log(`🚀 Server running at http://localhost:${port}`);
-});
+startServer();
