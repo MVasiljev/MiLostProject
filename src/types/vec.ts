@@ -4,12 +4,13 @@
  * Provides a type-safe, immutable vector implementation with WebAssembly
  * acceleration when available.
  */
+
+import { Option } from "../core/option.js";
 import {
-  registerModule,
   WasmModule,
+  registerModule,
   getWasmModule,
 } from "../initWasm/registry.js";
-import { Option } from "../core/option.js";
 import { u32 } from "./primitives.js";
 import { Str } from "./string.js";
 

@@ -7,12 +7,8 @@ const BUILD_CONFIG = {
   paths: {
     root: path.resolve(process.cwd()),
     wasmCrate: path.resolve(process.cwd(), "crates/wasm"),
-    wasmOutput: path.resolve(process.cwd(), "wasm"),
     dist: path.resolve(process.cwd(), "dist"),
-  },
-  files: {
-    wasmBinary: "milost.wasm",
-    wasmJs: "milost.js",
+    wasmOutput: path.resolve(process.cwd(), "dist/wasm"),
   },
 };
 
@@ -65,38 +61,52 @@ function buildWasm() {
     const pkgDir = path.join(BUILD_CONFIG.paths.wasmCrate, "pkg");
     const files = fs.readdirSync(pkgDir);
 
-    const wasmFile = files.find((f) => f.endsWith(".wasm"));
-    const jsFile = files.find((f) => f.endsWith(".js"));
+    // Look for the key files
+    const wasmBgFile = files.find((f) => f.endsWith("_bg.wasm"));
+    const wasmJsFile = files.find(
+      (f) => f.endsWith(".js") && !f.endsWith(".d.js")
+    );
+    const wasmTsFile = files.find((f) => f.endsWith(".d.ts"));
 
-    if (!wasmFile || !jsFile) {
+    if (!wasmBgFile || !wasmJsFile) {
       throw new Error("WASM build artifacts not found");
     }
 
-    // Copy and rename files
-    const sourceBinary = path.join(pkgDir, wasmFile);
-    const sourceJs = path.join(pkgDir, jsFile);
+    log(`Found WASM binary: ${wasmBgFile}`, "info");
+    log(`Found WASM JS module: ${wasmJsFile}`, "info");
+    if (wasmTsFile) {
+      log(`Found TypeScript definitions: ${wasmTsFile}`, "info");
+    }
 
-    const targetBinary = path.join(
-      BUILD_CONFIG.paths.wasmOutput,
-      BUILD_CONFIG.files.wasmBinary
-    );
-    const targetJs = path.join(
-      BUILD_CONFIG.paths.wasmOutput,
-      BUILD_CONFIG.files.wasmJs
-    );
+    // Copy files without renaming to maintain the expected structure
+    const sourceWasmBg = path.join(pkgDir, wasmBgFile);
+    const sourceWasmJs = path.join(pkgDir, wasmJsFile);
+
+    const targetWasmBg = path.join(BUILD_CONFIG.paths.wasmOutput, wasmBgFile);
+    const targetWasmJs = path.join(BUILD_CONFIG.paths.wasmOutput, wasmJsFile);
 
     // Validate WASM binary before copying
-    if (!validateWasmBinary(sourceBinary)) {
+    if (!validateWasmBinary(sourceWasmBg)) {
       throw new Error("Invalid WASM binary generated");
     }
 
-    fs.copyFileSync(sourceBinary, targetBinary);
-    fs.copyFileSync(sourceJs, targetJs);
+    // Copy all files from the pkg directory to maintain the full structure
+    fs.copySync(pkgDir, BUILD_CONFIG.paths.wasmOutput);
 
-    log(
-      `✅ WASM built successfully: ${BUILD_CONFIG.files.wasmBinary}`,
-      "success"
+    // 🧹 Remove .gitignore if present
+    const gitignorePath = path.join(
+      BUILD_CONFIG.paths.wasmOutput,
+      ".gitignore"
     );
+    if (fs.existsSync(gitignorePath)) {
+      fs.removeSync(gitignorePath);
+      log(`🧹 Removed .gitignore from WASM output`, "info");
+    }
+
+    log(`✅ WASM built and copied successfully:`, "success");
+    log(`   - ${wasmBgFile}`, "success");
+    log(`   - ${wasmJsFile}`, "success");
+
     return true;
   } catch (error) {
     log(`❌ WASM build failed: ${error.message}`, "error");

@@ -16,7 +16,7 @@ export {
   throttle,
   debounce,
   noop,
-  identity,
+  // identity,
   not,
   allOf,
   anyOf,

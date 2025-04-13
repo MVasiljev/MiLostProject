@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use js_sys::{Array, Function, Reflect, Object, Iterator as JsIterator};
-use crate::Option as RustOption;
+use crate::lang::Option as RustOption;
 use crate::Vec as RustVec;
 use crate::lang::{create_none, create_some, Vec};
 

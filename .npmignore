@@ -1,3 +1,6 @@
 # .npmignore
-!dist/wasm
-!dist/wasm/*
+!dist/
+!dist/wasm/
+!dist/wasm/*.wasm
+!dist/wasm/*.js
+!dist/wasm/*.d.ts

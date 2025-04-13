@@ -25,9 +25,23 @@ fi
 
 echo "✅ Valid WASM binary confirmed"
 
-# Copy files to dist
+# List files in pkg directory
+echo "📦 WASM build produced the following files:"
+ls -la ./pkg
+
+# Prepare output directory
 DIST_DIR="../../../dist/wasm"
 mkdir -p "$DIST_DIR"
+
+# Copy all files from pkg to dist/wasm
 cp -r ./pkg/* "$DIST_DIR"
 
-echo "📦 Copied WASM build artifacts to $DIST_DIR"
+# Remove .gitignore from dist/wasm if it exists
+if [ -f "$DIST_DIR/.gitignore" ]; then
+  echo "🧹 Removing .gitignore from dist/wasm/"
+  rm "$DIST_DIR/.gitignore"
+fi
+
+echo "✅ Copied WASM build artifacts to $DIST_DIR"
+echo "📂 Final contents of dist/wasm:"
+ls -la "$DIST_DIR"

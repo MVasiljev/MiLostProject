@@ -4,11 +4,8 @@
  * Provides a type-safe, immutable string implementation with WebAssembly
  * acceleration when available.
  */
-import {
-  registerModule,
-  WasmModule,
-  getWasmModule,
-} from "../initWasm/registry.js";
+
+import { WasmModule, registerModule, getWasmModule } from "../initWasm";
 
 /**
  * Module definition for Str WASM implementation

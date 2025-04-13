@@ -5,7 +5,6 @@
  * handling various browser compatibility issues and MIME type problems.
  */
 
-import { getFrameworkWasmPath } from "./milostFramework.js";
 import "./types";
 
 /**
@@ -55,25 +54,7 @@ function resolveWasmPath(wasmPath?: string): string {
   if (wasmPath) {
     return wasmPath;
   }
-
-  const frameworkPath = getFrameworkWasmPath();
-  if (frameworkPath) {
-    return frameworkPath;
-  }
-
-  if (typeof window !== "undefined" && window.__MILOST_CONFIG__) {
-    const config = window.__MILOST_CONFIG__;
-
-    if (config.wasmBasePath) {
-      return `${config.wasmBasePath}/milost_wasm_bg.wasm`;
-    }
-
-    if (config.isDevelopment) {
-      return "/dist/wasm/milost_wasm_bg.wasm";
-    }
-  }
-
-  return "./milost_wasm_bg.wasm";
+  return "./dist/wasm/milost_wasm_bg.wasm";
 }
 
 /**

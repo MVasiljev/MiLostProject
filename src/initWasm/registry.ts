@@ -1,4 +1,3 @@
-// src/initWasm/registry.ts
 import { loadWasmModule } from "./init.js";
 import "./types";
 
@@ -24,11 +23,11 @@ export interface WasmModule {
 
 const modules: WasmModule[] = [];
 let isInitialized = false;
+let isInitializing = false;
 let wasmModuleInstance: any = null;
 let initializedModules: string[] = [];
 let initializationError: Error | null = null;
 
-// Save external WASM instance if provided by bootstrapper
 let externalWasmInstance: any = null;
 
 /**
@@ -49,8 +48,10 @@ export function setExternalWasmInstance(instance: any): void {
  * @param module The module to register
  */
 export function registerModule(module: WasmModule): void {
-  modules.push(module);
-  console.log(`Registered WASM module: ${module.name}`);
+  if (!modules.find((m) => m.name === module.name)) {
+    modules.push(module);
+    console.log(`Registered WASM module: ${module.name}`);
+  }
 }
 
 /**
@@ -91,6 +92,23 @@ export function isWasmInitialized(): boolean {
 }
 
 /**
+ * Reset the WASM initialization state
+ * This allows re-initialization, especially useful during development
+ */
+export function resetWasmInitialization(): void {
+  if (isInitializing) {
+    console.warn("Cannot reset while initialization is in progress");
+    return;
+  }
+
+  isInitialized = false;
+  wasmModuleInstance = null;
+  initializedModules = [];
+  initializationError = null;
+  console.log("WASM initialization state reset");
+}
+
+/**
  * Initialize all registered modules
  * @param options Configuration options
  * @returns Promise that resolves to true if all modules were initialized successfully
@@ -102,6 +120,8 @@ export async function initWasm(
     debug?: boolean;
     skipWasmLoading?: boolean;
     forceJsFallback?: boolean;
+    resetIfInitialized?: boolean;
+    wasmBinary?: ArrayBuffer;
   } = {}
 ): Promise<boolean> {
   const {
@@ -110,13 +130,24 @@ export async function initWasm(
     debug = false,
     skipWasmLoading = false,
     forceJsFallback = false,
+    resetIfInitialized = false,
+    wasmBinary,
   } = options;
 
-  if (isInitialized) {
+  if (isInitialized && resetIfInitialized) {
+    console.log("Resetting previous WASM initialization");
+    resetWasmInitialization();
+  } else if (isInitialized) {
     console.log("WASM already initialized");
     return true;
   }
 
+  if (isInitializing) {
+    console.log("WASM initialization already in progress");
+    return false;
+  }
+
+  isInitializing = true;
   console.log(`Initializing WASM with ${modules.length} registered modules...`);
 
   if (debug && typeof window !== "undefined") {
@@ -124,13 +155,26 @@ export async function initWasm(
   }
 
   try {
-    // Use externally provided WASM instance or load one
     if (forceJsFallback) {
       console.log("Forcing JavaScript fallbacks for all modules");
       wasmModuleInstance = null;
-    } else if (skipWasmLoading) {
+    } else if (skipWasmLoading && externalWasmInstance) {
       console.log("Using externally provided WASM instance");
       wasmModuleInstance = externalWasmInstance;
+    } else if (wasmBinary) {
+      console.log("Using provided WASM binary buffer");
+      try {
+        const imports = { env: {}, wasi_snapshot_preview1: {} };
+        const result = await WebAssembly.instantiate(wasmBinary, imports);
+        wasmModuleInstance = result.instance.exports;
+        console.log("Successfully instantiated WASM from provided binary");
+      } catch (instantiateError) {
+        console.error(
+          "Failed to instantiate WASM from binary:",
+          instantiateError
+        );
+        throw instantiateError;
+      }
     } else {
       wasmModuleInstance = await loadWasmModule(wasmPath);
     }
@@ -139,8 +183,9 @@ export async function initWasm(
       console.warn(
         "Core WASM module loading failed, falling back to JS for all modules"
       );
-      fallbackAllModules();
+      await fallbackAllModules();
       isInitialized = true;
+      isInitializing = false;
       initializationError = new Error("Core WASM module loading failed");
       return false;
     }
@@ -163,53 +208,50 @@ export async function initWasm(
     initializedModules = [];
 
     if (forceJsFallback) {
-      // Initialize all modules with fallbacks
-      modules.forEach((module) => {
-        try {
-          module.fallback();
-          console.log(`Using JavaScript fallback for module: ${module.name}`);
-        } catch (fallbackError) {
-          console.error(
-            `Error in fallback for module ${module.name}:`,
-            fallbackError
-          );
-        }
-      });
-    } else {
-      // Initialize modules with WASM
-      const results = await Promise.all(
+      await Promise.all(
         modules.map(async (module) => {
           try {
-            console.log(`Initializing module: ${module.name}`);
-            await module.initialize(wasmModuleInstance);
-            initializedModules.push(module.name);
-            console.log(
-              `Successfully initialized module: ${module.name} with WASM`
+            module.fallback();
+            console.log(`Using JavaScript fallback for module: ${module.name}`);
+          } catch (fallbackError) {
+            console.error(
+              `Error in fallback for module ${module.name}:`,
+              fallbackError
             );
-            return true;
-          } catch (error) {
-            console.warn(
-              `WASM initialization failed for ${module.name}:`,
-              error
-            );
-            try {
-              module.fallback();
-              console.log(
-                `Using JavaScript fallback for module: ${module.name}`
-              );
-            } catch (fallbackError) {
-              console.error(
-                `Error in fallback for module ${module.name}:`,
-                fallbackError
-              );
-            }
-            return false;
           }
         })
       );
+    } else {
+      const initPromises = modules.map(async (module) => {
+        try {
+          console.log(`Initializing module: ${module.name}`);
+          await module.initialize(wasmModuleInstance);
+          initializedModules.push(module.name);
+          console.log(
+            `Successfully initialized module: ${module.name} with WASM`
+          );
+          return true;
+        } catch (error) {
+          console.warn(`WASM initialization failed for ${module.name}:`, error);
+          try {
+            module.fallback();
+            console.log(`Using JavaScript fallback for module: ${module.name}`);
+          } catch (fallbackError) {
+            console.error(
+              `Error in fallback for module ${module.name}:`,
+              fallbackError
+            );
+          }
+          return false;
+        }
+      });
+
+      await Promise.all(initPromises);
     }
 
     isInitialized = true;
+    isInitializing = false;
+
     const success =
       forceJsFallback || initializedModules.length === modules.length;
 
@@ -226,8 +268,9 @@ export async function initWasm(
   } catch (error) {
     console.error("Fatal error during WASM initialization:", error);
 
-    fallbackAllModules();
+    await fallbackAllModules();
     isInitialized = true;
+    isInitializing = false;
     initializationError = error as Error;
 
     if (throwOnError) {
@@ -241,17 +284,19 @@ export async function initWasm(
 /**
  * Private helper to fall back all modules to JavaScript
  */
-function fallbackAllModules(): void {
-  modules.forEach((module) => {
-    try {
-      module.fallback();
-      console.log(`Using JavaScript fallback for module: ${module.name}`);
-    } catch (fallbackError) {
-      console.error(
-        `Error in fallback for module ${module.name}:`,
-        fallbackError
-      );
-    }
-  });
+async function fallbackAllModules(): Promise<void> {
+  await Promise.all(
+    modules.map(async (module) => {
+      try {
+        module.fallback();
+        console.log(`Using JavaScript fallback for module: ${module.name}`);
+      } catch (fallbackError) {
+        console.error(
+          `Error in fallback for module ${module.name}:`,
+          fallbackError
+        );
+      }
+    })
+  );
   initializedModules = [];
 }

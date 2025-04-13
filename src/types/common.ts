@@ -12,7 +12,7 @@ import {
 import { Vec } from "./vec.js";
 import { Str } from "./string.js";
 import { u32, i32, f64, limits } from "./primitives.js";
-import { Result, AppError, identity } from "../core/index.js";
+import { Result, AppError } from "../core/index.js";
 import { Option } from "../core/option.js";
 import { Brand } from "./branding.js";
 
@@ -300,7 +300,7 @@ export const Types = {
   isNumeric,
   isBoolean,
   isFunction,
-  identity,
+  // identity,
   iterableToVec,
 };
 

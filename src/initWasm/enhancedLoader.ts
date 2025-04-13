@@ -1,4 +1,3 @@
-// src/initWasm/enhancedLoader.ts
 import { WasmModule } from "./registry";
 
 interface WasmInitOptions {
@@ -16,7 +15,6 @@ export async function enhancedWasmLoader(
 ): Promise<any> {
   const { wasmPath, debug = false, throwOnError = false } = options;
 
-  // Resolve the WASM path based on framework and configuration
   const resolvedPath = resolveWasmPath(wasmPath);
 
   if (debug) {
@@ -24,13 +22,11 @@ export async function enhancedWasmLoader(
   }
 
   try {
-    // Set up imports for WASM module
     const imports = {
       env: {},
       wasi_snapshot_preview1: {},
     };
 
-    // Try streaming instantiation first (most efficient)
     if (
       typeof WebAssembly.instantiateStreaming === "function" &&
       !isDataURI(resolvedPath)
@@ -53,7 +49,6 @@ export async function enhancedWasmLoader(
           );
         }
 
-        // Verify the content and first bytes before instantiation
         await verifyWasmResponse(response.clone(), debug);
 
         const result = await WebAssembly.instantiateStreaming(
@@ -72,7 +67,6 @@ export async function enhancedWasmLoader(
       }
     }
 
-    // Fallback to ArrayBuffer instantiation
     if (debug) {
       console.log("Using ArrayBuffer instantiation");
     }
@@ -90,7 +84,6 @@ export async function enhancedWasmLoader(
 
     const wasmBinary = await response.arrayBuffer();
 
-    // Verify the binary before instantiation
     verifyWasmBinary(wasmBinary, debug);
 
     const result = await WebAssembly.instantiate(wasmBinary, imports);
@@ -116,7 +109,6 @@ function verifyWasmBinary(binary: ArrayBuffer, debug = false): void {
     throw new Error("WebAssembly binary too small");
   }
 
-  // Check the magic number (0x0061736d or \0asm)
   if (
     bytes[0] !== 0x00 ||
     bytes[1] !== 0x61 ||
@@ -132,7 +124,6 @@ function verifyWasmBinary(binary: ArrayBuffer, debug = false): void {
         `Invalid WebAssembly binary: found ${magicHex} instead of 00 61 73 6d`
       );
 
-      // Log a hex dump of the first 32 bytes to diagnose issues
       const hexDump = Array.from(bytes.slice(0, 32))
         .map((b) => b.toString(16).padStart(2, "0"))
         .join(" ");
@@ -160,7 +151,6 @@ async function verifyWasmResponse(
     console.log(`Received Content-Type: ${contentType}`);
   }
 
-  // Check for valid MIME type
   if (
     !contentType ||
     (!contentType.includes("application/wasm") &&
@@ -169,7 +159,6 @@ async function verifyWasmResponse(
     console.warn(`Unexpected MIME type for WebAssembly: ${contentType}`);
   }
 
-  // Check the first bytes
   const buffer = await response.arrayBuffer();
   verifyWasmBinary(buffer, debug);
 }
@@ -197,7 +186,6 @@ function resolveWasmPath(wasmPath?: string): string {
     }
   }
 
-  // Default path as fallback
   return "./milost_wasm_bg.wasm";
 }
 

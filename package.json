@@ -25,8 +25,7 @@
     "publish": "npm publish --access=public"
   },
   "include": [
-    "src",
-    "wasm"
+    "src"
   ],
   "keywords": [
     "milost",

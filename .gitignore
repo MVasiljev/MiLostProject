@@ -12,6 +12,7 @@
 # Build artifacts
 /package
 /dist/
+/milost_showcase
 /build/
 /example/
 /test/

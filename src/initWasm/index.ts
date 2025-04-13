@@ -12,6 +12,8 @@ export {
   isWasmInitialized,
   getWasmModule,
   WasmModule,
+  resetWasmInitialization,
+  setExternalWasmInstance,
 } from "./registry.js";
 
 export {
@@ -21,13 +23,6 @@ export {
 } from "./lib.js";
 
 export { configureMiLostForDevelopment, getMiLostConfig } from "./milostDev.js";
-
-export {
-  configureMiLostForFramework,
-  getFrameworkWasmPath,
-  setupMiLostFramework,
-  MiLostFrameworkOptions,
-} from "./milostFramework.js";
 
 export { isWasmSupported } from "./init.js";
 
