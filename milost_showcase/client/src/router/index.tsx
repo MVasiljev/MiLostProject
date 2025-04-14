@@ -5,6 +5,7 @@ import WelcomePage from "../pages/Welcome/Welcome";
 import VectorPage from "../pages/Vector/Vector";
 import TuplePage from "../pages/Tuple/Tuple";
 import StructPage from "../pages/Struct/Struct";
+import StatusPage from "../pages/Status/Status";
 
 const router = createBrowserRouter([
   {
@@ -31,6 +32,10 @@ const router = createBrowserRouter([
         path: "structs",
         element: <StructPage />,
       },
+      {
+        path: "status",
+        element: <StatusPage />,
+      },
     ],
   },
 ]);
@@ -45,6 +50,7 @@ export const ROUTES = {
   VECTORS: "/vectors",
   TUPLES: "/tuples",
   STRUCTS: "/structs",
+  STATUS: "/status",
 };
 
 export default router;
