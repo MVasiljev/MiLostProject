@@ -94,6 +94,10 @@ export const Input = styled.input`
   }
 `;
 
+export const NumberInput = styled(Input)`
+  width: 100px;
+`;
+
 export const Select = styled.select`
   width: 100%;
   padding: 8px 12px;
@@ -124,6 +128,13 @@ export const ButtonGrid = styled.div`
     gap: 12px;
     margin-bottom: 16px;
   }
+`;
+
+export const OperationGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
 `;
 
 const Button = styled.button`
@@ -166,6 +177,68 @@ export const SecondaryButton = styled(Button)`
   &:hover:not(:disabled) {
     background-color: #0f172a;
   }
+`;
+
+export const TabsContainer = styled.div`
+  display: flex;
+  overflow-x: auto;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 24px;
+
+  @media (max-width: 640px) {
+    margin-bottom: 16px;
+  }
+`;
+
+export const Tab = styled.button<{ active: boolean }>`
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  font-size: 16px;
+  font-weight: ${(props) => (props.active ? "600" : "400")};
+  color: ${(props) => (props.active ? "#d97706" : "#64748b")};
+  border-bottom: 2px solid
+    ${(props) => (props.active ? "#d97706" : "transparent")};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    color: ${(props) => (props.active ? "#d97706" : "#1e293b")};
+  }
+
+  @media (max-width: 640px) {
+    font-size: 14px;
+    padding: 6px 12px;
+  }
+`;
+
+export const OperationButton = styled(Button)<{ active: boolean }>`
+  background-color: ${(props) => (props.active ? "#d97706" : "#f1f5f9")};
+  color: ${(props) => (props.active ? "white" : "#64748b")};
+  font-size: 13px;
+  padding: 6px 10px;
+
+  &:hover:not(:disabled) {
+    background-color: ${(props) => (props.active ? "#b45309" : "#e2e8f0")};
+  }
+`;
+
+export const InputRow = styled.div`
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  align-items: flex-end;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+`;
+
+export const InputColumn = styled.div`
+  flex: 1;
 `;
 
 export const ErrorMessage = styled.div`
