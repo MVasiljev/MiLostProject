@@ -1,3 +1,4 @@
+import React from "react";
 import { ROUTES } from "../../router";
 import {
   SidebarContainer,
@@ -9,22 +10,50 @@ import {
   StyledNavLink,
   Footer,
   CloseButton,
+  SectionDivider,
+  SectionTitle,
 } from "./Sidebar.styles";
 
-interface SidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface NavItem {
+  id: string;
+  label: string;
+  path: string;
 }
 
-function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const navItems = [
-    { id: "home", label: "Home", path: ROUTES.HOME },
-    { id: "strings", label: "Strings", path: ROUTES.STRINGS },
-    { id: "vectors", label: "Vectors", path: ROUTES.VECTORS },
-    { id: "tuples", label: "Tuples", path: ROUTES.TUPLES },
-    { id: "structs", label: "Structs", path: ROUTES.STRUCTS },
-    { id: "hashmaps", label: "HashMaps", path: ROUTES.HASHMAPS },
-    { id: "status", label: "System Status", path: ROUTES.STATUS },
+interface NavSection {
+  title?: string;
+  items: NavItem[];
+}
+
+function Sidebar({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const navSections: NavSection[] = [
+    {
+      title: "Overview",
+      items: [
+        { id: "home", label: "Home", path: ROUTES.HOME },
+        { id: "get-started", label: "Get Started", path: "/get-started" },
+      ],
+    },
+    {
+      title: "Data Types",
+      items: [
+        { id: "strings", label: "Strings", path: ROUTES.STRINGS },
+        { id: "vectors", label: "Vectors", path: ROUTES.VECTORS },
+        { id: "tuples", label: "Tuples", path: ROUTES.TUPLES },
+        { id: "structs", label: "Structs", path: ROUTES.STRUCTS },
+        { id: "hashmaps", label: "HashMaps", path: ROUTES.HASHMAPS },
+      ],
+    },
+    {
+      title: "System",
+      items: [{ id: "status", label: "System Status", path: ROUTES.STATUS }],
+    },
   ];
 
   return (
@@ -48,19 +77,28 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
       </div>
 
       <Nav>
-        <NavList>
-          {navItems.map((item) => (
-            <li key={item.id}>
-              <StyledNavLink
-                to={item.path}
-                end={item.path === ROUTES.HOME}
-                onClick={onClose}
-              >
-                {item.label}
-              </StyledNavLink>
-            </li>
-          ))}
-        </NavList>
+        {navSections.map((section, sectionIndex) => (
+          <React.Fragment key={sectionIndex}>
+            {section.title && (
+              <SectionDivider>
+                <SectionTitle>{section.title}</SectionTitle>
+              </SectionDivider>
+            )}
+            <NavList>
+              {section.items.map((item) => (
+                <li key={item.id}>
+                  <StyledNavLink
+                    to={item.path}
+                    end={item.path === ROUTES.HOME}
+                    onClick={onClose}
+                  >
+                    {item.label}
+                  </StyledNavLink>
+                </li>
+              ))}
+            </NavList>
+          </React.Fragment>
+        ))}
       </Nav>
 
       <Footer>

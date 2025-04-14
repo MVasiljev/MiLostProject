@@ -37,6 +37,7 @@ export const LogoSubtitle = styled.p`
 
 export const Nav = styled.nav`
   flex: 1;
+  overflow-y: auto;
 `;
 
 export const NavList = styled.ul`
@@ -88,4 +89,19 @@ export const CloseButton = styled.button`
   @media (max-width: 768px) {
     display: block;
   }
+`;
+
+export const SectionDivider = styled.div`
+  padding: 12px 16px 4px;
+  margin-top: 8px;
+  border-top: 1px solid #334155;
+`;
+
+export const SectionTitle = styled.h3`
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
 `;

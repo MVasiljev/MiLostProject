@@ -7,6 +7,7 @@ import TuplePage from "../pages/Tuple/Tuple";
 import StructPage from "../pages/Struct/Struct";
 import HashMapPage from "../pages/HashMap/HashMap";
 import StatusPage from "../pages/Status/Status";
+import GettingStartedPage from "../pages/GettingStarted/GettingStarted";
 
 const router = createBrowserRouter([
   {
@@ -16,6 +17,10 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <WelcomePage />,
+      },
+      {
+        path: "get-started",
+        element: <GettingStartedPage />,
       },
       {
         path: "strings",
@@ -51,6 +56,7 @@ export function Router() {
 
 export const ROUTES = {
   HOME: "/",
+  GET_STARTED: "/getting-started",
   STRINGS: "/strings",
   VECTORS: "/vectors",
   TUPLES: "/tuples",
