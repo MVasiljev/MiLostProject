@@ -2,28 +2,28 @@ use js_sys::{Array, Function};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
-#[wasm_bindgen]
-pub struct Vec {
+#[wasm_bindgen(js_name = "Vec")]
+pub struct VecF64 {
     inner: std::vec::Vec<f64>,
 }
 
 #[wasm_bindgen]
-impl Vec {
+impl VecF64 {
     #[wasm_bindgen(constructor)]
-    pub fn new() -> Vec {
-        Vec { inner: vec![] }
+    pub fn new() -> VecF64 {
+        VecF64 { inner: vec![] }
     }
 
     #[wasm_bindgen(js_name = "withCapacity")]
-    pub fn with_capacity(capacity: usize) -> Vec {
-        Vec {
+    pub fn with_capacity(capacity: usize) -> VecF64 {
+        VecF64 {
             inner: vec![0.0; capacity],
         }
     }
 
     #[wasm_bindgen(js_name = "from")]
-    pub fn from_array(arr: &Array) -> Vec {
-        let mut inner = Vec::new();
+    pub fn from_array(arr: &Array) -> VecF64 {
+        let mut inner = VecF64::new();
         for val in arr.iter() {
             if let Some(n) = val.as_f64() {
                 inner.inner.push(n);
@@ -33,14 +33,13 @@ impl Vec {
     }
 
     #[wasm_bindgen(js_name = "empty")]
-    pub fn empty() -> Vec {
-        Vec::new()
+    pub fn empty() -> VecF64 {
+        VecF64::new()
     }
 
     #[wasm_bindgen(js_name = "find")]
     pub fn find(&self, fn_val: &JsValue) -> Result<JsValue, JsValue> {
         let fn_obj = fn_val.dyn_ref::<Function>().ok_or_else(|| JsValue::from_str("Expected a function"))?;
-
         for (i, &value) in self.inner.iter().enumerate() {
             let args = js_sys::Array::new();
             args.push(&JsValue::from_f64(value));
@@ -49,7 +48,6 @@ impl Vec {
                 return Ok(JsValue::from_f64(value));
             }
         }
-
         Ok(JsValue::UNDEFINED)
     }
 
@@ -68,7 +66,7 @@ impl Vec {
     }
 
     #[wasm_bindgen(js_name = "map")]
-    pub fn map(&self, fn_val: &JsValue) -> Result<Vec, JsValue> {
+    pub fn map(&self, fn_val: &JsValue) -> Result<VecF64, JsValue> {
         let fn_obj = fn_val.dyn_ref::<Function>().ok_or_else(|| JsValue::from_str("Expected a function"))?;
         let result = js_sys::Array::new_with_length(self.inner.len() as u32);
         for (i, &value) in self.inner.iter().enumerate() {
@@ -78,11 +76,11 @@ impl Vec {
             let mapped_value = fn_obj.apply(&JsValue::NULL, &args)?;
             result.set(i as u32, mapped_value);
         }
-        Ok(Vec::from_array(&result))
+        Ok(VecF64::from_array(&result))
     }
 
     #[wasm_bindgen(js_name = "filter")]
-    pub fn filter(&self, fn_val: &JsValue) -> Result<Vec, JsValue> {
+    pub fn filter(&self, fn_val: &JsValue) -> Result<VecF64, JsValue> {
         let fn_obj = fn_val.dyn_ref::<Function>().ok_or_else(|| JsValue::from_str("Expected a function"))?;
         let result = js_sys::Array::new();
         for (i, &value) in self.inner.iter().enumerate() {
@@ -94,14 +92,14 @@ impl Vec {
                 result.push(&JsValue::from_f64(value));
             }
         }
-        Ok(Vec::from_array(&result))
+        Ok(VecF64::from_array(&result))
     }
 
     #[wasm_bindgen(js_name = "reverse")]
-    pub fn reverse(&self) -> Vec {
+    pub fn reverse(&self) -> VecF64 {
         let mut new_data = self.inner.clone();
         new_data.reverse();
-        Vec { inner: new_data }
+        VecF64 { inner: new_data }
     }
 
     #[wasm_bindgen(js_name = "all")]
@@ -133,22 +131,22 @@ impl Vec {
     }
 
     #[wasm_bindgen(js_name = "take")]
-    pub fn take(&self, n: usize) -> Vec {
+    pub fn take(&self, n: usize) -> VecF64 {
         let count = n.min(self.inner.len());
-        Vec { inner: self.inner[0..count].to_vec() }
+        VecF64 { inner: self.inner[0..count].to_vec() }
     }
 
     #[wasm_bindgen(js_name = "drop")]
-    pub fn drop(&self, n: usize) -> Vec {
+    pub fn drop(&self, n: usize) -> VecF64 {
         let count = n.min(self.inner.len());
-        Vec { inner: self.inner[count..].to_vec() }
+        VecF64 { inner: self.inner[count..].to_vec() }
     }
 
     #[wasm_bindgen(js_name = "concat")]
-    pub fn concat(&self, other: &Vec) -> Vec {
+    pub fn concat(&self, other: &VecF64) -> VecF64 {
         let mut new_data = self.inner.clone();
         new_data.extend_from_slice(&other.inner);
-        Vec { inner: new_data }
+        VecF64 { inner: new_data }
     }
 
     #[wasm_bindgen(js_name = "len")]

@@ -30,8 +30,8 @@ mod computed;
 use wasm_bindgen::prelude::*;
 
 // pub use branding::*;
-pub use str::*;
-pub use vec::*;
+pub use str::Str;
+pub use vec::VecF64;
 pub use primitives::*;
 pub use option::*;
 pub use result::*;

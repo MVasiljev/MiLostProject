@@ -1,6 +1,7 @@
 import { loadWasmModule } from "./init.js";
 import "./types";
-
+// @ts-expect-error: This import exists after WASM build
+import * as glue from "milost/dist/wasm/milost_wasm.js";
 /**
  * Interface for modules that need WASM initialization
  */
@@ -155,6 +156,9 @@ export async function initWasm(
   }
 
   try {
+    if (!forceJsFallback && glue && Object.keys(glue).length > 0) {
+      setExternalWasmInstance(glue);
+    }
     if (forceJsFallback) {
       console.log("Forcing JavaScript fallbacks for all modules");
       wasmModuleInstance = null;

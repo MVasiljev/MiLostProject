@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use js_sys::{Object, Map, JSON, Date, Reflect, Function, Array, Symbol, JsString};
-use super::vec::Vec as RustVec;
+use super::vec::VecF64 as RustVec;
 
 #[wasm_bindgen(js_name = "isMergeableObjectRust")]
 pub fn is_mergeable_object(value: &JsValue) -> bool {

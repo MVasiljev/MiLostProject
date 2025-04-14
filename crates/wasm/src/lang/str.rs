@@ -166,18 +166,3 @@ impl Str {
         self.value == other.value
     }
 }
-
-#[wasm_bindgen(inline_js = "
-export function initialize_str_symbol() {
-    const proto = Str.prototype;
-    Object.defineProperty(proto, Symbol.toStringTag, {
-        value: 'Str',
-        writable: false,
-        enumerable: false,
-        configurable: true
-    });
-}
-")]
-extern "C" {
-    fn initialize_str_symbol();
-}

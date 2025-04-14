@@ -1,6 +1,6 @@
 {
   "name": "milost",
-  "version": "1.0.33",
+  "version": "1.0.34",
   "description": "A Rust-like TypeScript library with WebAssembly optimizations",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -55,6 +55,9 @@
       "import": "./dist/index.js",
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./dist/wasm/milost_wasm.js": {
+      "import": "./dist/wasm/milost_wasm.js"
     },
     "./wasm/*": "./dist/wasm/*",
     "./wasm": {

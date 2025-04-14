@@ -1,8 +1,8 @@
 use wasm_bindgen::prelude::*;
 use js_sys::{Array, Function, Reflect, Object, Iterator as JsIterator};
 use crate::lang::Option as RustOption;
-use crate::Vec as RustVec;
-use crate::lang::{create_none, create_some, Vec};
+use crate::VecF64 as RustVec;
+use crate::lang::{create_none, create_some, VecF64};
 
 
 #[wasm_bindgen]
