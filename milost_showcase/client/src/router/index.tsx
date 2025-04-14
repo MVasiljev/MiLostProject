@@ -2,7 +2,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "./Layout";
 import StringsPage from "../pages/Strings/Strings";
 import WelcomePage from "../pages/Welcome/Welcome";
-import Vector from "../pages/Vector/Vector";
+import VectorPage from "../pages/Vector/Vector";
 
 const router = createBrowserRouter([
   {
@@ -19,7 +19,7 @@ const router = createBrowserRouter([
       },
       {
         path: "vectors",
-        element: <Vector />,
+        element: <VectorPage />,
       },
     ],
   },

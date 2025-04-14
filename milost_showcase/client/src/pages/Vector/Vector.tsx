@@ -47,7 +47,7 @@ interface ApiResponse<T> {
   error?: string;
 }
 
-function Vectors() {
+function VectorPage() {
   const [inputValues, setInputValues] = useState<string>("");
 
   const [parameter, setParameter] = useState<number>(0);
@@ -934,4 +934,4 @@ console.log(third.unwrap());       // 3`}
   );
 }
 
-export default Vectors;
+export default VectorPage;
