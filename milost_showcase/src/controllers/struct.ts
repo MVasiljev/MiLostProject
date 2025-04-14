@@ -27,13 +27,13 @@ export function createStruct(req: Request, res: Response): Response {
     }
 
     const struct = Struct.from(fields);
-    const keys = struct.keys().toArray();
+    const keys = struct.keys();
 
     return res.status(200).json({
       data: {
         original: fields,
         keys,
-        isEmpty: keys.length === 0,
+        isEmpty: keys.isEmpty,
       },
     });
   } catch (error) {
@@ -140,7 +140,7 @@ export function getStructKeys(req: Request, res: Response): Response {
     }
 
     const struct = Struct.from(fields);
-    const keys = struct.keys().toArray();
+    const keys = struct.keys();
 
     return res.status(200).json({
       data: {
@@ -170,7 +170,7 @@ export function getStructEntries(req: Request, res: Response): Response {
     }
 
     const struct = Struct.from(fields);
-    const entries = struct.entries().toArray();
+    const entries = struct.entries();
 
     return res.status(200).json({
       data: {
@@ -484,14 +484,14 @@ export function analyzeStruct(req: Request, res: Response): Response {
     }
 
     const struct = Struct.from(parsed);
-    const keys = struct.keys().toArray();
+    const keys = struct.keys();
 
     return res.status(200).json({
       data: {
         original: value,
         parsed,
         keys,
-        isEmpty: keys.length === 0,
+        isEmpty: keys.isEmpty,
       },
     });
   } catch (error) {

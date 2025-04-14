@@ -375,40 +375,43 @@ function StatusPage() {
                         </ModuleDescription>
                       )}
 
-                      {moduleInfo.methods && moduleInfo.methods.length > 0 && (
+                      {moduleInfo.methods && (
                         <>
-                          <ModuleDescription>
-                            Available Methods:
-                          </ModuleDescription>
-                          <MethodsList>
-                            {moduleInfo.methods.map((method) => (
-                              <Method
-                                key={method}
-                                available={moduleInfo.initialized}
-                              >
-                                <svg
-                                  width="12"
-                                  height="12"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                >
-                                  {moduleInfo.initialized ? (
-                                    <path
-                                      d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"
-                                      fill="currentColor"
-                                    />
-                                  ) : (
-                                    <path
-                                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"
-                                      fill="currentColor"
-                                    />
-                                  )}
-                                </svg>
-                                {method}
-                              </Method>
-                            ))}
-                          </MethodsList>
+                          {moduleInfo.methods.static?.length > 0 && (
+                            <>
+                              <ModuleDescription>
+                                Static Methods:
+                              </ModuleDescription>
+                              <MethodsList>
+                                {moduleInfo.methods.static.map((method) => (
+                                  <Method
+                                    key={`static-${method}`}
+                                    available={moduleInfo.initialized}
+                                  >
+                                    {method}
+                                  </Method>
+                                ))}
+                              </MethodsList>
+                            </>
+                          )}
+
+                          {moduleInfo.methods.instance?.length > 0 && (
+                            <>
+                              <ModuleDescription>
+                                Instance Methods:
+                              </ModuleDescription>
+                              <MethodsList>
+                                {moduleInfo.methods.instance.map((method) => (
+                                  <Method
+                                    key={`instance-${method}`}
+                                    available={moduleInfo.initialized}
+                                  >
+                                    {method}
+                                  </Method>
+                                ))}
+                              </MethodsList>
+                            </>
+                          )}
                         </>
                       )}
                     </ModuleCard>

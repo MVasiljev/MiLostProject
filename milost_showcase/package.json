@@ -16,7 +16,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "milost": "file:milost-1.0.33.tgz",
+    "milost": "^1.0.35",
     "pino": "^8.16.0",
     "pino-pretty": "^10.2.3"
   },

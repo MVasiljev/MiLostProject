@@ -30,14 +30,14 @@ export function createHashMap(req: Request, res: Response): Response {
     }
 
     const hashMap = HashMap.from(entries);
-    const keys = hashMap.keys().toArray();
+    const keys = hashMap.keys();
 
     return res.status(200).json({
       data: {
         original: entries,
         keys,
         size: hashMap.size(),
-        isEmpty: hashMap.isEmpty(),
+        isEmpty: hashMap.isEmpty,
       },
     });
   } catch (error) {
@@ -151,7 +151,7 @@ export function setHashMapValue(req: Request, res: Response): Response {
 
     const hashMap = HashMap.from(entries);
     const newMap = hashMap.insert(key, value);
-    const result = newMap.toArray();
+    const result = newMap;
 
     return res.status(200).json({
       data: {
@@ -190,7 +190,7 @@ export function removeHashMapEntry(req: Request, res: Response): Response {
 
     const hashMap = HashMap.from(entries);
     const newMap = hashMap.remove(key);
-    const result = newMap.toArray();
+    const result = newMap;
 
     return res.status(200).json({
       data: {
@@ -221,7 +221,7 @@ export function getHashMapKeys(req: Request, res: Response): Response {
     }
 
     const hashMap = HashMap.from(entries);
-    const keys = hashMap.keys().toArray();
+    const keys = hashMap.keys();
 
     return res.status(200).json({
       data: {
@@ -251,7 +251,7 @@ export function getHashMapValues(req: Request, res: Response): Response {
     }
 
     const hashMap = HashMap.from(entries);
-    const values = hashMap.values().toArray();
+    const values = hashMap.values();
 
     return res.status(200).json({
       data: {
@@ -281,7 +281,7 @@ export function getHashMapEntries(req: Request, res: Response): Response {
     }
 
     const hashMap = HashMap.from(entries);
-    const mapEntries = hashMap.entries().toArray();
+    const mapEntries = hashMap.entries();
 
     return res.status(200).json({
       data: {
@@ -654,7 +654,7 @@ export function analyzeHashMap(req: Request, res: Response): Response {
     }
 
     const hashMap = HashMap.from(parsed);
-    const keys = hashMap.keys().toArray();
+    const keys = hashMap.keys();
 
     return res.status(200).json({
       data: {
@@ -662,7 +662,7 @@ export function analyzeHashMap(req: Request, res: Response): Response {
         parsed,
         keys,
         size: hashMap.size(),
-        isEmpty: hashMap.isEmpty(),
+        isEmpty: hashMap.isEmpty,
       },
     });
   } catch (error) {
