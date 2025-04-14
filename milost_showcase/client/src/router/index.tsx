@@ -5,6 +5,7 @@ import WelcomePage from "../pages/Welcome/Welcome";
 import VectorPage from "../pages/Vector/Vector";
 import TuplePage from "../pages/Tuple/Tuple";
 import StructPage from "../pages/Struct/Struct";
+import HashMapPage from "../pages/HashMap/HashMap";
 import StatusPage from "../pages/Status/Status";
 
 const router = createBrowserRouter([
@@ -33,6 +34,10 @@ const router = createBrowserRouter([
         element: <StructPage />,
       },
       {
+        path: "hashmaps",
+        element: <HashMapPage />,
+      },
+      {
         path: "status",
         element: <StatusPage />,
       },
@@ -50,6 +55,7 @@ export const ROUTES = {
   VECTORS: "/vectors",
   TUPLES: "/tuples",
   STRUCTS: "/structs",
+  HASHMAPS: "/hashmaps",
   STATUS: "/status",
 };
 

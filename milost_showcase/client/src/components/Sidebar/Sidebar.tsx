@@ -23,6 +23,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
     { id: "vectors", label: "Vectors", path: ROUTES.VECTORS },
     { id: "tuples", label: "Tuples", path: ROUTES.TUPLES },
     { id: "structs", label: "Structs", path: ROUTES.STRUCTS },
+    { id: "hashmaps", label: "HashMaps", path: ROUTES.HASHMAPS },
     { id: "status", label: "System Status", path: ROUTES.STATUS },
   ];
 
