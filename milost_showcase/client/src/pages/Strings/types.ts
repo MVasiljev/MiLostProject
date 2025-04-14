@@ -1,3 +1,4 @@
+// Base string operation types
 export type StringTransformOperation =
   | "uppercase"
   | "lowercase"
@@ -15,6 +16,7 @@ export type SearchOperation =
   | "replace"
   | "split";
 
+// Category type for tab navigation
 export type StringOperationCategory =
   | "analyze"
   | "transform"
@@ -23,6 +25,7 @@ export type StringOperationCategory =
   | "compare"
   | "concat";
 
+// Response types
 export interface StringAnalysisResult {
   original: string;
   length: number;
@@ -69,6 +72,7 @@ export interface ConcatenateStringsResult {
   result: string;
 }
 
+// Union type for all possible results
 export type StringOperationResult =
   | StringAnalysisResult
   | StringTransformationResult
@@ -77,6 +81,7 @@ export type StringOperationResult =
   | CompareStringsResult
   | ConcatenateStringsResult;
 
+// Type guards
 export function isStringAnalysisResult(
   result: unknown
 ): result is StringAnalysisResult {
@@ -146,6 +151,7 @@ export function isConcatenateStringsResult(
   );
 }
 
+// Request type for substring operation
 export interface SubstringOperationRequest {
   value: string;
   operation: SubstringOperation;
@@ -154,6 +160,7 @@ export interface SubstringOperationRequest {
   searchStr?: string;
 }
 
+// Request type for search operation
 export interface SearchOperationRequest {
   value: string;
   operation: SearchOperation;

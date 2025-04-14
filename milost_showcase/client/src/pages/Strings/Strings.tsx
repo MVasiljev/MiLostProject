@@ -47,7 +47,7 @@ interface ApiResponse<T> {
   error?: string;
 }
 
-function Strings() {
+function StringsPage() {
   // Basic input states
   const [inputValue, setInputValue] = useState("");
   const [firstString, setFirstString] = useState("");
@@ -903,4 +903,4 @@ console.log(combined.unwrap());              // "Hello, MiLost!"`}
   );
 }
 
-export default Strings;
+export default StringsPage;
