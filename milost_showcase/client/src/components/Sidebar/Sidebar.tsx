@@ -21,6 +21,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
     { id: "home", label: "Home", path: ROUTES.HOME },
     { id: "strings", label: "Strings", path: ROUTES.STRINGS },
     { id: "vectors", label: "Vectors", path: ROUTES.VECTORS },
+    { id: "tuples", label: "Tuples", path: ROUTES.TUPLES },
   ];
 
   return (

@@ -1,13 +1,27 @@
 import { Request, Response } from "express";
 import { Str } from "milost";
 import logger from "../utils/logger.js";
+import {
+  CreateStringRequest,
+  StringResponse,
+  StringOperationRequest,
+  StringOperationResponse,
+  SubstringOperationRequest,
+  SubstringOperationResponse,
+  SearchOperationRequest,
+  SearchOperationResponse,
+  CompareStringsRequest,
+  CompareStringsResponse,
+  ConcatenateStringsRequest,
+  ConcatenateStringsResponse,
+} from "../types/string.js";
 
 /**
  * Create a new string and analyze it
  */
 export function createString(req: Request, res: Response): Response {
   try {
-    const { value } = req.body;
+    const { value } = req.body as CreateStringRequest;
 
     if (!value) {
       return res.status(400).json({
@@ -17,13 +31,15 @@ export function createString(req: Request, res: Response): Response {
 
     const str = Str.fromRaw(value);
 
-    return res.status(200).json({
+    const response: StringResponse = {
       data: {
         original: value,
         length: str.len(),
         isEmpty: str.isEmpty(),
       },
-    });
+    };
+
+    return res.status(200).json(response);
   } catch (error) {
     logger.error({ error }, "Error in createString controller");
     return res.status(500).json({
@@ -37,7 +53,7 @@ export function createString(req: Request, res: Response): Response {
  */
 export function stringTransformations(req: Request, res: Response): Response {
   try {
-    const { value, operation } = req.body;
+    const { value, operation } = req.body as StringOperationRequest;
 
     if (!value || !operation) {
       return res.status(400).json({
@@ -67,13 +83,15 @@ export function stringTransformations(req: Request, res: Response): Response {
         });
     }
 
-    return res.status(200).json({
+    const response: StringOperationResponse = {
       data: {
         original: value,
         operation,
         result,
       },
-    });
+    };
+
+    return res.status(200).json(response);
   } catch (error) {
     logger.error({ error }, "Error in stringTransformations controller");
     return res.status(500).json({
@@ -87,7 +105,8 @@ export function stringTransformations(req: Request, res: Response): Response {
  */
 export function substringOperations(req: Request, res: Response): Response {
   try {
-    const { value, operation, start, end, searchStr } = req.body;
+    const { value, operation, start, end, searchStr } =
+      req.body as SubstringOperationRequest;
 
     if (!value || !operation) {
       return res.status(400).json({
@@ -137,14 +156,16 @@ export function substringOperations(req: Request, res: Response): Response {
         });
     }
 
-    return res.status(200).json({
+    const response: SubstringOperationResponse = {
       data: {
         original: value,
         operation,
         result,
         params: { start, end, searchStr },
       },
-    });
+    };
+
+    return res.status(200).json(response);
   } catch (error) {
     logger.error({ error }, "Error in substringOperations controller");
     return res.status(500).json({
@@ -158,7 +179,8 @@ export function substringOperations(req: Request, res: Response): Response {
  */
 export function searchOperations(req: Request, res: Response): Response {
   try {
-    const { value, operation, searchStr, position, replaceStr } = req.body;
+    const { value, operation, searchStr, position, replaceStr } =
+      req.body as SearchOperationRequest;
 
     if (!value || !operation || !searchStr) {
       return res.status(400).json({
@@ -196,14 +218,16 @@ export function searchOperations(req: Request, res: Response): Response {
         });
     }
 
-    return res.status(200).json({
+    const response: SearchOperationResponse = {
       data: {
         original: value,
         operation,
         result,
         params: { searchStr, position, replaceStr },
       },
-    });
+    };
+
+    return res.status(200).json(response);
   } catch (error) {
     logger.error({ error }, "Error in searchOperations controller");
     return res.status(500).json({
@@ -217,7 +241,7 @@ export function searchOperations(req: Request, res: Response): Response {
  */
 export function compareStrings(req: Request, res: Response): Response {
   try {
-    const { firstString, secondString } = req.body;
+    const { firstString, secondString } = req.body as CompareStringsRequest;
 
     if (!firstString || !secondString) {
       return res.status(400).json({
@@ -230,13 +254,15 @@ export function compareStrings(req: Request, res: Response): Response {
 
     const isEqual = str1.equals(str2);
 
-    return res.status(200).json({
+    const response: CompareStringsResponse = {
       data: {
         firstString,
         secondString,
         equal: isEqual,
       },
-    });
+    };
+
+    return res.status(200).json(response);
   } catch (error) {
     logger.error({ error }, "Error in compareStrings controller");
     return res.status(500).json({
@@ -250,7 +276,7 @@ export function compareStrings(req: Request, res: Response): Response {
  */
 export function concatenateStrings(req: Request, res: Response): Response {
   try {
-    const { firstString, secondString } = req.body;
+    const { firstString, secondString } = req.body as ConcatenateStringsRequest;
 
     if (!firstString || !secondString) {
       return res.status(400).json({
@@ -263,13 +289,15 @@ export function concatenateStrings(req: Request, res: Response): Response {
 
     const result = str1.concat(str2).unwrap();
 
-    return res.status(200).json({
+    const response: ConcatenateStringsResponse = {
       data: {
         firstString,
         secondString,
         result,
       },
-    });
+    };
+
+    return res.status(200).json(response);
   } catch (error) {
     logger.error({ error }, "Error in concatenateStrings controller");
     return res.status(500).json({

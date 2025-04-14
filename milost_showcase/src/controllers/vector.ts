@@ -9,7 +9,9 @@ import {
   ArrayFilterOperationRequest,
   ArrayReduceOperationRequest,
   TakeDropOperationRequest,
-} from "../types/index.js";
+  VectorCheckOperationRequest,
+  VectorCheckOperationResponse,
+} from "../types/vector.js";
 
 /**
  * Create a new vector
@@ -314,7 +316,7 @@ export function takeDropVector(req: Request, res: Response): Response {
 export function checkVector(req: Request, res: Response): Response {
   try {
     const { values, operation, parameter } =
-      req.body as ArrayFilterOperationRequest;
+      req.body as VectorCheckOperationRequest;
 
     if (!values || !Array.isArray(values) || !operation) {
       return res.status(400).json({
@@ -339,14 +341,16 @@ export function checkVector(req: Request, res: Response): Response {
         });
     }
 
-    return res.status(200).json({
+    const response: VectorCheckOperationResponse = {
       data: {
         original: values,
         operation,
         parameter: numParam,
         result,
       },
-    });
+    };
+
+    return res.status(200).json(response);
   } catch (error) {
     logger.error({ error }, "Error in checkVector controller");
     return res.status(500).json({
