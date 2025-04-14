@@ -6,36 +6,38 @@ import {
   isWasmInitialized,
   setExternalWasmInstance,
 } from "milost";
-import config from "../config/index.js";
 import logger from "../utils/logger.js";
-import { WasmStatus } from "../types/index.js";
+import path from "path";
 
-/**
- * Initialize the WASM module for MiLost
- */
+const filename = fileURLToPath(import.meta.url);
+const dirname = path.dirname(filename);
+
 export async function initializeWasm(): Promise<boolean> {
   try {
-    const wasmJsUrl = pathToFileURL(config.wasm.jsPath).href;
-    const wasmInitModule = await import(wasmJsUrl);
-    const wasmInit = wasmInitModule.default;
+    const wasmBinaryPath = path.resolve(
+      dirname,
+      "../../node_modules/milost/dist/wasm/milost_wasm_bg.wasm"
+    );
+    const wasmJsPath = path.resolve(
+      dirname,
+      "../../node_modules/milost/dist/wasm/milost_wasm.js"
+    );
 
-    const binary = await fs.readFile(config.wasm.binaryPath);
-
+    const wasmInit = (await import(pathToFileURL(wasmJsPath).href)).default;
+    const binary = await fs.readFile(wasmBinaryPath);
     const instance = await wasmInit(binary);
 
     setExternalWasmInstance(instance);
 
     await initWasm({
       skipWasmLoading: true,
-      debug: config.debug,
+      debug: true,
     });
 
     logger.info("WASM initialized successfully");
 
-    if (config.debug) {
-      const moduleExports = Object.keys(getWasmModule()).slice(0, 10);
-      logger.debug({ exports: moduleExports }, "WASM exports sample");
-    }
+    const moduleExports = Object.keys(getWasmModule()).slice(0, 10);
+    logger.debug({ exports: moduleExports }, "WASM exports sample");
 
     return true;
   } catch (error) {
@@ -44,10 +46,7 @@ export async function initializeWasm(): Promise<boolean> {
   }
 }
 
-/**
- * Get WASM status information
- */
-export function getWasmStatus(): WasmStatus {
+export function getWasmStatus() {
   return {
     initialized: isWasmInitialized(),
     exports: isWasmInitialized()

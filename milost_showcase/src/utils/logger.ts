@@ -1,6 +1,10 @@
-import pino from "pino";
+import pinoModule from "pino";
 
-const logger = pino({
+const pinoLogger = pinoModule as unknown as (
+  options?: pinoModule.LoggerOptions
+) => pinoModule.Logger;
+
+const logger = pinoLogger({
   transport: {
     target: "pino-pretty",
     options: {
