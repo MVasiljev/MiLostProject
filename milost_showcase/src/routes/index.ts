@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import stringRoutes from "./string.js";
 import vectorRoutes from "./vector.js";
 import tupleRoutes from "./tuple.js";
+import structRoutes from "./struct.js";
 import { getWasmStatus } from "../services/wasm.js";
 import logger from "../utils/logger.js";
 
@@ -34,5 +35,6 @@ router.get("/", (req: Request, res: Response) => {
 router.use("/string", stringRoutes);
 router.use("/vector", vectorRoutes);
 router.use("/tuple", tupleRoutes);
+router.use("/struct", structRoutes);
 
 export default router;

@@ -4,6 +4,7 @@ import StringsPage from "../pages/Strings/Strings";
 import WelcomePage from "../pages/Welcome/Welcome";
 import VectorPage from "../pages/Vector/Vector";
 import TuplePage from "../pages/Tuple/Tuple";
+import StructPage from "../pages/Struct/Struct";
 
 const router = createBrowserRouter([
   {
@@ -26,6 +27,10 @@ const router = createBrowserRouter([
         path: "tuples",
         element: <TuplePage />,
       },
+      {
+        path: "structs",
+        element: <StructPage />,
+      },
     ],
   },
 ]);
@@ -39,6 +44,7 @@ export const ROUTES = {
   STRINGS: "/strings",
   VECTORS: "/vectors",
   TUPLES: "/tuples",
+  STRUCTS: "/structs",
 };
 
 export default router;
