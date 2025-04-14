@@ -1,59 +1,27 @@
-import express from "express";
-import path from "path";
-import { fileURLToPath } from "url";
-import { loadWasm, getWasmStatus } from "./utils/wasm-loader.js";
-import stringRoutes from "./routes/string.js";
-import welcomeView from "./views/welcome.js";
-import debugView from "./views/debug.js";
+import createApp from "./app.js";
+import { initializeWasm } from "./services/wasm.js";
+import config from "./config/index.js";
+import logger from "./utils/logger.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const publicDir = path.join(__dirname, "../public");
-
-console.log("📁 Serving static files from:", publicDir);
-
-async function startServer() {
+(async () => {
   try {
-    console.log("Initializing MiLost WASM...");
-    const wasmResult = await loadWasm();
-    console.log("WASM initialization complete:", wasmResult);
+    logger.info("Initializing WASM...");
 
-    const app = express();
-    const port = process.env.PORT || 3000;
+    const wasmInitialized = await initializeWasm();
 
-    const distDir = path.join(__dirname, "../dist");
-    app.use(express.static(path.join(__dirname, "../public")));
-    app.use(express.static(path.join(__dirname, "../dist")));
-    app.use(express.json());
+    if (!wasmInitialized) {
+      logger.error("WASM initialization failed. Exiting...");
+      process.exit(1);
+    }
 
-    app.get("/api/status", (req, res) => {
-      const status = getWasmStatus();
-      res.json(status);
-    });
+    const app = createApp();
 
-    app.use("/api/string", stringRoutes);
-    app.get("/welcome", welcomeView.renderWelcomePage);
-    app.get("/debug-info", debugView.renderDebugPage);
-
-    app.get("/", (req, res) => {
-      res.sendFile(path.join(publicDir, "index.html"));
-    });
-
-    app.use((req, res, next) => {
-      console.log("➡️ Incoming request:", req.method, req.originalUrl);
-      next();
-    });
-
-    app.listen(port, () => {
-      console.log(`🚀 Server running at http://localhost:${port}`);
-      console.log(`📄 Welcome page: http://localhost:${port}/welcome`);
-      console.log(`🔍 Debug info: http://localhost:${port}/debug-info`);
-      console.log(`🧪 API status: http://localhost:${port}/api/status`);
+    app.listen(config.port, () => {
+      logger.info(`🚀 Server running at http://localhost:${config.port}`);
+      logger.info(`API available at http://localhost:${config.port}/api`);
     });
   } catch (error) {
-    console.error("Failed to start server:", error);
+    logger.error({ error }, "Failed to start server");
     process.exit(1);
   }
-}
-
-startServer();
+})();
