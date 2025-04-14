@@ -25,7 +25,7 @@ function Header({ toggleSidebar }: HeaderProps) {
         </div>
         <IconLinks>
           <IconLink
-            href="https://github.com/MVasiljev/milost"
+            href="https://github.com/MVasiljev/MiLostProject"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="GitHub Repository"
