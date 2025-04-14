@@ -480,7 +480,6 @@ function StatusPage() {
             </Card>
           )}
 
-          {/* Display full status as JSON for debugging purposes */}
           <Card>
             <CardTitle>Raw Status Data</CardTitle>
             <Pre>{JSON.stringify(status, null, 2)}</Pre>

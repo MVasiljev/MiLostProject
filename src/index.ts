@@ -197,7 +197,7 @@ export {
   BrandTypes,
   iterableToVec,
   Types,
-} from "./types";
+} from "./types/index.js";
 
 export { Str } from "./types/string.js";
 
@@ -279,7 +279,6 @@ export { Tuple } from "./types/tuple.js";
 export { Vec } from "./types/vec.js";
 
 export {
-  initWasm,
   isWasmInitialized,
   getWasmModule,
   callWasmInstanceMethod,
@@ -292,6 +291,8 @@ export {
   resetWasmInitialization,
   setExternalWasmInstance,
 } from "./initWasm/index.js";
+
+export { initWasm } from "./initWasm/bootstrap.js";
 
 export {
   Graph,

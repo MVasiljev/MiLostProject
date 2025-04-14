@@ -31,21 +31,6 @@ export async function initializeWasm(): Promise<boolean> {
     const startTime = performance.now();
     initializationTime = new Date();
 
-    const wasmBinaryPath = path.resolve(
-      dirname,
-      "../../node_modules/milost/dist/wasm/milost_wasm_bg.wasm"
-    );
-    const wasmJsPath = path.resolve(
-      dirname,
-      "../../node_modules/milost/dist/wasm/milost_wasm.js"
-    );
-
-    const wasmInit = (await import(pathToFileURL(wasmJsPath).href)).default;
-    const binary = await fs.readFile(wasmBinaryPath);
-    const instance = await wasmInit(binary);
-
-    setExternalWasmInstance(instance);
-
     await initWasm({
       skipWasmLoading: true,
       debug: true,
@@ -73,7 +58,6 @@ export async function initializeWasm(): Promise<boolean> {
               instance: [] as string[],
             };
 
-            // Collect static methods
             if (typeof mod === "function") {
               Object.getOwnPropertyNames(mod)
                 .filter(
@@ -87,7 +71,6 @@ export async function initializeWasm(): Promise<boolean> {
                 .forEach((name) => methods.static.push(name));
             }
 
-            // Try to create an instance and get instance methods
             try {
               let testInstance: any = null;
 
