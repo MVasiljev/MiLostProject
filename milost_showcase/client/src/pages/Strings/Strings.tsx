@@ -1,4 +1,4 @@
-import { useState, FormEvent, ChangeEvent } from "react";
+import { useState, ChangeEvent, JSX } from "react";
 import {
   Container,
   Header,
@@ -10,7 +10,6 @@ import {
   Label,
   Input,
   NumberInput,
-  Select,
   PrimaryButton,
   ErrorMessage,
   ResultContainer,
@@ -48,17 +47,20 @@ interface ApiResponse<T> {
   error?: string;
 }
 
-function StringsPage() {
+function Strings() {
+  // Basic input states
   const [inputValue, setInputValue] = useState("");
   const [firstString, setFirstString] = useState("");
   const [secondString, setSecondString] = useState("");
 
+  // Operation parameters
   const [startIndex, setStartIndex] = useState<number>(0);
   const [endIndex, setEndIndex] = useState<number>(0);
   const [searchString, setSearchString] = useState("");
   const [replaceString, setReplaceString] = useState("");
   const [position, setPosition] = useState<number>(0);
 
+  // UI states
   const [activeCategory, setActiveCategory] =
     useState<StringOperationCategory>("analyze");
   const [transformOperation, setTransformOperation] =
@@ -68,6 +70,7 @@ function StringsPage() {
   const [searchOperation, setSearchOperation] =
     useState<SearchOperation>("contains");
 
+  // Result states
   const [result, setResult] = useState<StringOperationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -157,6 +160,7 @@ function StringsPage() {
       operation: substringOperation,
     };
 
+    // Add parameters based on the operation
     if (substringOperation === "substring") {
       requestBody.start = startIndex;
       requestBody.end = endIndex;
@@ -213,6 +217,7 @@ function StringsPage() {
       searchStr: searchString,
     };
 
+    // Add parameters based on the operation
     if (searchOperation === "indexOf") {
       requestBody.position = position;
     } else if (searchOperation === "replace") {
@@ -898,4 +903,4 @@ console.log(combined.unwrap());              // "Hello, MiLost!"`}
   );
 }
 
-export default StringsPage;
+export default Strings;
