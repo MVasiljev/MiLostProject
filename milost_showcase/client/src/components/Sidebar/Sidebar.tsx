@@ -20,6 +20,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
   const navItems = [
     { id: "home", label: "Home", path: ROUTES.HOME },
     { id: "strings", label: "Strings", path: ROUTES.STRINGS },
+    { id: "vectors", label: "Vectors", path: ROUTES.VECTORS },
   ];
 
   return (
