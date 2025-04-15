@@ -9,17 +9,17 @@ import {
   ValueItem,
   InfoBox,
 } from "./HashSet.styles";
-import type { HashSetSetOperation } from "./types";
+import { HashSetSetOperation as SetOperationType } from "./types";
 
 interface HashSetSetOperationProps {
   setValue: any[];
   secondSetInput: string;
   setSecondSetInput: (input: string) => void;
-  setOperation: HashSetSetOperation;
-  setSetOperation: (operation: HashSetSetOperation) => void;
+  setOperation: SetOperationType;
+  setSetOperation: (operation: SetOperationType) => void;
 }
 
-function HashSetSetOperation({
+function HashSetSetOperationForm({
   setValue,
   secondSetInput,
   setSecondSetInput,
@@ -59,7 +59,7 @@ function HashSetSetOperation({
           id="set-operation-select"
           value={setOperation}
           onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-            setSetOperation(e.target.value as HashSetSetOperation)
+            setSetOperation(e.target.value as SetOperationType)
           }
         >
           <option value="union">Union (A ∪ B)</option>
@@ -80,4 +80,4 @@ function HashSetSetOperation({
   );
 }
 
-export default HashSetSetOperation;
+export default HashSetSetOperationForm;

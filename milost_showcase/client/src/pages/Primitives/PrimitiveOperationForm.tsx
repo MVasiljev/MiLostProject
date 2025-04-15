@@ -1,11 +1,9 @@
 import { ChangeEvent } from "react";
 import {
-  Card,
   CardTitle,
   FormGroup,
   Label,
   Input,
-  NumberInput,
   Select,
   PrimaryButton,
   InfoBox,
@@ -18,15 +16,14 @@ import {
   FormatOperation,
   BitManipulationOperation,
   PrimitiveOperationCategory,
-  PrimitiveOperationResult,
 } from "./types";
 
 interface PrimitiveOperationFormProps {
   activeCategory: PrimitiveOperationCategory;
-  value: number;
-  setValue: (value: number) => void;
-  secondValue: number;
-  setSecondValue: (value: number) => void;
+  value: string;
+  setValue: (value: string) => void;
+  secondValue: string;
+  setSecondValue: (value: string) => void;
   primitiveType: PrimitiveType;
   setPrimitiveType: (type: PrimitiveType) => void;
   fromType: PrimitiveType;
@@ -41,13 +38,10 @@ interface PrimitiveOperationFormProps {
   setFormatOperation: (op: FormatOperation) => void;
   bitManipulationOperation: BitManipulationOperation;
   setBitManipulationOperation: (op: BitManipulationOperation) => void;
-  precision: number;
-  setPrecision: (precision: number) => void;
-  apiBaseUrl: string;
-  setResult: (result: PrimitiveOperationResult | null) => void;
+  precision: string;
+  setPrecision: (precision: string) => void;
+  handleSubmit: () => void;
   loading: boolean;
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
 }
 
 function PrimitiveOperationForm({
@@ -72,11 +66,8 @@ function PrimitiveOperationForm({
   setBitManipulationOperation,
   precision,
   setPrecision,
-  apiBaseUrl,
-  setResult,
+  handleSubmit,
   loading,
-  setLoading,
-  setError,
 }: PrimitiveOperationFormProps) {
   const primitiveTypes: PrimitiveType[] = [
     "u8",
@@ -91,97 +82,6 @@ function PrimitiveOperationForm({
     "f64",
   ];
 
-  const handleSubmit = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      let endpoint = `${apiBaseUrl}/primitive`;
-      let requestBody: any = {};
-
-      switch (activeCategory) {
-        case "create":
-          endpoint += "";
-          requestBody = { value, type: primitiveType };
-          break;
-        case "arithmetic":
-          endpoint += "/arithmetic";
-          requestBody = {
-            a: value,
-            b: secondValue,
-            operation: arithmeticOperation,
-            type: primitiveType,
-          };
-          break;
-        case "bitwise":
-          endpoint += "/bitwise";
-          requestBody = {
-            a: value,
-            operation: bitwiseOperation,
-          };
-          if (
-            ["and", "or", "xor", "shift_left", "shift_right"].includes(
-              bitwiseOperation
-            )
-          ) {
-            requestBody.b = secondValue;
-          }
-          break;
-        case "format":
-          endpoint += "/format";
-          requestBody = {
-            value,
-            format: formatOperation,
-          };
-          if (formatOperation === "float") {
-            requestBody.precision = precision;
-          }
-          break;
-        case "bitManipulation":
-          endpoint += "/bit-manipulation";
-          requestBody = {
-            value,
-            operation: bitManipulationOperation,
-          };
-          break;
-        case "validate":
-          endpoint += "/validate";
-          requestBody = { value, type: primitiveType };
-          break;
-        case "convert":
-          endpoint += "/convert";
-          requestBody = {
-            value,
-            fromType,
-            toType,
-          };
-          break;
-      }
-
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to perform operation"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const renderInputs = () => {
     switch (activeCategory) {
       case "create":
@@ -191,10 +91,10 @@ function PrimitiveOperationForm({
               <Label htmlFor="value-input">Value</Label>
               <Input
                 id="value-input"
-                type="number"
+                type="text"
                 value={value}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setValue(Number(e.target.value))
+                  setValue(e.target.value)
                 }
                 placeholder="Enter a value"
               />
@@ -224,10 +124,10 @@ function PrimitiveOperationForm({
             <FormGroup>
               <Label>First Value</Label>
               <Input
-                type="number"
+                type="text"
                 value={value}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setValue(Number(e.target.value))
+                  setValue(e.target.value)
                 }
                 placeholder="First value"
               />
@@ -235,10 +135,10 @@ function PrimitiveOperationForm({
             <FormGroup>
               <Label>Second Value</Label>
               <Input
-                type="number"
+                type="text"
                 value={secondValue}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setSecondValue(Number(e.target.value))
+                  setSecondValue(e.target.value)
                 }
                 placeholder="Second value"
               />
@@ -279,10 +179,10 @@ function PrimitiveOperationForm({
             <FormGroup>
               <Label>First Value</Label>
               <Input
-                type="number"
+                type="text"
                 value={value}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setValue(Number(e.target.value))
+                  setValue(e.target.value)
                 }
                 placeholder="First value"
               />
@@ -293,10 +193,10 @@ function PrimitiveOperationForm({
               <FormGroup>
                 <Label>Second Value</Label>
                 <Input
-                  type="number"
+                  type="text"
                   value={secondValue}
                   onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setSecondValue(Number(e.target.value))
+                    setSecondValue(e.target.value)
                   }
                   placeholder="Second value"
                 />
@@ -327,10 +227,10 @@ function PrimitiveOperationForm({
             <FormGroup>
               <Label>Value</Label>
               <Input
-                type="number"
+                type="text"
                 value={value}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setValue(Number(e.target.value))
+                  setValue(e.target.value)
                 }
                 placeholder="Enter value"
               />
@@ -352,16 +252,13 @@ function PrimitiveOperationForm({
             {formatOperation === "float" && (
               <FormGroup>
                 <Label>Precision</Label>
-                <NumberInput
-                  type="number"
+                <Input
+                  type="text"
                   value={precision}
-                  min={0}
-                  max={10}
                   onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setPrecision(
-                      Math.max(0, Math.min(10, Number(e.target.value)))
-                    )
+                    setPrecision(e.target.value)
                   }
+                  placeholder="Decimal places"
                 />
               </FormGroup>
             )}
@@ -374,10 +271,10 @@ function PrimitiveOperationForm({
             <FormGroup>
               <Label>Value</Label>
               <Input
-                type="number"
+                type="text"
                 value={value}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setValue(Number(e.target.value))
+                  setValue(e.target.value)
                 }
                 placeholder="Enter value"
               />
@@ -411,10 +308,10 @@ function PrimitiveOperationForm({
             <FormGroup>
               <Label>Value</Label>
               <Input
-                type="number"
+                type="text"
                 value={value}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setValue(Number(e.target.value))
+                  setValue(e.target.value)
                 }
                 placeholder="Enter value"
               />
@@ -443,10 +340,10 @@ function PrimitiveOperationForm({
             <FormGroup>
               <Label>Value</Label>
               <Input
-                type="number"
+                type="text"
                 value={value}
                 onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setValue(Number(e.target.value))
+                  setValue(e.target.value)
                 }
                 placeholder="Enter value"
               />
@@ -490,7 +387,7 @@ function PrimitiveOperationForm({
   };
 
   return (
-    <Card>
+    <>
       <CardTitle>
         {activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)}{" "}
         Operation
@@ -499,9 +396,9 @@ function PrimitiveOperationForm({
       {renderInputs()}
 
       <PrimaryButton onClick={handleSubmit} disabled={loading}>
-        Execute Operation
+        {loading ? "Processing..." : "Execute Operation"}
       </PrimaryButton>
-    </Card>
+    </>
   );
 }
 

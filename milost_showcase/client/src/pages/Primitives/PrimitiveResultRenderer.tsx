@@ -28,6 +28,8 @@ function PrimitiveResultRenderer({
   error,
   result,
 }: PrimitiveResultRendererProps) {
+  if (!result && !loading && !error) return null;
+
   if (loading) {
     return (
       <ResultContainer>

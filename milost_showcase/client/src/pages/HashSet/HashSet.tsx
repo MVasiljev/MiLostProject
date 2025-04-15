@@ -4,6 +4,7 @@ import {
   HashSetMapOperation,
   HashSetOperationResult,
   HashSetFilterOperation,
+  HashSetSetOperation,
 } from "./types";
 import {
   Container,
@@ -25,7 +26,7 @@ import HashSetInsert from "./HashSetInsert";
 import HashSetMap from "./HashSetMap";
 import HashSetRemove from "./HashSetRemove";
 import HashSetResultRenderer from "./HashSetResultRenderer";
-import HashSetSetOperation from "./HashSetSetOperation";
+import HashSetSetOperationForm from "./HashSetSetOperation";
 
 interface ApiResponse<T> {
   data?: T;
@@ -36,10 +37,10 @@ function HashSetPage() {
   const [inputValue, setInputValue] = useState<string>(
     "1, 2, 3, 'hello', true"
   );
-  const [setArrValue, setArrSetValue] = useState<any[]>([]);
+  const [setArrValue, setSetArrValue] = useState<any[]>([]);
 
   // For individual operations
-  const [value, setValue] = useState<string>("");
+  const [valueInput, setValueInput] = useState<string>("");
   const [mapOperation, setMapOperation] =
     useState<HashSetMapOperation>("double");
   const [filterOperation, setFilterOperation] =
@@ -49,7 +50,6 @@ function HashSetPage() {
   // For set operations
   const [secondSetInput, setSecondSetInput] =
     useState<string>("3, 4, 5, 'world'");
-  const [secondSet, setSecondSet] = useState<any[]>([]);
   const [setOperation, setSetOperation] =
     useState<HashSetSetOperation>("union");
 
@@ -58,6 +58,8 @@ function HashSetPage() {
   const [result, setResult] = useState<HashSetOperationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hashSetOperation, setHashSetOperation] =
+    useState<HashSetSetOperation>("union");
 
   const apiBaseUrl = "/api";
 
@@ -120,8 +122,8 @@ function HashSetPage() {
 
       if (response.ok && data.data) {
         setResult(data.data);
-        if ("values" in data.data) {
-          setArrSetValue(data.data.values);
+        if ("values" in data.data && Array.isArray(data.data.values)) {
+          setSetArrValue(data.data.values);
         }
       } else {
         setError(data.error || "Something went wrong");
@@ -137,12 +139,12 @@ function HashSetPage() {
 
   const handleContainsCheck = async (): Promise<void> => {
     try {
-      if (setValue.length === 0) {
+      if (setArrValue.length === 0) {
         setError("Please analyze a HashSet first");
         return;
       }
 
-      if (!value) {
+      if (valueInput === "") {
         setError("Please enter a value to check");
         return;
       }
@@ -150,14 +152,28 @@ function HashSetPage() {
       setLoading(true);
       setError(null);
 
-      let parsedValue: any = value;
-      try {
-        if (value.toLowerCase() === "true") parsedValue = true;
-        else if (value.toLowerCase() === "false") parsedValue = false;
-        else if (value.toLowerCase() === "null") parsedValue = null;
-        else if (!isNaN(Number(value))) parsedValue = Number(value);
-      } catch (err) {
-        console.error("Failed to parse value", err);
+      // Parse the input value to the appropriate type
+      let parsedValue: any = valueInput;
+
+      // Try to convert to appropriate type
+      if (valueInput.toLowerCase() === "true") {
+        parsedValue = true;
+      } else if (valueInput.toLowerCase() === "false") {
+        parsedValue = false;
+      } else if (valueInput.toLowerCase() === "null") {
+        parsedValue = null;
+      } else if (!isNaN(Number(valueInput)) && valueInput.trim() !== "") {
+        // Only convert to number if it's a valid number string and not empty
+        parsedValue = Number(valueInput);
+      } else {
+        // If it starts and ends with quotes, remove them
+        if (
+          (valueInput.startsWith("'") && valueInput.endsWith("'")) ||
+          (valueInput.startsWith('"') && valueInput.endsWith('"'))
+        ) {
+          parsedValue = valueInput.substring(1, valueInput.length - 1);
+        }
+        // Otherwise keep as string
       }
 
       const response = await fetch(`${apiBaseUrl}/hashset/contains`, {
@@ -166,7 +182,7 @@ function HashSetPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          values: setValue,
+          values: setArrValue,
           value: parsedValue,
         }),
       });
@@ -187,12 +203,12 @@ function HashSetPage() {
 
   const handleInsertValue = async (): Promise<void> => {
     try {
-      if (setValue.length === 0) {
+      if (setArrValue.length === 0) {
         setError("Please analyze a HashSet first");
         return;
       }
 
-      if (!value) {
+      if (valueInput === "") {
         setError("Please enter a value to insert");
         return;
       }
@@ -200,14 +216,28 @@ function HashSetPage() {
       setLoading(true);
       setError(null);
 
-      let parsedValue: any = value;
-      try {
-        if (value.toLowerCase() === "true") parsedValue = true;
-        else if (value.toLowerCase() === "false") parsedValue = false;
-        else if (value.toLowerCase() === "null") parsedValue = null;
-        else if (!isNaN(Number(value))) parsedValue = Number(value);
-      } catch (err) {
-        console.error("Failed to parse value", err);
+      // Parse the input value to the appropriate type
+      let parsedValue: any = valueInput;
+
+      // Try to convert to appropriate type
+      if (valueInput.toLowerCase() === "true") {
+        parsedValue = true;
+      } else if (valueInput.toLowerCase() === "false") {
+        parsedValue = false;
+      } else if (valueInput.toLowerCase() === "null") {
+        parsedValue = null;
+      } else if (!isNaN(Number(valueInput)) && valueInput.trim() !== "") {
+        // Only convert to number if it's a valid number string and not empty
+        parsedValue = Number(valueInput);
+      } else {
+        // If it starts and ends with quotes, remove them
+        if (
+          (valueInput.startsWith("'") && valueInput.endsWith("'")) ||
+          (valueInput.startsWith('"') && valueInput.endsWith('"'))
+        ) {
+          parsedValue = valueInput.substring(1, valueInput.length - 1);
+        }
+        // Otherwise keep as string
       }
 
       const response = await fetch(`${apiBaseUrl}/hashset/insert`, {
@@ -216,7 +246,7 @@ function HashSetPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          values: setValue,
+          values: setArrValue,
           value: parsedValue,
         }),
       });
@@ -225,9 +255,10 @@ function HashSetPage() {
 
       if (response.ok && data.data) {
         setResult(data.data);
-        if ("result" in data.data) {
-          setSetValue(data.data.result);
-          setInputValue(data.data.result.toString());
+        if ("result" in data.data && Array.isArray(data.data.result)) {
+          setSetArrValue(data.data.result);
+          // Update input value if needed
+          // setInputValue(data.data.result.join(", "));
         }
       } else {
         setError(data.error || "Something went wrong");
@@ -246,7 +277,7 @@ function HashSetPage() {
         return;
       }
 
-      if (!value) {
+      if (valueInput === "") {
         setError("Please enter a value to remove");
         return;
       }
@@ -254,14 +285,28 @@ function HashSetPage() {
       setLoading(true);
       setError(null);
 
-      let parsedValue: any = value;
-      try {
-        if (value.toLowerCase() === "true") parsedValue = true;
-        else if (value.toLowerCase() === "false") parsedValue = false;
-        else if (value.toLowerCase() === "null") parsedValue = null;
-        else if (!isNaN(Number(value))) parsedValue = Number(value);
-      } catch (err) {
-        console.error("Failed to parse value", err);
+      // Parse the input value to the appropriate type
+      let parsedValue: any = valueInput;
+
+      // Try to convert to appropriate type
+      if (valueInput.toLowerCase() === "true") {
+        parsedValue = true;
+      } else if (valueInput.toLowerCase() === "false") {
+        parsedValue = false;
+      } else if (valueInput.toLowerCase() === "null") {
+        parsedValue = null;
+      } else if (!isNaN(Number(valueInput)) && valueInput.trim() !== "") {
+        // Only convert to number if it's a valid number string and not empty
+        parsedValue = Number(valueInput);
+      } else {
+        // If it starts and ends with quotes, remove them
+        if (
+          (valueInput.startsWith("'") && valueInput.endsWith("'")) ||
+          (valueInput.startsWith('"') && valueInput.endsWith('"'))
+        ) {
+          parsedValue = valueInput.substring(1, valueInput.length - 1);
+        }
+        // Otherwise keep as string
       }
 
       const response = await fetch(`${apiBaseUrl}/hashset/remove`, {
@@ -270,7 +315,7 @@ function HashSetPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          values: setValue,
+          values: setArrValue,
           value: parsedValue,
         }),
       });
@@ -279,17 +324,10 @@ function HashSetPage() {
 
       if (response.ok && data.data) {
         setResult(data.data);
-        if ("result" in data.data) {
-          if (Array.isArray(data.data.result)) {
-            if (Array.isArray(data.data.result)) {
-              setArrSetValue(data.data.result);
-            } else {
-              console.error("Unexpected result type: ", data.data.result);
-            }
-          } else {
-            console.error("Unexpected result type: ", data.data.result);
-          }
-          setInputValue(data.data.result.toString());
+        if ("result" in data.data && Array.isArray(data.data.result)) {
+          setSetArrValue(data.data.result);
+          // Update input value if needed
+          // setInputValue(data.data.result.join(", "));
         }
       } else {
         setError(data.error || "Something went wrong");
@@ -303,7 +341,7 @@ function HashSetPage() {
 
   const handleMapOperation = async (): Promise<void> => {
     try {
-      if (setValue.length === 0) {
+      if (setArrValue.length === 0) {
         setError("Please analyze a HashSet first");
         return;
       }
@@ -317,7 +355,7 @@ function HashSetPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          values: setValue,
+          values: setArrValue,
           operation: mapOperation,
         }),
       });
@@ -326,9 +364,10 @@ function HashSetPage() {
 
       if (response.ok && data.data) {
         setResult(data.data);
-        if ("result" in data.data) {
-          setArrSetValue(data.data.result);
-          setInputValue(data.data.result.toString());
+        if ("result" in data.data && Array.isArray(data.data.result)) {
+          setSetArrValue(data.data.result);
+          // Update input value if needed
+          // setInputValue(data.data.result.join(", "));
         }
       } else {
         setError(data.error || "Something went wrong");
@@ -342,7 +381,7 @@ function HashSetPage() {
 
   const handleFilterOperation = async (): Promise<void> => {
     try {
-      if (setValue.length === 0) {
+      if (setArrValue.length === 0) {
         setError("Please analyze a HashSet first");
         return;
       }
@@ -354,7 +393,7 @@ function HashSetPage() {
           filterOperation === "contains" ||
           filterOperation === "startsWith" ||
           filterOperation === "endsWith") &&
-        !filterParameter
+        filterParameter === ""
       ) {
         setError("Please enter a parameter for the filter operation");
         return;
@@ -381,7 +420,10 @@ function HashSetPage() {
             parsedParameter = false;
           else if (filterParameter.toLowerCase() === "null")
             parsedParameter = null;
-          else if (!isNaN(Number(filterParameter)))
+          else if (
+            !isNaN(Number(filterParameter)) &&
+            filterParameter.trim() !== ""
+          )
             parsedParameter = Number(filterParameter);
         }
       } catch (err) {
@@ -394,7 +436,7 @@ function HashSetPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          values: setValue,
+          values: setArrValue,
           operation: filterOperation,
           parameter: parsedParameter,
         }),
@@ -404,9 +446,10 @@ function HashSetPage() {
 
       if (response.ok && data.data) {
         setResult(data.data);
-        if ("result" in data.data) {
-          setArrSetValue(data.data.result);
-          setInputValue(data.data.result.toString());
+        if ("result" in data.data && Array.isArray(data.data.result)) {
+          setSetArrValue(data.data.result);
+          // Update input value if needed
+          // setInputValue(data.data.result.join(", "));
         }
       } else {
         setError(data.error || "Something went wrong");
@@ -425,7 +468,7 @@ function HashSetPage() {
         return;
       }
 
-      if (!secondSetInput) {
+      if (secondSetInput === "") {
         setError("Please enter values for the second HashSet");
         return;
       }
@@ -435,7 +478,6 @@ function HashSetPage() {
 
       try {
         const parsedSecondSet = parseHashSetInput(secondSetInput);
-        setSecondSet(parsedSecondSet);
 
         const response = await fetch(`${apiBaseUrl}/hashset/set-operation`, {
           method: "POST",
@@ -443,7 +485,7 @@ function HashSetPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            firstSet: setValue,
+            firstSet: setArrValue,
             secondSet: parsedSecondSet,
             operation: setOperation,
           }),
@@ -454,8 +496,9 @@ function HashSetPage() {
         if (response.ok && data.data) {
           setResult(data.data);
           if ("result" in data.data && Array.isArray(data.data.result)) {
-            setArrSetValue(data.data.result);
-            setInputValue(data.data.result.toString());
+            setSetArrValue(data.data.result);
+            // Update input value if needed
+            // setInputValue(data.data.result.join(", "));
           }
         } else {
           setError(data.error || "Something went wrong");
@@ -507,18 +550,37 @@ function HashSetPage() {
   const renderActiveComponent = () => {
     switch (activeCategory) {
       case "analyze":
+        // return (
+        //   <HashSetAnalyze
+        //     inputValue={inputValue}
+        //     setInputValue={setInputValue}
+        //   />
+        // );
+        break;
+      case "contains":
         return (
-          <HashSetAnalyze
-            inputValue={inputValue}
-            setInputValue={setInputValue}
+          <HashSetContains
+            setValue={setArrValue}
+            valueInput={valueInput}
+            setValueInput={setValueInput}
           />
         );
-      case "contains":
-        return <HashSetContains setValue={setArrValue} value={value} />;
       case "insert":
-        return <HashSetInsert setValue={setArrValue} value={value} />;
+        return (
+          <HashSetInsert
+            setValue={setArrValue}
+            valueInput={valueInput}
+            setValueInput={setValueInput}
+          />
+        );
       case "remove":
-        return <HashSetRemove setValue={setArrValue} value={value} />;
+        return (
+          <HashSetRemove
+            setValue={setArrValue}
+            valueInput={valueInput}
+            setValueInput={setValueInput}
+          />
+        );
       case "map":
         return (
           <HashSetMap
@@ -539,7 +601,7 @@ function HashSetPage() {
         );
       case "setOperation":
         return (
-          <HashSetSetOperation
+          <HashSetSetOperationForm
             setValue={setArrValue}
             secondSetInput={secondSetInput}
             setSecondSetInput={setSecondSetInput}

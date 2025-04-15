@@ -10,14 +10,14 @@ import {
 
 interface HashSetContainsProps {
   setValue: any[];
-  value: string;
-  setValue: (value: string) => void;
+  valueInput: string;
+  setValueInput: (value: string) => void;
 }
 
 function HashSetContains({
   setValue,
-  value,
-  setValue: setValueFn,
+  valueInput,
+  setValueInput,
 }: HashSetContainsProps) {
   return (
     <>
@@ -34,9 +34,9 @@ function HashSetContains({
         <Input
           id="value-input"
           type="text"
-          value={value}
+          value={valueInput}
           onChange={(e: ChangeEvent<HTMLInputElement>) =>
-            setValueFn(e.target.value)
+            setValueInput(e.target.value)
           }
           placeholder="Enter a value to check"
         />
