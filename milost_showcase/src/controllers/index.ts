@@ -13,6 +13,7 @@ import * as iterController from "./iter.js";
 import * as resultController from "./result.js";
 import * as functionalController from "./functional.js";
 import * as syncPrimitivesController from "./sync_primitives.js";
+import * as smartPointersController from "./smart_pointers.js";
 
 export {
   stringController,
@@ -30,4 +31,5 @@ export {
   resultController,
   functionalController,
   syncPrimitivesController,
+  smartPointersController,
 };

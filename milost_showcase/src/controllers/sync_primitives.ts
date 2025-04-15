@@ -1,12 +1,5 @@
 import { Request, Response } from "express";
-import {
-  Mutex,
-  RwLock,
-  ArcMutex,
-  createMutex,
-  createRwLock,
-  createArcMutex,
-} from "milost";
+import { createMutex, createRwLock, createArcMutex } from "milost";
 import { u32, Str, AppError } from "milost";
 import logger from "../utils/logger.js";
 import { SyncPrimitiveOperationRequest } from "../types/sync_primitives.js";
