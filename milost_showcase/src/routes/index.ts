@@ -24,6 +24,7 @@ import matchingRoutes from "./matching.js";
 import contractRoutes from "./contract.js";
 import asyncRoutes from "./async.js";
 import resourceRoutes from "./resource.js";
+import asyncUtilsRoutes from "./async-utils.js";
 
 const router = express.Router();
 
@@ -74,5 +75,6 @@ router.use("/matching", matchingRoutes);
 router.use("/contract", contractRoutes);
 router.use("/async", asyncRoutes);
 router.use("/resource", resourceRoutes);
+router.use("/async-utils", asyncUtilsRoutes);
 
 export default router;

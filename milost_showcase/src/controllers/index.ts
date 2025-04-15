@@ -21,6 +21,7 @@ import * as matchingController from "./matching.js";
 import * as contractController from "./contract.js";
 import * as asyncController from "./async.js";
 import * as resourceController from "./resource.js";
+import * as asyncUtilsController from "./async-utils.js";
 
 export {
   stringController,
@@ -46,4 +47,5 @@ export {
   contractController,
   asyncController,
   resourceController,
+  asyncUtilsController,
 };
