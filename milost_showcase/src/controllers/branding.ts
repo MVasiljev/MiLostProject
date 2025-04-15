@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import { Branded, Str } from "milost";
-import logger from "../utils/logger.js";
+import { ValidationError, Str, Branded } from "milost";
 import {
   CreateBrandedRequest,
+  createValidator,
   CreateBrandedResponse,
   ValidateBrandedRequest,
   ValidateBrandedResponse,
@@ -12,6 +12,17 @@ import {
   ConvertBrandedResponse,
   BrandedOperationRequest,
 } from "../types/branding.js";
+import logger from "../utils/logger.js";
+
+function extractErrorMessage(error: unknown): string {
+  if (error instanceof ValidationError) {
+    return error.message;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
 
 /**
  * Create a new branded value
@@ -33,65 +44,27 @@ export function createBranded(req: Request, res: Response): Response {
       });
     }
 
-    // Create a validator function based on the provided validator configuration
-    let validatorFn: (val: any) => boolean;
+    let validatorFn;
     try {
-      if (typeof validator === "string") {
-        // Parse the validator as a function string
-        validatorFn = new Function("value", `return ${validator}`) as (
-          val: any
-        ) => boolean;
-      } else if (typeof validator === "object" && validator !== null) {
-        // Create a validator based on the provided configuration
-        if (validator.type === "range") {
-          const { min, max } = validator;
-          validatorFn = (val: any) => {
-            const numVal = Number(val);
-            return !isNaN(numVal) && numVal >= min && numVal <= max;
-          };
-        } else if (validator.type === "regex") {
-          const regex = new RegExp(validator.pattern);
-          validatorFn = (val: any) =>
-            typeof val === "string" && regex.test(val);
-        } else if (validator.type === "custom" && validator.code) {
-          validatorFn = new Function("value", validator.code) as (
-            val: any
-          ) => boolean;
-        } else {
-          return res.status(400).json({
-            error: "Invalid validator configuration",
-          });
-        }
-      } else {
-        // Default validator that always passes
-        validatorFn = () => true;
-      }
+      validatorFn = createValidator(validator || (() => true));
     } catch (error) {
       return res.status(400).json({
-        error: `Failed to create validator function: ${error instanceof Error ? error : String(error)}`,
+        error: `Failed to create validator: ${extractErrorMessage(error)}`,
       });
     }
 
-    // Create the branded value
     const brandStr = Str.fromRaw(brand);
-    const errorMsg = errorMessage
-      ? Str.fromRaw(errorMessage).unwrap()
-      : undefined;
+    const errorMsg = errorMessage ? Str.fromRaw(errorMessage) : undefined;
 
-    const result = Branded.create(
-      value,
-      brandStr.unwrap(),
-      validatorFn,
-      errorMsg
-    );
+    const result = Branded.create(value, brandStr, validatorFn, errorMsg);
 
     const response: CreateBrandedResponse = {
       data: {
         value,
         brand,
-        success: result.isOk().unwrap(),
-        result: result.isOk() ? result.unwrap() : null,
-        error: result.isErr() ? result.unwrap() : null,
+        success: result.isOk(),
+        result: result.isOk() ? result.unwrap().unwrap() : null,
+        error: result.isErr() ? extractErrorMessage(result.unwrap()) : null,
       },
     };
 
@@ -123,42 +96,12 @@ export function validateBranded(req: Request, res: Response): Response {
       });
     }
 
-    // Create a validator function based on the provided validator configuration
-    let validatorFn: (val: any) => boolean;
+    let validatorFn;
     try {
-      if (typeof validator === "string") {
-        // Parse the validator as a function string
-        validatorFn = new Function("value", `return ${validator}`) as (
-          val: any
-        ) => boolean;
-      } else if (typeof validator === "object" && validator !== null) {
-        // Create a validator based on the provided configuration
-        if (validator.type === "range") {
-          const { min, max } = validator;
-          validatorFn = (val: any) => {
-            const numVal = Number(val);
-            return !isNaN(numVal) && numVal >= min && numVal <= max;
-          };
-        } else if (validator.type === "regex") {
-          const regex = new RegExp(validator.pattern);
-          validatorFn = (val: any) =>
-            typeof val === "string" && regex.test(val);
-        } else if (validator.type === "custom" && validator.code) {
-          validatorFn = new Function("value", validator.code) as (
-            val: any
-          ) => boolean;
-        } else {
-          return res.status(400).json({
-            error: "Invalid validator configuration",
-          });
-        }
-      } else {
-        // Default validator that always passes
-        validatorFn = () => true;
-      }
+      validatorFn = createValidator(validator || (() => true));
     } catch (error) {
       return res.status(400).json({
-        error: `Failed to create validator function: ${error instanceof Error ? error : String(error)}`,
+        error: `Failed to create validator: ${extractErrorMessage(error)}`,
       });
     }
 
@@ -201,43 +144,15 @@ export function unwrapBranded(req: Request, res: Response): Response {
       });
     }
 
-    // Create a validator function
-    let validatorFn: (val: any) => boolean;
+    let validatorFn;
     try {
-      if (typeof validator === "string") {
-        validatorFn = new Function("value", `return ${validator}`) as (
-          val: any
-        ) => boolean;
-      } else if (typeof validator === "object" && validator !== null) {
-        if (validator.type === "range") {
-          const { min, max } = validator;
-          validatorFn = (val: any) => {
-            const numVal = Number(val);
-            return !isNaN(numVal) && numVal >= min && numVal <= max;
-          };
-        } else if (validator.type === "regex") {
-          const regex = new RegExp(validator.pattern);
-          validatorFn = (val: any) =>
-            typeof val === "string" && regex.test(val);
-        } else if (validator.type === "custom" && validator.code) {
-          validatorFn = new Function("value", validator.code) as (
-            val: any
-          ) => boolean;
-        } else {
-          return res.status(400).json({
-            error: "Invalid validator configuration",
-          });
-        }
-      } else {
-        validatorFn = () => true;
-      }
+      validatorFn = createValidator(validator || (() => true));
     } catch (error) {
       return res.status(400).json({
-        error: `Failed to create validator function: ${error instanceof Error ? error : String(error)}`,
+        error: `Failed to create validator: ${extractErrorMessage(error)}`,
       });
     }
 
-    // Create the branded value to unwrap
     const brandStr = Str.fromRaw(brand);
     const errorMsg = errorMessage ? Str.fromRaw(errorMessage) : undefined;
 
@@ -250,7 +165,7 @@ export function unwrapBranded(req: Request, res: Response): Response {
 
     if (brandedResult.isErr()) {
       return res.status(400).json({
-        error: `Failed to create branded value: ${brandedResult.unwrap()}`,
+        error: `Failed to create branded value: ${extractErrorMessage(brandedResult.unwrap())}`,
       });
     }
 
@@ -294,60 +209,30 @@ export function convertBranded(req: Request, res: Response): Response {
       });
     }
 
-    // Create a validator function for the target brand
-    let validatorFn: (val: any) => boolean;
+    let validatorFn;
     try {
-      if (typeof validator === "string") {
-        validatorFn = new Function("value", `return ${validator}`) as (
-          val: any
-        ) => boolean;
-      } else if (typeof validator === "object" && validator !== null) {
-        if (validator.type === "range") {
-          const { min, max } = validator;
-          validatorFn = (val: any) => {
-            const numVal = Number(val);
-            return !isNaN(numVal) && numVal >= min && numVal <= max;
-          };
-        } else if (validator.type === "regex") {
-          const regex = new RegExp(validator.pattern);
-          validatorFn = (val: any) =>
-            typeof val === "string" && regex.test(val);
-        } else if (validator.type === "custom" && validator.code) {
-          validatorFn = new Function("value", validator.code) as (
-            val: any
-          ) => boolean;
-        } else {
-          return res.status(400).json({
-            error: "Invalid validator configuration",
-          });
-        }
-      } else {
-        validatorFn = () => true;
-      }
+      validatorFn = createValidator(validator || (() => true));
     } catch (error) {
       return res.status(400).json({
-        error: `Failed to create validator function: ${error instanceof Error ? error : String(error)}`,
+        error: `Failed to create validator: ${extractErrorMessage(error)}`,
       });
     }
 
-    // Create and validate the source branded value
     const sourceBrandStr = Str.fromRaw(fromBrand);
-    const sourceValidator = () => true; // Always valid for source
-    const sourceResult = Branded.create(value, sourceBrandStr, sourceValidator);
+    const sourceResult = Branded.create(value, sourceBrandStr, () => true);
 
     if (sourceResult.isErr()) {
       return res.status(400).json({
-        error: `Failed to create source branded value: ${sourceResult.unwrap()}`,
+        error: `Failed to create source branded value: ${extractErrorMessage(sourceResult.unwrap())}`,
       });
     }
 
-    // Get the raw value from the source branded value
     const sourceBranded = sourceResult.unwrap();
     const rawValue = sourceBranded.unwrap();
 
-    // Create the target branded value
     const targetBrandStr = Str.fromRaw(toBrand);
     const errorMsg = errorMessage ? Str.fromRaw(errorMessage) : undefined;
+
     const targetResult = Branded.create(
       rawValue,
       targetBrandStr,
@@ -361,8 +246,10 @@ export function convertBranded(req: Request, res: Response): Response {
         fromBrand,
         toBrand,
         success: targetResult.isOk(),
-        result: targetResult.isOk() ? targetResult.unwrap() : null,
-        error: targetResult.isErr() ? targetResult.unwrap() : null,
+        result: targetResult.isOk() ? targetResult.unwrap().unwrap() : null,
+        error: targetResult.isErr()
+          ? extractErrorMessage(targetResult.unwrap())
+          : null,
       },
     };
 

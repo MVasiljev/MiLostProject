@@ -6,7 +6,7 @@ import structRoutes from "./struct.js";
 import hashMapRoutes from "./hash_map.js";
 import hashSetRoutes from "./hash_set.js";
 import primitiveRoutes from "./primitives.js";
-// import brandingRoutes from "./branding.js";
+import brandingRoutes from "./branding.js";
 import commonRoutes from "./common.js";
 import { getWasmStatus } from "../services/wasm.js";
 import logger from "../utils/logger.js";
@@ -50,7 +50,7 @@ console.log(
   router.stack.map((r) => r.route)
 );
 
-// router.use("/branded", brandingRoutes);
+router.use("/branded", brandingRoutes);
 router.use("/common", commonRoutes);
 
 export default router;
