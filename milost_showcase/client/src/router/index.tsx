@@ -10,6 +10,7 @@ import StatusPage from "../pages/Status/Status";
 import GettingStartedPage from "../pages/GettingStarted/GettingStarted";
 import PrimitivesPage from "../pages/Primitives/Primitives";
 import HashSetPage from "../pages/HashSet/HashSet";
+import CommonPage from "../pages/Common/Common";
 // import BrandingPage from "../pages/Branding/Branding";
 // import CommonPage from "../pages/Common/Common";
 
@@ -58,10 +59,10 @@ const router = createBrowserRouter([
       //   path: "branding",
       //   element: <BrandingPage />,
       // },
-      // {
-      //   path: "common",
-      //   element: <CommonPage />,
-      // },
+      {
+        path: "common",
+        element: <CommonPage />,
+      },
       {
         path: "status",
         element: <StatusPage />,
