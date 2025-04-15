@@ -48,25 +48,20 @@ function PrimitiveResultRenderer({
   if (!result) return null;
 
   const renderResultContent = () => {
-    // Safely convert result to a string representation
     const safeStringify = (obj: any) => {
       try {
-        // If it's a primitive or array, return as is
         if (typeof obj !== "object" || obj === null) return String(obj);
 
-        // If it's an object, stringify with fallback
         return JSON.stringify(obj, null, 2);
       } catch {
         return "Unable to parse result";
       }
     };
 
-    // Check if result is an API response with a data property
     if (result && typeof result === "object" && "data" in result) {
       return <Pre>{safeStringify(result.data)}</Pre>;
     }
 
-    // Handle specific result types
     if (isPrimitiveAnalysisResult(result)) {
       return (
         <Pre>
@@ -162,7 +157,6 @@ function PrimitiveResultRenderer({
       );
     }
 
-    // Fallback for any other result type
     return <Pre>{safeStringify(result)}</Pre>;
   };
 

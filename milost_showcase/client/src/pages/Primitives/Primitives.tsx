@@ -17,18 +17,15 @@ import PrimitiveResultRenderer from "./PrimitiveResultRenderer";
 import PrimitiveExamples from "./PrimitiveExamples";
 
 function PrimitivesPage() {
-  // State for input values and configuration
   const [value, setValue] = useState<string>("0");
   const [secondValue, setSecondValue] = useState<string>("0");
   const [primitiveType, setPrimitiveType] = useState<PrimitiveType>("u32");
   const [fromType, setFromType] = useState<PrimitiveType>("u32");
   const [toType, setToType] = useState<PrimitiveType>("u32");
 
-  // Operation states
   const [activeCategory, setActiveCategory] =
     useState<PrimitiveOperationCategory>("create");
 
-  // Specific operation states
   const [arithmeticOperation, setArithmeticOperation] =
     useState<ArithmeticOperation>("add");
   const [bitwiseOperation, setBitwiseOperation] =
@@ -39,14 +36,12 @@ function PrimitivesPage() {
     useState<BitManipulationOperation>("isPowerOfTwo");
   const [precision, setPrecision] = useState<string>("2");
 
-  // Result and error handling
   const [result, setResult] = useState<PrimitiveOperationResult | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const apiBaseUrl = "/api";
 
-  // Handle form submission
   const handleSubmit = async () => {
     try {
       setLoading(true);
@@ -55,7 +50,6 @@ function PrimitivesPage() {
       let endpoint = `${apiBaseUrl}/primitive`;
       let requestBody: any = {};
 
-      // Parse string inputs to numbers when needed
       const numValue = value.trim() === "" ? 0 : Number(value);
       const numSecondValue =
         secondValue.trim() === "" ? 0 : Number(secondValue);

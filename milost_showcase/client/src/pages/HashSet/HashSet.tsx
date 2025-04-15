@@ -39,7 +39,6 @@ function HashSetPage() {
   );
   const [setArrValue, setSetArrValue] = useState<any[]>([]);
 
-  // For individual operations
   const [valueInput, setValueInput] = useState<string>("");
   const [mapOperation, setMapOperation] =
     useState<HashSetMapOperation>("double");
@@ -47,7 +46,6 @@ function HashSetPage() {
     useState<HashSetFilterOperation>("greaterThan");
   const [filterParameter, setFilterParameter] = useState<string>("5");
 
-  // For set operations
   const [secondSetInput, setSecondSetInput] =
     useState<string>("3, 4, 5, 'world'");
   const [setOperation, setSetOperation] =
@@ -99,7 +97,6 @@ function HashSetPage() {
     }
   };
 
-  // API request handlers
   const handleAnalyzeHashSet = async (): Promise<void> => {
     try {
       if (!inputValue) {
@@ -152,10 +149,8 @@ function HashSetPage() {
       setLoading(true);
       setError(null);
 
-      // Parse the input value to the appropriate type
       let parsedValue: any = valueInput;
 
-      // Try to convert to appropriate type
       if (valueInput.toLowerCase() === "true") {
         parsedValue = true;
       } else if (valueInput.toLowerCase() === "false") {
@@ -163,17 +158,14 @@ function HashSetPage() {
       } else if (valueInput.toLowerCase() === "null") {
         parsedValue = null;
       } else if (!isNaN(Number(valueInput)) && valueInput.trim() !== "") {
-        // Only convert to number if it's a valid number string and not empty
         parsedValue = Number(valueInput);
       } else {
-        // If it starts and ends with quotes, remove them
         if (
           (valueInput.startsWith("'") && valueInput.endsWith("'")) ||
           (valueInput.startsWith('"') && valueInput.endsWith('"'))
         ) {
           parsedValue = valueInput.substring(1, valueInput.length - 1);
         }
-        // Otherwise keep as string
       }
 
       const response = await fetch(`${apiBaseUrl}/hashset/contains`, {
@@ -216,10 +208,8 @@ function HashSetPage() {
       setLoading(true);
       setError(null);
 
-      // Parse the input value to the appropriate type
       let parsedValue: any = valueInput;
 
-      // Try to convert to appropriate type
       if (valueInput.toLowerCase() === "true") {
         parsedValue = true;
       } else if (valueInput.toLowerCase() === "false") {
@@ -227,17 +217,14 @@ function HashSetPage() {
       } else if (valueInput.toLowerCase() === "null") {
         parsedValue = null;
       } else if (!isNaN(Number(valueInput)) && valueInput.trim() !== "") {
-        // Only convert to number if it's a valid number string and not empty
         parsedValue = Number(valueInput);
       } else {
-        // If it starts and ends with quotes, remove them
         if (
           (valueInput.startsWith("'") && valueInput.endsWith("'")) ||
           (valueInput.startsWith('"') && valueInput.endsWith('"'))
         ) {
           parsedValue = valueInput.substring(1, valueInput.length - 1);
         }
-        // Otherwise keep as string
       }
 
       const response = await fetch(`${apiBaseUrl}/hashset/insert`, {
@@ -257,8 +244,6 @@ function HashSetPage() {
         setResult(data.data);
         if ("result" in data.data && Array.isArray(data.data.result)) {
           setSetArrValue(data.data.result);
-          // Update input value if needed
-          // setInputValue(data.data.result.join(", "));
         }
       } else {
         setError(data.error || "Something went wrong");
@@ -285,10 +270,8 @@ function HashSetPage() {
       setLoading(true);
       setError(null);
 
-      // Parse the input value to the appropriate type
       let parsedValue: any = valueInput;
 
-      // Try to convert to appropriate type
       if (valueInput.toLowerCase() === "true") {
         parsedValue = true;
       } else if (valueInput.toLowerCase() === "false") {
@@ -296,17 +279,14 @@ function HashSetPage() {
       } else if (valueInput.toLowerCase() === "null") {
         parsedValue = null;
       } else if (!isNaN(Number(valueInput)) && valueInput.trim() !== "") {
-        // Only convert to number if it's a valid number string and not empty
         parsedValue = Number(valueInput);
       } else {
-        // If it starts and ends with quotes, remove them
         if (
           (valueInput.startsWith("'") && valueInput.endsWith("'")) ||
           (valueInput.startsWith('"') && valueInput.endsWith('"'))
         ) {
           parsedValue = valueInput.substring(1, valueInput.length - 1);
         }
-        // Otherwise keep as string
       }
 
       const response = await fetch(`${apiBaseUrl}/hashset/remove`, {
@@ -326,8 +306,6 @@ function HashSetPage() {
         setResult(data.data);
         if ("result" in data.data && Array.isArray(data.data.result)) {
           setSetArrValue(data.data.result);
-          // Update input value if needed
-          // setInputValue(data.data.result.join(", "));
         }
       } else {
         setError(data.error || "Something went wrong");
@@ -366,8 +344,6 @@ function HashSetPage() {
         setResult(data.data);
         if ("result" in data.data && Array.isArray(data.data.result)) {
           setSetArrValue(data.data.result);
-          // Update input value if needed
-          // setInputValue(data.data.result.join(", "));
         }
       } else {
         setError(data.error || "Something went wrong");
@@ -448,8 +424,6 @@ function HashSetPage() {
         setResult(data.data);
         if ("result" in data.data && Array.isArray(data.data.result)) {
           setSetArrValue(data.data.result);
-          // Update input value if needed
-          // setInputValue(data.data.result.join(", "));
         }
       } else {
         setError(data.error || "Something went wrong");
@@ -497,8 +471,6 @@ function HashSetPage() {
           setResult(data.data);
           if ("result" in data.data && Array.isArray(data.data.result)) {
             setSetArrValue(data.data.result);
-            // Update input value if needed
-            // setInputValue(data.data.result.join(", "));
           }
         } else {
           setError(data.error || "Something went wrong");
@@ -519,7 +491,6 @@ function HashSetPage() {
     }
   };
 
-  // Main handler that calls the appropriate operation
   const handleSubmit = (): void => {
     switch (activeCategory) {
       case "analyze":
@@ -546,16 +517,9 @@ function HashSetPage() {
     }
   };
 
-  // Component to render based on the active category
   const renderActiveComponent = () => {
     switch (activeCategory) {
       case "analyze":
-        // return (
-        //   <HashSetAnalyze
-        //     inputValue={inputValue}
-        //     setInputValue={setInputValue}
-        //   />
-        // );
         break;
       case "contains":
         return (
