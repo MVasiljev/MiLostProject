@@ -4,6 +4,10 @@ import vectorRoutes from "./vector.js";
 import tupleRoutes from "./tuple.js";
 import structRoutes from "./struct.js";
 import hashMapRoutes from "./hash_map.js";
+import hashSetRoutes from "./hash_set.js";
+import primitiveRoutes from "./primitives.js";
+import brandingRoutes from "./branding.js";
+import commonRoutes from "./common.js";
 import { getWasmStatus } from "../services/wasm.js";
 import logger from "../utils/logger.js";
 
@@ -38,5 +42,9 @@ router.use("/vector", vectorRoutes);
 router.use("/tuple", tupleRoutes);
 router.use("/struct", structRoutes);
 router.use("/hashmap", hashMapRoutes);
+router.use("/hashset", hashSetRoutes);
+router.use("/primitive", primitiveRoutes);
+router.use("/branded", brandingRoutes);
+router.use("/common", commonRoutes);
 
 export default router;

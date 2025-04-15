@@ -29,7 +29,7 @@ import {
   ExportItem,
   Pre,
   LoadingIndicator,
-  Error,
+  Error as StyledError,
 } from "./Status.styles";
 
 interface SystemInfo {
@@ -48,7 +48,7 @@ interface StatusResponse {
     [key: string]: {
       initialized: boolean;
       available: boolean;
-      methods?: string[];
+      methods?: Record<string, string[]>;
       error?: string;
     };
   };
@@ -132,7 +132,7 @@ function StatusPage() {
           <Title>System Status</Title>
           <Subtitle>WASM initialization and system information.</Subtitle>
         </Header>
-        <Error>
+        <StyledError>
           <strong>Error loading status information:</strong> {error}
           <div style={{ marginTop: "12px" }}>
             <RefreshButton onClick={handleRefresh}>
@@ -175,7 +175,7 @@ function StatusPage() {
               Try Again
             </RefreshButton>
           </div>
-        </Error>
+        </StyledError>
       </Container>
     );
   }
@@ -236,9 +236,9 @@ function StatusPage() {
       </div>
 
       {error && (
-        <Error>
+        <StyledError>
           <strong>Error refreshing status:</strong> {error}
-        </Error>
+        </StyledError>
       )}
 
       {loading && status && (
@@ -335,87 +335,89 @@ function StatusPage() {
                   WASM Modules
                 </h3>
                 {Object.entries(status.modules).map(
-                  ([moduleName, moduleInfo]) => (
-                    <ModuleCard key={moduleName}>
-                      <ModuleHeader>
-                        <ModuleName>
-                          <StatusIndicator
-                            status={
-                              moduleInfo.initialized
-                                ? "success"
+                  ([moduleName, moduleInfo]) => {
+                    return (
+                      <ModuleCard key={moduleName}>
+                        <ModuleHeader>
+                          <ModuleName>
+                            <StatusIndicator
+                              status={
+                                moduleInfo.initialized
+                                  ? "success"
+                                  : moduleInfo.available
+                                    ? "warning"
+                                    : "error"
+                              }
+                            />
+                            {moduleName}
+                          </ModuleName>
+                          <ModuleStatus>
+                            <Badge
+                              status={
+                                moduleInfo.initialized
+                                  ? "success"
+                                  : moduleInfo.available
+                                    ? "warning"
+                                    : "error"
+                              }
+                            >
+                              {moduleInfo.initialized
+                                ? "Initialized"
                                 : moduleInfo.available
-                                  ? "warning"
-                                  : "error"
-                            }
-                          />
-                          {moduleName}
-                        </ModuleName>
-                        <ModuleStatus>
-                          <Badge
-                            status={
-                              moduleInfo.initialized
-                                ? "success"
-                                : moduleInfo.available
-                                  ? "warning"
-                                  : "error"
-                            }
-                          >
-                            {moduleInfo.initialized
-                              ? "Initialized"
-                              : moduleInfo.available
-                                ? "Available but not initialized"
-                                : "Not Available"}
-                          </Badge>
-                        </ModuleStatus>
-                      </ModuleHeader>
+                                  ? "Available but not initialized"
+                                  : "Not Available"}
+                            </Badge>
+                          </ModuleStatus>
+                        </ModuleHeader>
 
-                      {moduleInfo.error && (
-                        <ModuleDescription style={{ color: "#ef4444" }}>
-                          Error: {moduleInfo.error}
-                        </ModuleDescription>
-                      )}
+                        {moduleInfo.error && (
+                          <ModuleDescription style={{ color: "#ef4444" }}>
+                            Error: {moduleInfo.error}
+                          </ModuleDescription>
+                        )}
 
-                      {moduleInfo.methods && (
-                        <>
-                          {moduleInfo.methods.static?.length > 0 && (
-                            <>
-                              <ModuleDescription>
-                                Static Methods:
-                              </ModuleDescription>
-                              <MethodsList>
-                                {moduleInfo.methods.static.map((method) => (
-                                  <Method
-                                    key={`static-${method}`}
-                                    available={moduleInfo.initialized}
-                                  >
-                                    {method}
-                                  </Method>
-                                ))}
-                              </MethodsList>
-                            </>
-                          )}
+                        {moduleInfo.methods && (
+                          <>
+                            {moduleInfo.methods.static?.length > 0 && (
+                              <>
+                                <ModuleDescription>
+                                  Static Methods:
+                                </ModuleDescription>
+                                <MethodsList>
+                                  {moduleInfo.methods.static.map((method) => (
+                                    <Method
+                                      key={`static-${method}`}
+                                      available={moduleInfo.initialized}
+                                    >
+                                      {method}
+                                    </Method>
+                                  ))}
+                                </MethodsList>
+                              </>
+                            )}
 
-                          {moduleInfo.methods.instance?.length > 0 && (
-                            <>
-                              <ModuleDescription>
-                                Instance Methods:
-                              </ModuleDescription>
-                              <MethodsList>
-                                {moduleInfo.methods.instance.map((method) => (
-                                  <Method
-                                    key={`instance-${method}`}
-                                    available={moduleInfo.initialized}
-                                  >
-                                    {method}
-                                  </Method>
-                                ))}
-                              </MethodsList>
-                            </>
-                          )}
-                        </>
-                      )}
-                    </ModuleCard>
-                  )
+                            {moduleInfo.methods.instance?.length > 0 && (
+                              <>
+                                <ModuleDescription>
+                                  Instance Methods:
+                                </ModuleDescription>
+                                <MethodsList>
+                                  {moduleInfo.methods.instance.map((method) => (
+                                    <Method
+                                      key={`instance-${method}`}
+                                      available={moduleInfo.initialized}
+                                    >
+                                      {method}
+                                    </Method>
+                                  ))}
+                                </MethodsList>
+                              </>
+                            )}
+                          </>
+                        )}
+                      </ModuleCard>
+                    );
+                  }
                 )}
               </div>
             )}
