@@ -8,6 +8,10 @@ import StructPage from "../pages/Struct/Struct";
 import HashMapPage from "../pages/HashMap/HashMap";
 import StatusPage from "../pages/Status/Status";
 import GettingStartedPage from "../pages/GettingStarted/GettingStarted";
+import PrimitivesPage from "../pages/Primitives/Primitives";
+import HashSetPage from "../pages/HashSet/HashSet";
+// import BrandingPage from "../pages/Branding/Branding";
+// import CommonPage from "../pages/Common/Common";
 
 const router = createBrowserRouter([
   {
@@ -43,6 +47,22 @@ const router = createBrowserRouter([
         element: <HashMapPage />,
       },
       {
+        path: "primitives",
+        element: <PrimitivesPage />,
+      },
+      {
+        path: "hashsets",
+        element: <HashSetPage />,
+      },
+      // {
+      //   path: "branding",
+      //   element: <BrandingPage />,
+      // },
+      // {
+      //   path: "common",
+      //   element: <CommonPage />,
+      // },
+      {
         path: "status",
         element: <StatusPage />,
       },
@@ -62,6 +82,10 @@ export const ROUTES = {
   TUPLES: "/tuples",
   STRUCTS: "/structs",
   HASHMAPS: "/hashmaps",
+  PRIMITIVES: "/primitives",
+  HASHSETS: "/hashsets",
+  BRANDING: "/branding",
+  COMMON: "/common",
   STATUS: "/status",
 };
 

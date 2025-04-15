@@ -43,11 +43,20 @@ function Sidebar({
     {
       title: "Data Types",
       items: [
+        { id: "primitives", label: "Primitives", path: ROUTES.PRIMITIVES },
         { id: "strings", label: "Strings", path: ROUTES.STRINGS },
         { id: "vectors", label: "Vectors", path: ROUTES.VECTORS },
         { id: "tuples", label: "Tuples", path: ROUTES.TUPLES },
         { id: "structs", label: "Structs", path: ROUTES.STRUCTS },
         { id: "hashmaps", label: "HashMaps", path: ROUTES.HASHMAPS },
+        { id: "hashsets", label: "HashSets", path: ROUTES.HASHSETS },
+      ],
+    },
+    {
+      title: "Utilities",
+      items: [
+        { id: "branding", label: "Branded Types", path: ROUTES.BRANDING },
+        { id: "common", label: "Common Utilities", path: ROUTES.COMMON },
       ],
     },
     {
