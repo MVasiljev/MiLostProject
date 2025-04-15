@@ -34,7 +34,7 @@ export function createHashSet(req: Request, res: Response): Response {
         original: values,
         size,
         isEmpty: hashSet.isEmpty(),
-        values: hashSet.values().toArray(),
+        values: hashSet.values(),
       },
     });
   } catch (error) {
@@ -103,7 +103,7 @@ export function insertHashSetValue(req: Request, res: Response): Response {
 
     const hashSet = HashSet.from(values);
     const newHashSet = hashSet.insert(value);
-    const result = newHashSet.values().toArray();
+    const result = newHashSet.values();
 
     return res.status(200).json({
       data: {
@@ -144,7 +144,7 @@ export function removeHashSetValue(req: Request, res: Response): Response {
     const hashSet = HashSet.from(values);
     const valueExists = hashSet.contains(value);
     const newHashSet = hashSet.remove(value);
-    const result = newHashSet.values().toArray();
+    const result = newHashSet.values();
 
     return res.status(200).json({
       data: {
@@ -628,7 +628,7 @@ export function analyzeHashSet(req: Request, res: Response): Response {
         parsed,
         size: hashSet.size(),
         isEmpty: hashSet.isEmpty(),
-        values: hashSet.values().toArray(),
+        values: hashSet.values(),
       },
     });
   } catch (error) {

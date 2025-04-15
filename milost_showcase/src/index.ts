@@ -1,27 +1,71 @@
-import createApp from "./app.js";
-import { initializeWasm } from "./services/wasm.js";
-import config from "./config/index.js";
-import logger from "./utils/logger.js";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
 
-(async () => {
+// Detailed module loading debug
+console.log("Current module:", import.meta.url);
+console.log("__filename:", fileURLToPath(import.meta.url));
+console.log("__dirname:", dirname(fileURLToPath(import.meta.url)));
+
+// Explicit module imports with error handling
+async function safeImport(modulePath: string) {
   try {
-    logger.info("Initializing WASM...");
+    console.log(`Attempting to import: ${modulePath}`);
+    const module = await import(modulePath);
+    console.log(`Successfully imported: ${modulePath}`);
+    return module;
+  } catch (error) {
+    console.error(`Failed to import ${modulePath}:`, error);
+    throw error;
+  }
+}
 
+async function startApplication() {
+  try {
+    // Sequentially import and log each module
+    const createApp = await safeImport("./app.js");
+    const { initializeWasm } = await safeImport("./services/wasm.js");
+    const config = await safeImport("./config/index.js");
+    const logger = await safeImport("./utils/logger.js");
+
+    console.log("All modules imported successfully");
+
+    // Rest of the application startup logic
+    console.log("Initializing WASM...");
     const wasmInitialized = await initializeWasm();
 
     if (!wasmInitialized) {
-      logger.error("WASM initialization failed. Exiting...");
+      console.error("WASM initialization failed. Exiting...");
       process.exit(1);
     }
 
-    const app = createApp();
+    console.log("Creating Express app...");
+    const app = createApp.default();
 
-    app.listen(config.port, () => {
-      logger.info(`🚀 Server running at http://localhost:${config.port}`);
-      logger.info(`API available at http://localhost:${config.port}/api`);
+    const port = config.default.port;
+    console.log(`Attempting to listen on port ${port}`);
+
+    app.listen(port, () => {
+      console.log(`🚀 Server running at http://localhost:${port}`);
+      console.log(`API available at http://localhost:${port}/api`);
     });
   } catch (error) {
-    logger.error({ error }, "Failed to start server");
+    console.error("Application startup failed:", error);
     process.exit(1);
   }
-})();
+}
+
+// Global error handlers
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
+
+// Start the application
+startApplication().catch((error) => {
+  console.error("Fatal error during application startup:", error);
+  process.exit(1);
+});

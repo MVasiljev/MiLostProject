@@ -48,7 +48,7 @@ import {
   ConversionResponse,
   ValidateRequest,
   ValidateResponse,
-} from "../types/primitive.js";
+} from "../types/primitives.js";
 
 /**
  * Create a new primitive value

@@ -1,5 +1,6 @@
 import { loadWasmModule } from "./init.js";
 import "./types";
+//@ts-ignore
 import * as glue from "milost/dist/wasm/milost_wasm.js";
 /**
  * Interface for modules that need WASM initialization

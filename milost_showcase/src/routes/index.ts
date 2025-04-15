@@ -6,7 +6,7 @@ import structRoutes from "./struct.js";
 import hashMapRoutes from "./hash_map.js";
 import hashSetRoutes from "./hash_set.js";
 import primitiveRoutes from "./primitives.js";
-import brandingRoutes from "./branding.js";
+// import brandingRoutes from "./branding.js";
 import commonRoutes from "./common.js";
 import { getWasmStatus } from "../services/wasm.js";
 import logger from "../utils/logger.js";
@@ -43,8 +43,14 @@ router.use("/tuple", tupleRoutes);
 router.use("/struct", structRoutes);
 router.use("/hashmap", hashMapRoutes);
 router.use("/hashset", hashSetRoutes);
+console.log("Primitive routes:", primitiveRoutes);
 router.use("/primitive", primitiveRoutes);
-router.use("/branded", brandingRoutes);
+console.log(
+  "Routes registered:",
+  router.stack.map((r) => r.route)
+);
+
+// router.use("/branded", brandingRoutes);
 router.use("/common", commonRoutes);
 
 export default router;
