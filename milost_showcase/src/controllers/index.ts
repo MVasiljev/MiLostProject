@@ -7,6 +7,9 @@ import * as hashSetController from "./hash_set.js";
 import * as primitiveController from "./primitives.js";
 import * as brandingController from "./branding.js";
 import * as commonController from "./common.js";
+import * as errorController from "./errors.js";
+import * as optionController from "./option.js";
+import * as iterController from "./iter.js";
 
 export {
   stringController,
@@ -18,4 +21,7 @@ export {
   primitiveController,
   brandingController,
   commonController,
+  errorController,
+  optionController,
+  iterController,
 };

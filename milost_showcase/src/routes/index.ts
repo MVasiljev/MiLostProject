@@ -1,4 +1,6 @@
 import express, { Request, Response } from "express";
+import { getWasmStatus } from "../services/wasm.js";
+import logger from "../utils/logger.js";
 import stringRoutes from "./string.js";
 import vectorRoutes from "./vector.js";
 import tupleRoutes from "./tuple.js";
@@ -8,8 +10,9 @@ import hashSetRoutes from "./hash_set.js";
 import primitiveRoutes from "./primitives.js";
 import brandingRoutes from "./branding.js";
 import commonRoutes from "./common.js";
-import { getWasmStatus } from "../services/wasm.js";
-import logger from "../utils/logger.js";
+import errorRoutes from "./errors.js";
+import optionRoutes from "./option.js";
+import iterRoutes from "./iter.js";
 
 const router = express.Router();
 
@@ -45,12 +48,10 @@ router.use("/hashmap", hashMapRoutes);
 router.use("/hashset", hashSetRoutes);
 console.log("Primitive routes:", primitiveRoutes);
 router.use("/primitive", primitiveRoutes);
-console.log(
-  "Routes registered:",
-  router.stack.map((r) => r.route)
-);
-
 router.use("/branded", brandingRoutes);
 router.use("/common", commonRoutes);
+router.use("/errors", errorRoutes);
+router.use("/option", optionRoutes);
+router.use("/iter", iterRoutes);
 
 export default router;

@@ -3,7 +3,6 @@ import cors from "cors";
 import routes from "./routes/index.js";
 import { errorHandler } from "./middleware/error.js";
 import logger from "./utils/logger.js";
-import { ApiError } from "./types/index.js";
 
 export default function createApp(): Application {
   const app = express();

@@ -1,6 +1,5 @@
 import pinoModule from "pino";
 
-// Extend the Pino Logger type to include our custom method
 interface ExtendedLogger extends pinoModule.Logger {
   errorWithDetails: (error: Error | any, context?: any) => void;
 }
@@ -29,7 +28,6 @@ const logger = pinoLogger({
   timestamp: pinoModule.stdTimeFunctions.isoTime,
 }) as ExtendedLogger;
 
-// Add the custom method with type-safe implementation
 logger.errorWithDetails = (error: Error | any, context?: any) => {
   logger.error({
     ...(context || {}),
