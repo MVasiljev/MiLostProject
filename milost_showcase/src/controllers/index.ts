@@ -12,6 +12,7 @@ import * as optionController from "./option.js";
 import * as iterController from "./iter.js";
 import * as resultController from "./result.js";
 import * as functionalController from "./functional.js";
+import * as syncPrimitivesController from "./sync_primitives.js";
 
 export {
   stringController,
@@ -28,4 +29,5 @@ export {
   iterController,
   resultController,
   functionalController,
+  syncPrimitivesController,
 };

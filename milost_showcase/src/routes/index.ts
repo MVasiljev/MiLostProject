@@ -15,6 +15,7 @@ import optionRoutes from "./option.js";
 import iterRoutes from "./iter.js";
 import resultRoutes from "./result.js";
 import functionalRoutes from "./functional.js";
+import syncPrimitivesRoutes from "./sync_primitives.js";
 
 const router = express.Router();
 
@@ -56,5 +57,6 @@ router.use("/option", optionRoutes);
 router.use("/iter", iterRoutes);
 router.use("/result", resultRoutes);
 router.use("/functional", functionalRoutes);
+router.use("/sync-primitives", syncPrimitivesRoutes);
 
 export default router;
