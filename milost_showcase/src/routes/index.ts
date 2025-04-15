@@ -16,6 +16,14 @@ import iterRoutes from "./iter.js";
 import resultRoutes from "./result.js";
 import functionalRoutes from "./functional.js";
 import syncPrimitivesRoutes from "./sync_primitives.js";
+import smartPointersRoutes from "./smart_pointers.js";
+import computedRoutes from "./computed.js";
+import ownershipRoutes from "./ownership.js";
+import referenceRoutes from "./reference.js";
+import matchingRoutes from "./matching.js";
+import contractRoutes from "./contract.js";
+import asyncRoutes from "./async.js";
+import resourceRoutes from "./resource.js";
 
 const router = express.Router();
 
@@ -58,5 +66,13 @@ router.use("/iter", iterRoutes);
 router.use("/result", resultRoutes);
 router.use("/functional", functionalRoutes);
 router.use("/sync-primitives", syncPrimitivesRoutes);
+router.use("/smart-pointers", smartPointersRoutes);
+router.use("/computed", computedRoutes);
+router.use("/ownership", ownershipRoutes);
+router.use("/reference", referenceRoutes);
+router.use("/matching", matchingRoutes);
+router.use("/contract", contractRoutes);
+router.use("/async", asyncRoutes);
+router.use("/resource", resourceRoutes);
 
 export default router;
