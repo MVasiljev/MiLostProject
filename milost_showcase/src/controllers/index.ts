@@ -10,6 +10,8 @@ import * as commonController from "./common.js";
 import * as errorController from "./errors.js";
 import * as optionController from "./option.js";
 import * as iterController from "./iter.js";
+import * as resultController from "./result.js";
+import * as functionalController from "./functional.js";
 
 export {
   stringController,
@@ -24,4 +26,6 @@ export {
   errorController,
   optionController,
   iterController,
+  resultController,
+  functionalController,
 };

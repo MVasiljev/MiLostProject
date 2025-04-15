@@ -13,6 +13,8 @@ import commonRoutes from "./common.js";
 import errorRoutes from "./errors.js";
 import optionRoutes from "./option.js";
 import iterRoutes from "./iter.js";
+import resultRoutes from "./result.js";
+import functionalRoutes from "./functional.js";
 
 const router = express.Router();
 
@@ -46,12 +48,13 @@ router.use("/tuple", tupleRoutes);
 router.use("/struct", structRoutes);
 router.use("/hashmap", hashMapRoutes);
 router.use("/hashset", hashSetRoutes);
-console.log("Primitive routes:", primitiveRoutes);
 router.use("/primitive", primitiveRoutes);
 router.use("/branded", brandingRoutes);
 router.use("/common", commonRoutes);
 router.use("/errors", errorRoutes);
 router.use("/option", optionRoutes);
 router.use("/iter", iterRoutes);
+router.use("/result", resultRoutes);
+router.use("/functional", functionalRoutes);
 
 export default router;
