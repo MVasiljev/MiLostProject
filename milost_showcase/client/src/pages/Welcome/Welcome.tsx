@@ -20,7 +20,8 @@ function Welcome() {
           <TitleHighlight>MiLost</TitleHighlight> Library
         </Title>
         <Subtitle>
-          High-performance TypeScript library powered by Rust and WebAssembly
+          Bringing Rust's Safety and Web Assembly Performance to TypeScript
+          Development
         </Subtitle>
       </Header>
 
@@ -48,28 +49,102 @@ function Welcome() {
       </FeaturesGrid>
 
       <CodeBlock>
-        <CodeBlockTitle>Quick Start</CodeBlockTitle>
+        <CodeBlockTitle>The MiLost Philosophy</CodeBlockTitle>
         <CodeContent>
-          <Pre>
-            {`import { Str, Vec, Result, Ok, Err, Option } from "milost";
+          <Pre>{`// Embracing Safe and Expressive Programming
 
-// Working with Strings
-const greeting = Str.fromRaw("Hello, world!");
-console.log(greeting.unwrap()); // "Hello, world!"
+// 1. Immutability by Default
+const immutableList = Vec.from([1, 2, 3])
+  .map(x => x * 2)  // Creates a new vector
+  .filter(x => x > 2);
 
-// Working with Vectors
-const numbers = Vec.from([1, 2, 3, 4, 5]);
-const doubled = numbers.map((n) => n * 2);
-console.log(doubled.toArray()); // [2, 4, 6, 8, 10]
-
-// Error Handling with Result
+// 2. Explicit Error Handling
 function divide(a: number, b: number): Result<number, Error> {
-  if (b === 0) {
-    return Err(new Error("Division by zero"));
+  return b !== 0 
+    ? Ok(a / b)
+    : Err(new Error("Division by zero is not allowed"));
+}
+
+// 3. Option for Nullable Values
+function findUser(id: number): Option<User> {
+  return id > 0 
+    ? Option.Some(getUserById(id))
+    : Option.None();
+}
+
+// 4. Pattern Matching for Complex Logic
+const result = matchValue(findUser(42), [
+  [SomePattern, user => \`Found user: \${user.name}\`],
+  [NonePattern, () => "User not found"]
+]);
+
+// 5. Functional Composition
+const processData = pipe(
+  (data: Data) => data.filter(isValid),
+  map(transform),
+  reduce(aggregate)
+);`}</Pre>
+        </CodeContent>
+      </CodeBlock>
+
+      <CodeBlock>
+        <CodeBlockTitle>Why MiLost?</CodeBlockTitle>
+        <CodeContent>
+          <Pre>{`// Addressing Common JavaScript/TypeScript Pain Points
+
+// Problem: Unchecked Nulls and Undefined
+// Traditional JS
+function divide(a, b) {
+  return a / b;  // Silently returns Infinity or NaN
+}
+
+// MiLost Solution
+function safeDivide(a: number, b: number): Result<number, Error> {
+  return b !== 0 
+    ? Ok(a / b)
+    : Err(new Error("Safe division requires non-zero denominator"));
+}
+
+// Problem: Inconsistent Error Handling
+// Traditional JS
+async function fetchData() {
+  try {
+    const response = await fetch(url);
+    return response.json();
+  } catch (error) {
+    // Inconsistent error handling
+    console.error(error);
   }
-  return Ok(a / b);
-}`}
-          </Pre>
+}
+
+// MiLost Solution
+async function fetchData(): Promise<Result<Data, NetworkError>> {
+  return Result.tryCatchAsync(async () => {
+    const response = await fetch(url);
+    return response.json();
+  });
+}`}</Pre>
+        </CodeContent>
+      </CodeBlock>
+
+      <CodeBlock>
+        <CodeBlockTitle>Getting Started</CodeBlockTitle>
+        <CodeContent>
+          <Pre>{`# Installation
+npm install milost
+
+# Core Concepts
+import { 
+  Vec, Result, Option, 
+  Ok, Err, contract, 
+  pipe, match 
+} from 'milost';
+
+// Recommended Learning Path:
+// 1. Result and Option for Error Handling
+// 2. Functional Utilities (pipe, compose)
+// 3. Collections (Vec, HashMap)
+// 4. Advanced: Smart Pointers, Concurrency`}</Pre>
         </CodeContent>
       </CodeBlock>
 

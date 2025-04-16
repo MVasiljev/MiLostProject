@@ -37,7 +37,7 @@ function Sidebar({
       title: "Overview",
       items: [
         { id: "home", label: "Home", path: ROUTES.HOME },
-        { id: "get-started", label: "Get Started", path: "/get-started" },
+        { id: "get-started", label: "Get Started", path: ROUTES.GET_STARTED },
       ],
     },
     {
@@ -53,10 +53,52 @@ function Sidebar({
       ],
     },
     {
+      title: "Functional Programming",
+      items: [
+        { id: "option", label: "Option", path: ROUTES.OPTION },
+        { id: "result", label: "Result", path: ROUTES.RESULT },
+        { id: "iter", label: "Iterators", path: ROUTES.ITER },
+        {
+          id: "functional",
+          label: "Functional Utils",
+          path: ROUTES.FUNCTIONAL,
+        },
+      ],
+    },
+    {
+      title: "Concurrency & Memory",
+      items: [
+        {
+          id: "sync-primitives",
+          label: "Sync Primitives",
+          path: ROUTES.SYNC_PRIMITIVES,
+        },
+        {
+          id: "smart-pointers",
+          label: "Smart Pointers",
+          path: ROUTES.SMART_POINTERS,
+        },
+        { id: "ownership", label: "Ownership", path: ROUTES.OWNERSHIP },
+        { id: "reference", label: "Reference", path: ROUTES.REFERENCE },
+        { id: "resource", label: "Resource", path: ROUTES.RESOURCE },
+      ],
+    },
+    {
+      title: "Advanced Features",
+      items: [
+        { id: "computed", label: "Computed", path: ROUTES.COMPUTED },
+        { id: "matching", label: "Pattern Matching", path: ROUTES.MATCHING },
+        { id: "contract", label: "Contract", path: ROUTES.CONTRACT },
+        { id: "async", label: "Async", path: ROUTES.ASYNC },
+        { id: "async-utils", label: "Async Utils", path: ROUTES.ASYNC_UTILS },
+      ],
+    },
+    {
       title: "Utilities",
       items: [
         { id: "branding", label: "Branded Types", path: ROUTES.BRANDING },
         { id: "common", label: "Common Utilities", path: ROUTES.COMMON },
+        { id: "errors", label: "Errors", path: ROUTES.ERRORS },
       ],
     },
     {
