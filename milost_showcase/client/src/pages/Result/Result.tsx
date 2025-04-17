@@ -27,6 +27,12 @@ import {
   isResultMatchResult,
   isResultUtilityResult,
 } from "./types";
+import ResultCheck from "./ResultCheck";
+import ResultCreate from "./ResultCrate";
+import ResultMatch from "./ResultMatch";
+import ResultTransform from "./ResultTransform";
+import ResultUnwrap from "./ResultUnwrap";
+import ResultUtility from "./ResultUtility";
 
 interface ApiResponse<T> {
   data?: T;

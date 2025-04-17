@@ -12,11 +12,10 @@ import PrimitivesPage from "../pages/Primitives/Primitives";
 import HashSetPage from "../pages/HashSet/HashSet";
 import CommonPage from "../pages/Common/Common";
 import BrandingPage from "../pages/Branding/Branding";
-// Pages to implement
 import OptionPage from "../pages/Option/Option";
 import ResultPage from "../pages/Result/Result";
-// import IterPage from "../pages/Iter/Iter";
-// import FunctionalPage from "../pages/Functional/Functional";
+import IterPage from "../pages/Iter/Iter";
+import FunctionalPage from "../pages/Functional/Functional";
 // import SyncPrimitivesPage from "../pages/SyncPrimitives/SyncPrimitives";
 // import SmartPointersPage from "../pages/SmartPointers/SmartPointers";
 // import ComputedPage from "../pages/Computed/Computed";
@@ -82,7 +81,6 @@ const router = createBrowserRouter([
         path: "status",
         element: <StatusPage />,
       },
-      // New routes
       {
         path: "option",
         element: <OptionPage />,
@@ -91,14 +89,14 @@ const router = createBrowserRouter([
         path: "result",
         element: <ResultPage />,
       },
-      // {
-      //   path: "iter",
-      //   element: <IterPage />,
-      // },
-      // {
-      //   path: "functional",
-      //   element: <FunctionalPage />,
-      // },
+      {
+        path: "iter",
+        element: <IterPage />,
+      },
+      {
+        path: "functional",
+        element: <FunctionalPage />,
+      },
       // {
       //   path: "sync-primitives",
       //   element: <SyncPrimitivesPage />,
