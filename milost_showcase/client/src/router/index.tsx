@@ -14,7 +14,7 @@ import CommonPage from "../pages/Common/Common";
 import BrandingPage from "../pages/Branding/Branding";
 // Pages to implement
 import OptionPage from "../pages/Option/Option";
-// import ResultPage from "../pages/Result/Result";
+import ResultPage from "../pages/Result/Result";
 // import IterPage from "../pages/Iter/Iter";
 // import FunctionalPage from "../pages/Functional/Functional";
 // import SyncPrimitivesPage from "../pages/SyncPrimitives/SyncPrimitives";
@@ -87,10 +87,10 @@ const router = createBrowserRouter([
         path: "option",
         element: <OptionPage />,
       },
-      // {
-      //   path: "result",
-      //   element: <ResultPage />,
-      // },
+      {
+        path: "result",
+        element: <ResultPage />,
+      },
       // {
       //   path: "iter",
       //   element: <IterPage />,

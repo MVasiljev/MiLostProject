@@ -38,6 +38,15 @@ export const LogoSubtitle = styled.p`
 export const Nav = styled.nav`
   flex: 1;
   overflow-y: auto;
+
+  /* Hide scrollbar for Webkit-based browsers (Chrome, Safari) */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for other browsers */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 `;
 
 export const NavList = styled.ul`
