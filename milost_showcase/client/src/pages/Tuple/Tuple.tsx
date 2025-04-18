@@ -1,15 +1,4 @@
-import { useState, ChangeEvent, JSX } from "react";
-import {
-  TupleOperation,
-  TupleMapOperation,
-  TupleOperationResult,
-  isTupleAnalysisResult,
-  isTupleGetResult,
-  isTupleFirstResult,
-  isTupleSecondResult,
-  isTupleReplaceResult,
-  isTupleMapResult,
-} from "./types";
+import { useState } from "react";
 import {
   Container,
   Header,
@@ -17,681 +6,416 @@ import {
   Subtitle,
   Card,
   CardTitle,
+  TabsContainer,
+  Tab,
+  InfoBox,
   FormGroup,
   Label,
-  Input,
-  PrimaryButton,
-  ErrorMessage,
-  ResultContainer,
-  ResultTitle,
-  ResultContent,
-  Pre,
   CodeBlock,
+  Pre,
   SmallText,
 } from "./Tuple.styles";
 
-interface ApiResponse<T> {
-  data?: T;
-  error?: string;
-}
-
 function TuplePage() {
-  const [inputValue, setInputValue] = useState("1, true, 'hello'");
-  const [tupleInput, setTupleInput] = useState("");
-  const [index, setIndex] = useState<number>(0);
-  const [newValue, setNewValue] = useState<string>("");
+  const [activeCategory, setActiveCategory] = useState("overview");
 
-  const [activeOperation, setActiveOperation] = useState<
-    TupleOperation | "analyze"
-  >("analyze");
-  const [mapOperation, setMapOperation] = useState<TupleMapOperation>("double");
-
-  const [result, setResult] = useState<TupleOperationResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const apiBaseUrl = "/api";
-
-  const handleAnalyzeTuple = async (): Promise<void> => {
-    try {
-      if (!inputValue) {
-        setError("Please enter tuple values");
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch(`${apiBaseUrl}/tuple/analyze`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ value: inputValue }),
-      });
-
-      const data: ApiResponse<TupleOperationResult> = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-        if (isTupleAnalysisResult(data.data)) {
-          setTupleInput(JSON.stringify(data.data.parsed));
-        }
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to analyze tuple");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGetItem = async (): Promise<void> => {
-    try {
-      const values = parseTupleInput();
-
-      if (!values || values.length === 0) {
-        setError("Please analyze a tuple first");
-        return;
-      }
-
-      if (index < 0 || index >= values.length) {
-        setError(`Index must be between 0 and ${values.length - 1}`);
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch(`${apiBaseUrl}/tuple/get`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          values,
-          index,
-        }),
-      });
-
-      const data: ApiResponse<TupleOperationResult> = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to get tuple item");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGetFirst = async (): Promise<void> => {
-    try {
-      const values = parseTupleInput();
-
-      if (!values || values.length === 0) {
-        setError("Please analyze a tuple first");
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch(`${apiBaseUrl}/tuple/first`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          values,
-        }),
-      });
-
-      const data: ApiResponse<TupleOperationResult> = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to get first item");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGetSecond = async (): Promise<void> => {
-    try {
-      const values = parseTupleInput();
-
-      if (!values || values.length < 2) {
-        setError("Please analyze a tuple with at least 2 items first");
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch(`${apiBaseUrl}/tuple/second`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          values,
-        }),
-      });
-
-      const data: ApiResponse<TupleOperationResult> = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to get second item"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleReplace = async (): Promise<void> => {
-    try {
-      const values = parseTupleInput();
-
-      if (!values || values.length === 0) {
-        setError("Please analyze a tuple first");
-        return;
-      }
-
-      if (index < 0 || index >= values.length) {
-        setError(`Index must be between 0 and ${values.length - 1}`);
-        return;
-      }
-
-      if (!newValue && newValue !== "") {
-        setError("Please enter a new value");
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      let parsedValue: any = newValue;
-      try {
-        if (newValue.toLowerCase() === "true") parsedValue = true;
-        else if (newValue.toLowerCase() === "false") parsedValue = false;
-        else if (newValue.toLowerCase() === "null") parsedValue = null;
-        else if (!isNaN(Number(newValue))) parsedValue = Number(newValue);
-      } catch (err) {
-        console.error("Failed to parse new value", err);
-      }
-
-      const response = await fetch(`${apiBaseUrl}/tuple/replace`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          values,
-          index,
-          value: parsedValue,
-        }),
-      });
-
-      const data: ApiResponse<TupleOperationResult> = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-        if (isTupleReplaceResult(data.data)) {
-          setTupleInput(JSON.stringify(data.data.result));
-        }
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to replace tuple item"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleMapTuple = async (): Promise<void> => {
-    try {
-      const values = parseTupleInput();
-
-      if (!values || values.length === 0) {
-        setError("Please analyze a tuple first");
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch(`${apiBaseUrl}/tuple/map`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          values,
-          operation: mapOperation,
-        }),
-      });
-
-      const data: ApiResponse<TupleOperationResult> = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-        if (isTupleMapResult(data.data)) {
-          setTupleInput(JSON.stringify(data.data.result));
-        }
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to map tuple");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const parseTupleInput = (): any[] => {
-    if (!tupleInput) return [];
-
-    try {
-      return JSON.parse(tupleInput);
-    } catch (err) {
-      setError("Invalid tuple format. Please analyze a tuple first.");
-      return [];
-    }
-  };
-
-  const handleSubmit = (): void => {
-    switch (activeOperation) {
-      case "analyze":
-        handleAnalyzeTuple();
-        break;
-      case "get":
-        handleGetItem();
-        break;
-      case "first":
-        handleGetFirst();
-        break;
-      case "second":
-        handleGetSecond();
-        break;
-      case "replace":
-        handleReplace();
-        break;
-      case "map":
-        handleMapTuple();
-        break;
-    }
-  };
-
-  const renderInputForm = (): JSX.Element => {
-    switch (activeOperation) {
-      case "analyze":
-        return (
-          <FormGroup>
-            <Label htmlFor="tuple-input">
-              Enter tuple values (comma-separated)
-            </Label>
-            <Input
-              id="tuple-input"
-              type="text"
-              value={inputValue}
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setInputValue(e.target.value)
-              }
-              placeholder="e.g. 1, true, 'hello'"
-            />
-            <SmallText>
-              Supported formats: numbers, booleans (true/false), strings ('text'
-              or "text"), and null.
-            </SmallText>
-          </FormGroup>
-        );
-      case "get":
-        return (
-          <>
-            <FormGroup>
-              <Label htmlFor="tuple-display">Current tuple</Label>
-              <Input
-                id="tuple-display"
-                type="text"
-                value={tupleInput}
-                readOnly
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label htmlFor="index-input">Index to get</Label>
-              <Input
-                id="index-input"
-                type="number"
-                min={0}
-                value={index}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setIndex(parseInt(e.target.value) || 0)
-                }
-              />
-            </FormGroup>
-          </>
-        );
-      case "first":
-      case "second":
-        return (
-          <FormGroup>
-            <Label htmlFor="tuple-display">Current tuple</Label>
-            <Input id="tuple-display" type="text" value={tupleInput} readOnly />
-          </FormGroup>
-        );
-      case "replace":
-        return (
-          <>
-            <FormGroup>
-              <Label htmlFor="tuple-display">Current tuple</Label>
-              <Input
-                id="tuple-display"
-                type="text"
-                value={tupleInput}
-                readOnly
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label htmlFor="index-input">Index to replace</Label>
-              <Input
-                id="index-input"
-                type="number"
-                min={0}
-                value={index}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setIndex(parseInt(e.target.value) || 0)
-                }
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label htmlFor="value-input">New value</Label>
-              <Input
-                id="value-input"
-                type="text"
-                value={newValue}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setNewValue(e.target.value)
-                }
-                placeholder="Enter new value"
-              />
-              <SmallText>
-                For strings, just type the text. For numbers, booleans, or null,
-                type the value directly.
-              </SmallText>
-            </FormGroup>
-          </>
-        );
-      case "map":
-        return (
-          <>
-            <FormGroup>
-              <Label htmlFor="tuple-display">Current tuple</Label>
-              <Input
-                id="tuple-display"
-                type="text"
-                value={tupleInput}
-                readOnly
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label htmlFor="map-operation">Map operation</Label>
-              <select
-                id="map-operation"
-                value={mapOperation}
-                onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-                  setMapOperation(e.target.value as TupleMapOperation)
-                }
-                style={{
-                  width: "100%",
-                  padding: "0.75rem 1rem",
-                  borderRadius: "8px",
-                  border: "1px solid #ccc",
-                  fontSize: "1rem",
-                }}
-              >
-                <option value="double">Double numbers</option>
-                <option value="square">Square numbers</option>
-                <option value="toString">Convert all to strings</option>
-                <option value="increment">Increment numbers</option>
-                <option value="decrement">Decrement numbers</option>
-              </select>
-              <SmallText>
-                Operations only affect applicable values (e.g., "double" only
-                affects numbers).
-              </SmallText>
-            </FormGroup>
-          </>
-        );
-      default:
-        return <div>Please select an operation</div>;
-    }
-  };
-
-  const renderResult = (): JSX.Element | null => {
-    if (!result) return null;
-
-    if (isTupleAnalysisResult(result)) {
-      return (
-        <Pre>
-          {JSON.stringify(
-            {
-              original: result.original,
-              parsed: result.parsed,
-              length: result.length,
-              types: result.types,
-            },
-            null,
-            2
-          )}
-        </Pre>
-      );
-    }
-
-    if (isTupleGetResult(result)) {
-      return (
-        <Pre>
-          {JSON.stringify(
-            {
-              original: result.original,
-              index: result.index,
-              result: result.result,
-            },
-            null,
-            2
-          )}
-        </Pre>
-      );
-    }
-
-    if (isTupleFirstResult(result) || isTupleSecondResult(result)) {
-      return (
-        <Pre>
-          {JSON.stringify(
-            {
-              original: result.original,
-              result: result.result,
-            },
-            null,
-            2
-          )}
-        </Pre>
-      );
-    }
-
-    if (isTupleReplaceResult(result)) {
-      return (
-        <Pre>
-          {JSON.stringify(
-            {
-              original: result.original,
-              index: result.index,
-              value: result.value,
-              result: result.result,
-            },
-            null,
-            2
-          )}
-        </Pre>
-      );
-    }
-
-    if (isTupleMapResult(result)) {
-      return (
-        <Pre>
-          {JSON.stringify(
-            {
-              original: result.original,
-              operation: result.operation,
-              result: result.result,
-            },
-            null,
-            2
-          )}
-        </Pre>
-      );
-    }
-
-    return <Pre>{JSON.stringify(result, null, 2)}</Pre>;
-  };
+  const categories = [
+    { id: "overview", label: "Overview" },
+    { id: "fundamentals", label: "Core Concepts" },
+    { id: "advantages", label: "Advantages" },
+    { id: "useCases", label: "Use Cases" },
+    { id: "complexity", label: "Complexity Management" },
+    { id: "patterns", label: "Design Patterns" },
+    { id: "antiPatterns", label: "Anti-Patterns" },
+  ];
 
   return (
     <Container>
       <Header>
-        <Title>Tuple Operations</Title>
+        <Title>Heterogeneous Data Structures</Title>
         <Subtitle>
-          MiLost provides high-performance tuple operations powered by Rust and
-          WASM.
+          Understanding Tuples: A Powerful Way to Handle Mixed-Type Collections
         </Subtitle>
       </Header>
 
-      <Card>
-        <CardTitle>Tuple Operations</CardTitle>
-
-        <div style={{ marginBottom: "1.5rem" }}>
-          <Label>Select Operation</Label>
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "0.5rem",
-              marginTop: "0.5rem",
-            }}
+      <TabsContainer>
+        {categories.map((category) => (
+          <Tab
+            key={category.id}
+            active={activeCategory === category.id}
+            onClick={() => setActiveCategory(category.id)}
           >
-            {[
-              { id: "analyze", label: "Analyze" },
-              { id: "get", label: "Get Item" },
-              { id: "first", label: "Get First" },
-              { id: "second", label: "Get Second" },
-              { id: "replace", label: "Replace" },
-              { id: "map", label: "Map" },
-            ].map((op) => (
-              <button
-                key={op.id}
-                onClick={() =>
-                  setActiveOperation(op.id as TupleOperation | "analyze")
-                }
-                style={{
-                  padding: "0.5rem 1rem",
-                  borderRadius: "6px",
-                  border: "none",
-                  background: activeOperation === op.id ? "#0066ff" : "#f0f0f0",
-                  color: activeOperation === op.id ? "white" : "#333",
-                  fontWeight: activeOperation === op.id ? "bold" : "normal",
-                  cursor: "pointer",
-                }}
-              >
-                {op.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {renderInputForm()}
-
-        <PrimaryButton onClick={handleSubmit} disabled={loading}>
-          {loading
-            ? "Processing..."
-            : `Execute ${activeOperation === "analyze" ? "Analysis" : activeOperation}`}
-        </PrimaryButton>
-
-        {error && <ErrorMessage>{error}</ErrorMessage>}
-
-        {result && (
-          <ResultContainer>
-            <ResultTitle>Result</ResultTitle>
-            <ResultContent>{renderResult()}</ResultContent>
-          </ResultContainer>
-        )}
-      </Card>
+            {category.label}
+          </Tab>
+        ))}
+      </TabsContainer>
 
       <Card>
-        <CardTitle>Tuple API Examples</CardTitle>
+        <CardTitle>
+          {activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)}
+        </CardTitle>
 
-        <CodeBlock>
-          <Pre>
-            {`import { Tuple } from "milost";
+        {activeCategory === "overview" && (
+          <>
+            <InfoBox>
+              Tuples represent a fundamental way to group different types of
+              data with fixed structure and known positions.
+            </InfoBox>
 
-// Create a tuple from values
-const tuple = Tuple.from(1, "hello", true);
+            <FormGroup>
+              <Label>The Limitations of Traditional Arrays</Label>
+              <ul>
+                <li>No type safety for mixed collections</li>
+                <li>Lack of semantic meaning</li>
+                <li>Unclear data relationships</li>
+                <li>Difficulty in expressing intent</li>
+              </ul>
+            </FormGroup>
 
-// Get tuple length
-console.log(tuple.len());  // 3
+            <CodeBlock>
+              <Pre>{`// Traditional array approach
+const mixedData = [42, "hello", true];
+// What does each index mean? No clear context.
 
-// Access items by index
-console.log(tuple.get(0)); // 1
-console.log(tuple.get(1)); // "hello"
-console.log(tuple.get(2)); // true
+// Problematic access
+function processData(data) {
+  // No guarantee of type or position
+  const value = data[1];  
+  // Is this always a string? Always at index 1?
+}`}</Pre>
+            </CodeBlock>
 
-// Convenience methods for pairs
-const pair = Tuple.pair("key", "value");
-console.log(pair.first());  // "key"
-console.log(pair.second()); // "value"
+            <SmallText>
+              Traditional arrays lack the precision and safety needed for
+              complex data representations.
+            </SmallText>
+          </>
+        )}
 
-// Replace items (immutable - returns new tuple)
-const newTuple = tuple.replace(1, "world");
-console.log(newTuple.get(1)); // "world"
-console.log(tuple.get(1));    // "hello" (original unchanged)
+        {activeCategory === "fundamentals" && (
+          <>
+            <InfoBox>
+              Tuples provide a structured approach to grouping heterogeneous
+              data with strong type guarantees and immutability.
+            </InfoBox>
 
-// Map operations (applies to all elements)
-const mapped = tuple.map(value => {
-  if (typeof value === "number") return value * 2;
-  if (typeof value === "string") return value.toUpperCase();
-  return value;
-});
-console.log(mapped.toArray()); // [2, "HELLO", true]
+            <FormGroup>
+              <Label>Core Characteristics of Tuples</Label>
+              <ul>
+                <li>
+                  <strong>Fixed Length</strong>: Predetermined number of
+                  elements
+                </li>
+                <li>
+                  <strong>Heterogeneous Types</strong>: Can contain different
+                  types of data
+                </li>
+                <li>
+                  <strong>Positional Semantics</strong>: Each position has a
+                  specific meaning
+                </li>
+                <li>
+                  <strong>Immutability</strong>: Cannot be modified after
+                  creation
+                </li>
+              </ul>
+            </FormGroup>
 
-// Convert to array
-const asArray = tuple.toArray();
-console.log(asArray); // [1, "hello", true]
+            <CodeBlock>
+              <Pre>{`// Tuple-like approach with semantic meaning
+const userRecord = {
+  id: 42,
+  name: "John Doe",
+  isActive: true
+};
 
-// String representation
-console.log(tuple.toString()); // [Tuple [1,"hello",true]]`}
-          </Pre>
-        </CodeBlock>
+// Better: Clear structure, immutable
+function createUserTuple(id, name, isActive) {
+  return Object.freeze([id, name, isActive]);
+}
 
-        <SmallText>
-          MiLost's Tuple class provides a type-safe, immutable tuple
-          implementation with WASM acceleration when available. It's perfect for
-          heterogeneous collections where order and fixed length are important.
-        </SmallText>
+const user = createUserTuple(42, "John Doe", true);
+// Accessing with clear intent
+const userId = user[0];      // Clearly the ID
+const userName = user[1];    // Clearly the name`}</Pre>
+            </CodeBlock>
+
+            <SmallText>
+              Tuples bring clarity and intentionality to data representation.
+            </SmallText>
+          </>
+        )}
+
+        {activeCategory === "advantages" && (
+          <>
+            <InfoBox>
+              Tuples offer significant benefits over traditional data structures
+              in terms of safety, clarity, and expressiveness.
+            </InfoBox>
+
+            <FormGroup>
+              <Label>Key Advantages</Label>
+              <ul>
+                <li>
+                  <strong>Type Safety</strong>: Compile-time checks for type
+                  consistency
+                </li>
+                <li>
+                  <strong>Immutability</strong>: Prevent unexpected
+                  modifications
+                </li>
+                <li>
+                  <strong>Performance</strong>: Efficient memory layout and
+                  access
+                </li>
+                <li>
+                  <strong>Semantic Clarity</strong>: Express data relationships
+                  explicitly
+                </li>
+                <li>
+                  <strong>Functional Programming</strong>: Support pure,
+                  predictable transformations
+                </li>
+              </ul>
+            </FormGroup>
+
+            <CodeBlock>
+              <Pre>{`// Complex data with clear structure
+function processCoordinates(point) {
+  const [x, y, z] = point;
+  return {
+    magnitude: Math.sqrt(x*x + y*y + z*z),
+    normalized: [
+      x / Math.sqrt(x*x + y*y + z*z),
+      y / Math.sqrt(x*x + y*y + z*z),
+      z / Math.sqrt(x*x + y*y + z*z)
+    ]
+  };
+}
+
+const point3D = [3, 4, 5];
+const result = processCoordinates(point3D);`}</Pre>
+            </CodeBlock>
+
+            <SmallText>
+              Tuples provide a clean, expressive way to handle structured data.
+            </SmallText>
+          </>
+        )}
+
+        {activeCategory === "useCases" && (
+          <>
+            <InfoBox>
+              Tuples excel in scenarios requiring compact, type-safe
+              representations of related data.
+            </InfoBox>
+
+            <FormGroup>
+              <Label>Practical Use Cases</Label>
+              <ul>
+                <li>
+                  <strong>Coordinate Systems</strong>: Representing 2D/3D points
+                </li>
+                <li>
+                  <strong>API Responses</strong>: Grouping related return values
+                </li>
+                <li>
+                  <strong>Configuration</strong>: Storing related settings
+                </li>
+                <li>
+                  <strong>Database Records</strong>: Lightweight data containers
+                </li>
+                <li>
+                  <strong>Algorithm Results</strong>: Multiple return values
+                </li>
+              </ul>
+            </FormGroup>
+
+            <CodeBlock>
+              <Pre>{`// Multiple return value pattern
+function divideWithRemainder(a, b) {
+  const quotient = Math.floor(a / b);
+  const remainder = a % b;
+  return [quotient, remainder];
+}
+
+const [result, leftover] = divideWithRemainder(10, 3);
+console.log(result);    // 3
+console.log(leftover);  // 1
+
+// Configuration tuple
+const serverConfig = [
+  'localhost',  // host
+  8080,         // port
+  true          // secure
+];`}</Pre>
+            </CodeBlock>
+
+            <SmallText>
+              Tuples provide elegant solutions for complex data grouping.
+            </SmallText>
+          </>
+        )}
+
+        {activeCategory === "complexity" && (
+          <>
+            <InfoBox>
+              Managing complexity is crucial when working with heterogeneous
+              data structures.
+            </InfoBox>
+
+            <FormGroup>
+              <Label>Complexity Management Strategies</Label>
+              <ul>
+                <li>
+                  <strong>Type Annotations</strong>: Provide clear type
+                  information
+                </li>
+                <li>
+                  <strong>Destructuring</strong>: Extract values with clarity
+                </li>
+                <li>
+                  <strong>Immutable Transformations</strong>: Create new tuples
+                  instead of modifying
+                </li>
+                <li>
+                  <strong>Consistent Indexing</strong>: Maintain predictable
+                  element positions
+                </li>
+              </ul>
+            </FormGroup>
+
+            <CodeBlock>
+              <Pre>{`// Complex data management
+class UserProfile {
+  constructor(details) {
+    // Immutable tuple-like structure
+    this.data = Object.freeze([
+      details.id,        // Unique identifier
+      details.name,      // Full name
+      details.email,     // Contact email
+      details.roles      // Access roles
+    ]);
+  }
+
+  // Immutable update method
+  updateRoles(newRoles) {
+    return Object.freeze([
+      this.data[0],      // Keep original ID
+      this.data[1],      // Keep original name
+      this.data[2],      // Keep original email
+      newRoles           // Update roles
+    ]);
+  }
+}`}</Pre>
+            </CodeBlock>
+
+            <SmallText>
+              Thoughtful design prevents complexity from becoming unmanageable.
+            </SmallText>
+          </>
+        )}
+
+        {activeCategory === "patterns" && (
+          <>
+            <InfoBox>
+              Design patterns help structure and manage tuple-based data more
+              effectively.
+            </InfoBox>
+
+            <FormGroup>
+              <Label>Effective Design Patterns</Label>
+              <ul>
+                <li>
+                  <strong>Immutable Constructor</strong>: Create tuples with
+                  guaranteed immutability
+                </li>
+                <li>
+                  <strong>Transformation Method</strong>: Create new tuples
+                  instead of modifying
+                </li>
+                <li>
+                  <strong>Semantic Indexing</strong>: Use constants for index
+                  access
+                </li>
+                <li>
+                  <strong>Type Guard</strong>: Validate tuple structure
+                </li>
+              </ul>
+            </FormGroup>
+
+            <CodeBlock>
+              <Pre>{`// Advanced tuple pattern
+const USER_TUPLE = {
+  ID: 0,
+  NAME: 1,
+  EMAIL: 2,
+  ROLES: 3
+};
+
+function createUserTuple(id, name, email, roles) {
+  return Object.freeze([id, name, email, roles]);
+}
+
+function isValidUserTuple(tuple) {
+  return (
+    tuple.length === 4 &&
+    typeof tuple[USER_TUPLE.ID] === 'number' &&
+    typeof tuple[USER_TUPLE.NAME] === 'string'
+  );
+}`}</Pre>
+            </CodeBlock>
+
+            <SmallText>
+              Patterns provide structure and predictability to tuple usage.
+            </SmallText>
+          </>
+        )}
+
+        {activeCategory === "antiPatterns" && (
+          <>
+            <InfoBox>
+              Understanding common pitfalls helps create more robust tuple-based
+              designs.
+            </InfoBox>
+
+            <FormGroup>
+              <Label>Tuple Anti-Patterns to Avoid</Label>
+              <ul>
+                <li>
+                  <strong>Magic Indexing</strong>: Using hard-coded, unexplained
+                  indices
+                </li>
+                <li>
+                  <strong>Mutable Tuples</strong>: Allowing modifications after
+                  creation
+                </li>
+                <li>
+                  <strong>Overloading</strong>: Putting too much unrelated data
+                  in one tuple
+                </li>
+                <li>
+                  <strong>Ignoring Type Safety</strong>: Bypassing type checks
+                </li>
+              </ul>
+            </FormGroup>
+
+            <CodeBlock>
+              <Pre>{`// Anti-Pattern: Unclear, mutable tuple
+let userData = [123, "John"];
+userData[1] = "Jane";  // Unexpected mutation
+
+// Better Approach
+const createUser = (id, name) => Object.freeze([id, name]);
+const user = createUser(123, "John");
+// user[1] = "Jane";  // This would throw an error`}</Pre>
+            </CodeBlock>
+
+            <SmallText>
+              Avoiding these patterns leads to more maintainable code.
+            </SmallText>
+          </>
+        )}
       </Card>
     </Container>
   );
