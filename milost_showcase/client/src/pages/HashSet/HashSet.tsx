@@ -15,7 +15,6 @@ import {
   Label,
   InfoBox,
 } from "./HashSet.styles";
-import HashSetExamples from "./HashSetExamples";
 import { Table } from "../Vector/Vector.styles";
 
 function HashSetPage() {
@@ -866,8 +865,6 @@ console.log(commonWords.values().toArray());
           </>
         )}
       </Card>
-
-      <HashSetExamples />
     </Container>
   );
 }

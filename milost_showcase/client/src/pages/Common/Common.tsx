@@ -1,19 +1,4 @@
-import { useState, ChangeEvent } from "react";
-import {
-  CommonOperationCategory,
-  TypeCheckType,
-  OptionOperation,
-  ResultOperation,
-  LoadingState,
-  BrandType,
-  CommonOperationResult,
-  isTypeCheckResult,
-  isConversionResult,
-  isLoadingStateResult,
-  isBrandTypeResult,
-  isOptionResult,
-  isResultResult,
-} from "./types";
+import { useState } from "react";
 import {
   Container,
   Header,
@@ -21,462 +6,284 @@ import {
   Subtitle,
   Card,
   CardTitle,
-  FormGroup,
-  Label,
-  Input,
-  Textarea,
-  PrimaryButton,
-  ErrorMessage,
-  ResultContainer,
-  ResultTitle,
-  ResultContent,
-  Pre,
-  CodeBlock,
-  SmallText,
   TabsContainer,
   Tab,
-  Select,
   InfoBox,
+  FormGroup,
+  Label,
+  CodeBlock,
+  Pre,
+  SmallText,
   Table,
-  Badge,
 } from "./Common.styles";
-import CommonExamples from "./CommonExamples";
-import CommonInputForm from "./CommonInputForm";
-import CommonResultDisplay from "./CommonResultDisplay";
-
-interface ApiResponse<T> {
-  data?: T;
-  error?: string;
-}
 
 function CommonPage() {
-  // Basic input states
-  const [inputValue, setInputValue] = useState<string>("");
-  const [secondValue, setSecondValue] = useState<string>("");
-  const [defaultValue, setDefaultValue] = useState<string>("");
-  const [arrayValues, setArrayValues] = useState<string>(
-    "{[1, 2, 3, 'hello', true]}"
-  );
+  const [activeTab, setActiveTab] = useState("overview");
 
-  // Operation states
-  const [activeCategory, setActiveCategory] =
-    useState<CommonOperationCategory>("typeCheck");
-  const [typeCheckType, setTypeCheckType] = useState<TypeCheckType>("defined");
-  const [optionOperation, setOptionOperation] =
-    useState<OptionOperation>("some");
-  const [resultOperation, setResultOperation] = useState<ResultOperation>("ok");
-  const [loadingState, setLoadingState] = useState<LoadingState>("IDLE");
-  const [brandType, setBrandType] = useState<BrandType>("JSON");
-
-  // Result states
-  const [result, setResult] = useState<CommonOperationResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const apiBaseUrl = "/api";
-
-  const parseValue = (value: string): any => {
-    try {
-      if (
-        (value.trim().startsWith("{") && value.trim().endsWith("}")) ||
-        (value.trim().startsWith("[") && value.trim().endsWith("]"))
-      ) {
-        return JSON.parse(value);
-      } else if (value.toLowerCase() === "true") {
-        return true;
-      } else if (value.toLowerCase() === "false") {
-        return false;
-      } else if (value.toLowerCase() === "null") {
-        return null;
-      } else if (value.toLowerCase() === "undefined") {
-        return undefined;
-      } else if (!isNaN(Number(value)) && value.trim() !== "") {
-        return Number(value);
-      }
-      return value;
-    } catch (err) {
-      return value;
-    }
-  };
-
-  const handleTypeCheck = async (): Promise<void> => {
-    try {
-      if (inputValue.trim() === "") {
-        setError("Please enter a value to check");
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      const parsedValue = parseValue(inputValue);
-
-      const response = await fetch(`${apiBaseUrl}/common/type-check`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          value: parsedValue,
-          checkType: typeCheckType,
-        }),
-      });
-
-      const data: ApiResponse<CommonOperationResult> = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to perform type check"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleConvertToVec = async (): Promise<void> => {
-    try {
-      if (arrayValues.trim() === "") {
-        setError("Please enter array values to convert");
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      // Parse the array values
-      let values: any[] = [];
-      try {
-        if (
-          arrayValues.trim().startsWith("[") &&
-          arrayValues.trim().endsWith("]")
-        ) {
-          values = JSON.parse(arrayValues);
-        } else {
-          values = arrayValues.split(",").map((val) => parseValue(val.trim()));
-        }
-      } catch (err) {
-        setError(
-          `Invalid array format: ${err instanceof Error ? err.message : String(err)}`
-        );
-        setLoading(false);
-        return;
-      }
-
-      const response = await fetch(`${apiBaseUrl}/common/convert`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          values,
-        }),
-      });
-
-      const data: ApiResponse<CommonOperationResult> = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to convert to Vec");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLoadingStates = async (): Promise<void> => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch(`${apiBaseUrl}/common/loading-states`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          state: loadingState,
-        }),
-      });
-
-      const data: ApiResponse<CommonOperationResult> = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to get loading states"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleBrandTypes = async (): Promise<void> => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch(`${apiBaseUrl}/common/brand-types`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          type: brandType,
-        }),
-      });
-
-      const data: ApiResponse<CommonOperationResult> = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to get brand types"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleOptionOperation = async (): Promise<void> => {
-    try {
-      if (optionOperation !== "none" && inputValue.trim() === "") {
-        setError("Please enter a value for the option");
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      const parsedValue = parseValue(inputValue);
-
-      const requestBody: any = {
-        value: parsedValue,
-        operation: optionOperation,
-      };
-
-      if (optionOperation === "unwrapOr") {
-        requestBody.defaultValue = parseValue(defaultValue);
-      }
-
-      const response = await fetch(`${apiBaseUrl}/common/option`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      const data: ApiResponse<CommonOperationResult> = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to perform option operation"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResultOperation = async (): Promise<void> => {
-    try {
-      if (
-        (resultOperation === "ok" ||
-          resultOperation === "unwrap" ||
-          resultOperation === "unwrapOr" ||
-          resultOperation === "isOk" ||
-          resultOperation === "isErr") &&
-        inputValue.trim() === ""
-      ) {
-        setError("Please enter a value for the result");
-        return;
-      }
-
-      if (
-        (resultOperation === "err" || resultOperation === "unwrapErr") &&
-        secondValue.trim() === ""
-      ) {
-        setError("Please enter an error value for the result");
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      const parsedValue = parseValue(inputValue);
-      const parsedErrorValue = parseValue(secondValue);
-
-      const requestBody: any = {
-        value: parsedValue,
-        errorValue: parsedErrorValue,
-        operation: resultOperation,
-      };
-
-      if (resultOperation === "unwrapOr") {
-        requestBody.defaultValue = parseValue(defaultValue);
-      }
-
-      const response = await fetch(`${apiBaseUrl}/common/result`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      const data: ApiResponse<CommonOperationResult> = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to perform result operation"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = (): void => {
-    switch (activeCategory) {
-      case "typeCheck":
-        handleTypeCheck();
-        break;
-      case "convertToVec":
-        handleConvertToVec();
-        break;
-      case "loadingStates":
-        handleLoadingStates();
-        break;
-      case "brandTypes":
-        handleBrandTypes();
-        break;
-      case "option":
-        handleOptionOperation();
-        break;
-      case "result":
-        handleResultOperation();
-        break;
-    }
-  };
+  const tabs = [
+    { id: "overview", label: "Overview" },
+    { id: "typecheck", label: "Type Checking" },
+    { id: "vec", label: "Convert to Vec" },
+    { id: "loading", label: "Loading States" },
+    { id: "brand", label: "Brand Types" },
+    { id: "option", label: "Option Type" },
+    { id: "result", label: "Result Type" },
+    { id: "examples", label: "Examples" },
+  ];
 
   return (
     <Container>
       <Header>
         <Title>Common Utilities</Title>
         <Subtitle>
-          MiLost provides common utilities for type checking, option/result
-          types, and more.
+          MiLost includes a suite of utility types and helpers to validate,
+          transform, and safely operate on values.
         </Subtitle>
       </Header>
 
+      <TabsContainer>
+        {tabs.map((tab) => (
+          <Tab
+            key={tab.id}
+            active={activeTab === tab.id}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </Tab>
+        ))}
+      </TabsContainer>
+
       <Card>
-        <CardTitle>Common Operations</CardTitle>
-        <TabsContainer>
-          <Tab
-            active={activeCategory === "typeCheck"}
-            onClick={() => setActiveCategory("typeCheck")}
-          >
-            Type Check
-          </Tab>
-          <Tab
-            active={activeCategory === "convertToVec"}
-            onClick={() => setActiveCategory("convertToVec")}
-          >
-            Convert to Vec
-          </Tab>
-          <Tab
-            active={activeCategory === "loadingStates"}
-            onClick={() => setActiveCategory("loadingStates")}
-          >
-            Loading States
-          </Tab>
-          <Tab
-            active={activeCategory === "brandTypes"}
-            onClick={() => setActiveCategory("brandTypes")}
-          >
-            Brand Types
-          </Tab>
-          <Tab
-            active={activeCategory === "option"}
-            onClick={() => setActiveCategory("option")}
-          >
-            Option
-          </Tab>
-          <Tab
-            active={activeCategory === "result"}
-            onClick={() => setActiveCategory("result")}
-          >
-            Result
-          </Tab>
-        </TabsContainer>
+        <CardTitle>
+          {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+        </CardTitle>
 
-        <CommonInputForm
-          activeCategory={activeCategory}
-          inputValue={inputValue}
-          setInputValue={setInputValue}
-          secondValue={secondValue}
-          setSecondValue={setSecondValue}
-          defaultValue={defaultValue}
-          setDefaultValue={setDefaultValue}
-          arrayValues={arrayValues}
-          setArrayValues={setArrayValues}
-          typeCheckType={typeCheckType}
-          setTypeCheckType={setTypeCheckType}
-          optionOperation={optionOperation}
-          setOptionOperation={setOptionOperation}
-          resultOperation={resultOperation}
-          setResultOperation={setResultOperation}
-          loadingState={loadingState}
-          setLoadingState={setLoadingState}
-          brandType={brandType}
-          setBrandType={setBrandType}
-        />
+        {activeTab === "overview" && (
+          <>
+            <InfoBox>
+              Common utilities provide reliable, WASM-powered methods to
+              interact with dynamic values in a type-safe and predictable way.
+            </InfoBox>
+            <FormGroup>
+              <Label>What's Included?</Label>
+              <ul>
+                <li>Advanced type guards for runtime safety</li>
+                <li>Option and Result types for nullable/error-prone logic</li>
+                <li>
+                  Utility types like loading state enums and branded types
+                </li>
+              </ul>
+            </FormGroup>
+            <Table>
+              <thead>
+                <tr>
+                  <th>Use when you need...</th>
+                  <th>Instead of...</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Safe checking of unknown input</td>
+                  <td>
+                    <code>typeof</code>, <code>instanceof</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Nullable safety with default values</td>
+                  <td>
+                    Chained <code>||</code> logic
+                  </td>
+                </tr>
+                <tr>
+                  <td>Interfacing WASM-native Vec</td>
+                  <td>JavaScript Arrays</td>
+                </tr>
+              </tbody>
+            </Table>
+            <CodeBlock>
+              <Pre>{`// Minimal Example
+import { isDefined } from "milost";
 
-        <PrimaryButton onClick={handleSubmit} disabled={loading}>
-          {loading ? "Processing..." : "Execute Operation"}
-        </PrimaryButton>
+console.log(isDefined(null)); // true
 
-        {error && <ErrorMessage>{error}</ErrorMessage>}
+// Full API demonstration
+import {
+  isDefined, isNumeric, isVec, isStr, isBoolean,
+  iterableToVec, Option, Result, LoadingStates, BrandTypes
+} from "milost";
 
-        {result && (
-          <ResultContainer>
-            <ResultTitle>Result</ResultTitle>
-            <ResultContent>
-              <CommonResultDisplay result={result} />
-            </ResultContent>
-          </ResultContainer>
+const value = 42;
+console.log(isNumeric(value)); // true
+console.log(isStr("hello"));   // true
+console.log(Option.Some("x").unwrap()); // "x"
+console.log(Result.Ok(1).unwrap()); // 1
+console.log(LoadingStates.LOADING); // "loading"
+console.log(BrandTypes.PERCENTAGE); // "percentage"`}</Pre>
+            </CodeBlock>
+            <SmallText>
+              Every utility is pure and safe. You never mutate the original
+              input. Both minimal and full applications can coexist to aid
+              readability and completeness.
+            </SmallText>
+          </>
+        )}
+
+        {activeTab === "typecheck" && (
+          <>
+            <InfoBox>
+              Type guards help you inspect unknown values with precision and
+              safety.
+            </InfoBox>
+            <CodeBlock>
+              <Pre>{`import { isDefined, isNumeric, isBoolean, isStr, isVec } from "milost";
+
+console.log(isDefined(null)); // true
+console.log(isNumeric(42));   // true
+console.log(isBoolean(false)); // true
+console.log(isStr("hi"));     // true
+console.log(isVec([1, 2, 3])); // false (not a WASM Vec)`}</Pre>
+            </CodeBlock>
+            <SmallText>
+              These helpers are perfect for validating user input, JSON
+              payloads, or dynamic data sources.
+            </SmallText>
+          </>
+        )}
+
+        {activeTab === "vec" && (
+          <>
+            <InfoBox>
+              JavaScript arrays can be converted to MiLost Vec for better WASM
+              compatibility.
+            </InfoBox>
+            <CodeBlock>
+              <Pre>{`import { iterableToVec } from "milost";
+
+const jsArray = ["a", "b", "c"];
+const vec = iterableToVec(jsArray);
+
+console.log(vec.len()); // 3`}</Pre>
+            </CodeBlock>
+            <SmallText>
+              <code>Vec</code> is the foundation for high-performance containers
+              in MiLost.
+            </SmallText>
+          </>
+        )}
+
+        {activeTab === "loading" && (
+          <>
+            <InfoBox>
+              LoadingStates define common lifecycle phases of async operations.
+            </InfoBox>
+            <CodeBlock>
+              <Pre>{`import { LoadingStates } from "milost";
+
+console.log(LoadingStates.IDLE);      // "idle"
+console.log(LoadingStates.LOADING);   // "loading"
+console.log(LoadingStates.SUCCEEDED); // "succeeded"
+console.log(LoadingStates.FAILED);    // "failed"`}</Pre>
+            </CodeBlock>
+            <SmallText>
+              Use these states to simplify UI and state machine logic.
+            </SmallText>
+          </>
+        )}
+
+        {activeTab === "brand" && (
+          <>
+            <InfoBox>
+              Branded types label data with semantic meaning and validation
+              rules.
+            </InfoBox>
+            <CodeBlock>
+              <Pre>{`import { BrandTypes } from "milost";
+
+console.log(BrandTypes.JSON);       // "json"
+console.log(BrandTypes.PERCENTAGE); // "percentage"
+console.log(BrandTypes.POSITIVE);   // "positive"`}</Pre>
+            </CodeBlock>
+            <SmallText>
+              Pair <code>BrandTypes</code> with the Branded API to construct
+              domain-safe values.
+            </SmallText>
+          </>
+        )}
+
+        {activeTab === "option" && (
+          <>
+            <InfoBox>
+              Option is a better alternative to <code>null</code> and{" "}
+              <code>undefined</code>.
+            </InfoBox>
+            <CodeBlock>
+              <Pre>{`import { Option } from "milost";
+
+const some = Option.Some("text");
+const none = Option.None();
+
+console.log(some.unwrap());       // "text"
+console.log(none.unwrapOr(""));  // ""`}</Pre>
+            </CodeBlock>
+            <SmallText>
+              Options help express the absence of a value in a safe, functional
+              way.
+            </SmallText>
+          </>
+        )}
+
+        {activeTab === "result" && (
+          <>
+            <InfoBox>
+              Result is used to model success/failure of an operation with value
+              safety.
+            </InfoBox>
+            <CodeBlock>
+              <Pre>{`import { Result } from "milost";
+
+const success = Result.Ok("data");
+const failure = Result.Err("error");
+
+console.log(success.isOk()); // true
+console.log(failure.isErr()); // true
+console.log(success.unwrap()); // "data"
+console.log(failure.unwrapOr("fallback")); // "fallback"`}</Pre>
+            </CodeBlock>
+            <SmallText>
+              Result is a drop-in replacement for <code>try/catch</code> that
+              makes error flows more expressive.
+            </SmallText>
+          </>
+        )}
+
+        {activeTab === "examples" && (
+          <>
+            <InfoBox>
+              Putting it all together — an end-to-end data flow using common
+              utilities.
+            </InfoBox>
+            <CodeBlock>
+              <Pre>{`import {
+  isDefined, isNumeric, iterableToVec,
+  Option, Result, LoadingStates, BrandTypes
+} from "milost";
+
+const input = 42;
+if (isDefined(input) && isNumeric(input)) {
+  const vec = iterableToVec([input]);
+  const optional = Option.Some(vec.len());
+  const result = Result.Ok(optional.unwrap());
+  console.log(result.unwrap()); // 1
+}`}</Pre>
+            </CodeBlock>
+            <SmallText>
+              This example validates input, collects it in a Vec, wraps it in
+              Option, and extracts with Result — all using MiLost common
+              helpers.
+            </SmallText>
+          </>
         )}
       </Card>
-
-      <CommonExamples />
     </Container>
   );
 }
