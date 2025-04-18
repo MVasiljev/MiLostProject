@@ -174,3 +174,95 @@ export const SmallFeaturesGrid = styled.div`
     }
   }
 `;
+
+export const IntroText = styled.div`
+  margin-bottom: 32px;
+  font-size: 18px;
+  color: #475569;
+  line-height: 1.6;
+
+  p {
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 640px) {
+    font-size: 16px;
+  }
+`;
+
+export const SectionDivider = styled.div`
+  margin: 48px 0;
+  text-align: center;
+  position: relative;
+
+  &:before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: #e2e8f0;
+    z-index: 1;
+  }
+
+  span {
+    background-color: #f8fafc;
+    padding: 0 16px;
+    position: relative;
+    z-index: 2;
+    font-size: 16px;
+    font-weight: 500;
+    color: #64748b;
+  }
+`;
+
+export const QuickLinks = styled.div`
+  margin: 32px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+
+  a {
+    display: inline-block;
+    padding: 10px 18px;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    color: #1e293b;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #f1f5f9;
+      border-color: #cbd5e1;
+      transform: translateY(-2px);
+    }
+  }
+`;
+
+export const ContactLinks = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+`;
+
+export const ContactLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #d97706;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  svg {
+    font-size: 20px;
+  }
+`;

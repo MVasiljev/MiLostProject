@@ -19,14 +19,14 @@ import FunctionalPage from "../pages/Functional/Functional";
 import SyncPrimitivesPage from "../pages/SyncPrimitives/SyncPrimitives";
 import SmartPointersPage from "../pages/SmartPointers/SmartPointers";
 import ComputedPage from "../pages/Computed/Computed";
-// import OwnershipPage from "../pages/Ownership/Ownership";
-// import ReferencePage from "../pages/Reference/Reference";
-// import MatchingPage from "../pages/Matching/Matching";
-// import ContractPage from "../pages/Contract/Contract";
-// import AsyncPage from "../pages/Async/Async";
-// import ResourcePage from "../pages/Resource/Resource";
-// import AsyncUtilsPage from "../pages/AsyncUtils/AsyncUtils";
-// import ErrorsPage from "../pages/Errors/Errors";
+import OwnershipPage from "../pages/Ownership/Ownership";
+import ReferencePage from "../pages/Reference/Reference";
+import ContractPage from "../pages/Contract/Contract";
+import AsyncPage from "../pages/Async/Async";
+import ResourcePage from "../pages/Resource/Resource";
+import PatternMatchingPage from "../pages/PatternMatching/PatternMatching";
+import AsyncUtilsPage from "../pages/AsyncUtils/AsyncUtils";
+import ErrorsPage from "../pages/Errors/Errors";
 
 const router = createBrowserRouter([
   {
@@ -109,38 +109,38 @@ const router = createBrowserRouter([
         path: "computed",
         element: <ComputedPage />,
       },
-      // {
-      //   path: "ownership",
-      //   element: <OwnershipPage />,
-      // },
-      // {
-      //   path: "reference",
-      //   element: <ReferencePage />,
-      // },
-      // {
-      //   path: "matching",
-      //   element: <MatchingPage />,
-      // },
-      // {
-      //   path: "contract",
-      //   element: <ContractPage />,
-      // },
-      // {
-      //   path: "async",
-      //   element: <AsyncPage />,
-      // },
-      // {
-      //   path: "resource",
-      //   element: <ResourcePage />,
-      // },
-      // {
-      //   path: "async-utils",
-      //   element: <AsyncUtilsPage />,
-      // },
-      // {
-      //   path: "errors",
-      //   element: <ErrorsPage />,
-      // },
+      {
+        path: "ownership",
+        element: <OwnershipPage />,
+      },
+      {
+        path: "reference",
+        element: <ReferencePage />,
+      },
+      {
+        path: "matching",
+        element: <PatternMatchingPage />,
+      },
+      {
+        path: "contract",
+        element: <ContractPage />,
+      },
+      {
+        path: "async",
+        element: <AsyncPage />,
+      },
+      {
+        path: "resource",
+        element: <ResourcePage />,
+      },
+      {
+        path: "async-utils",
+        element: <AsyncUtilsPage />,
+      },
+      {
+        path: "errors",
+        element: <ErrorsPage />,
+      },
     ],
   },
 ]);

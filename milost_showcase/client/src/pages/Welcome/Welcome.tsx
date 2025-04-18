@@ -10,7 +10,13 @@ import {
   CodeContent,
   Pre,
   SmallFeaturesGrid,
+  IntroText,
+  QuickLinks,
+  SectionDivider,
+  ContactLink,
+  ContactLinks,
 } from "./Welcome.styles";
+import { FaGithub, FaEnvelope, FaLinkedin } from "react-icons/fa";
 
 function Welcome() {
   return (
@@ -24,6 +30,14 @@ function Welcome() {
           Development
         </Subtitle>
       </Header>
+
+      {/* <QuickLinks>
+        <Link to={ROUTES.GET_STARTED}>Getting Started Guide</Link>
+        <Link to={ROUTES.VECTORS}>Collections</Link>
+        <Link to={ROUTES.OPTION}>Error Handling</Link>
+        <Link to={ROUTES.COMPUTED}>Reactive Programming</Link>
+        <Link to={ROUTES.ASYNC}>Concurrency</Link>
+      </QuickLinks> */}
 
       <FeaturesGrid>
         <FeatureCard
@@ -47,6 +61,25 @@ function Welcome() {
           }
         />
       </FeaturesGrid>
+
+      <IntroText>
+        <p>
+          MiLost bridges the gap between Rust's safety guarantees and
+          TypeScript's developer experience. It provides a comprehensive set of
+          data structures, utilities, and patterns inspired by Rust's most
+          powerful features, all with optional WebAssembly acceleration for
+          near-native performance.
+        </p>
+        <p>
+          Whether you're building a complex web application, processing data at
+          scale, or just looking to write more reliable code, MiLost provides
+          the building blocks for robust, maintainable software.
+        </p>
+      </IntroText>
+
+      <SectionDivider>
+        <span>Core Principles</span>
+      </SectionDivider>
 
       <CodeBlock>
         <CodeBlockTitle>The MiLost Philosophy</CodeBlockTitle>
@@ -86,6 +119,27 @@ const processData = pipe(
 );`}</Pre>
         </CodeContent>
       </CodeBlock>
+
+      <IntroText>
+        <p>
+          MiLost's philosophy centers around making correct code the path of
+          least resistance. By providing immutable data structures, explicit
+          error handling, and powerful abstractions, MiLost helps developers
+          write code that is more maintainable, safer, and often more efficient.
+        </p>
+        <p>
+          The library introduces concepts like <strong>Option</strong> and{" "}
+          <strong>Result</strong> types from Rust, which transform error
+          handling from an afterthought to a core part of your function
+          signatures. Similarly, immutable collections like <strong>Vec</strong>{" "}
+          and <strong>HashMap</strong>
+          eliminate entire classes of bugs related to unexpected mutations.
+        </p>
+      </IntroText>
+
+      <SectionDivider>
+        <span>Solving Real Problems</span>
+      </SectionDivider>
 
       <CodeBlock>
         <CodeBlockTitle>Why MiLost?</CodeBlockTitle>
@@ -127,6 +181,28 @@ async function fetchData(): Promise<Result<Data, NetworkError>> {
         </CodeContent>
       </CodeBlock>
 
+      <IntroText>
+        <p>
+          JavaScript and TypeScript developers face common challenges that
+          MiLost directly addresses: null/undefined errors, unexpected
+          mutations, race conditions, and inconsistent error handling.
+        </p>
+        <p>
+          The examples above are just the beginning. MiLost's approach to memory
+          management through the
+          <strong>Owned</strong>, <strong>Ref</strong>, and{" "}
+          <strong>RefMut</strong> types provides explicit control over how
+          values are accessed and modified. The library's concurrency primitives
+          like <strong>Channel</strong> and <strong>Task</strong> enable safe
+          communication between asynchronous operations, preventing race
+          conditions and memory leaks.
+        </p>
+      </IntroText>
+
+      <SectionDivider>
+        <span>Ready to Start?</span>
+      </SectionDivider>
+
       <CodeBlock>
         <CodeBlockTitle>Getting Started</CodeBlockTitle>
         <CodeContent>
@@ -147,6 +223,26 @@ import {
 // 4. Advanced: Smart Pointers, Concurrency`}</Pre>
         </CodeContent>
       </CodeBlock>
+
+      <IntroText>
+        <p>
+          Getting started with MiLost is simple. The library is modular,
+          allowing you to adopt features incrementally as needed. We recommend
+          starting with the error handling types (Result and Option) and
+          immutable collections (Vec), then exploring the more advanced features
+          as you grow more comfortable with the Rust-inspired paradigms.
+        </p>
+        <p>
+          The documentation provides comprehensive guides and examples for each
+          feature, along with best practices and performance considerations.
+          Whether you're building a new project or enhancing an existing one,
+          MiLost can be integrated smoothly into your workflow.
+        </p>
+      </IntroText>
+
+      <SectionDivider>
+        <span>Feature Highlights</span>
+      </SectionDivider>
 
       <SmallFeaturesGrid>
         <FeatureItem
@@ -174,6 +270,42 @@ import {
           description="High-performance Rust-implemented collections like Vec, HashMap, HashSet"
         />
       </SmallFeaturesGrid>
+
+      <SectionDivider>
+        <span>Community & Support</span>
+      </SectionDivider>
+
+      <IntroText>
+        <p>
+          MiLost is an open-source project currently in active development. As
+          the creator, I welcome contributions, feedback, and questions from
+          developers interested in Rust-inspired patterns for JavaScript and
+          TypeScript.
+        </p>
+        <p>
+          The project is available on GitHub under MIT license. If you're
+          interested in contributing or have questions about the library, please
+          open an issue on the GitHub repository or reach out directly.
+        </p>
+        <p>
+          Whether you want to report a bug, suggest a feature, improve
+          documentation, or contribute code, your involvement is welcome.
+          Together, we can build a library that brings the best of Rust's safety
+          patterns to the JavaScript ecosystem.
+        </p>
+
+        <ContactLinks>
+          <ContactLink href="https://github.com/MVasiljev/MiLostProject">
+            <FaGithub /> GitHub
+          </ContactLink>
+          <ContactLink href="mailto:milan.vasiljev.work@gmail.com">
+            <FaEnvelope /> Email
+          </ContactLink>
+          <ContactLink href="https://www.linkedin.com/in/milan-vasiljev/">
+            <FaLinkedin /> LinkedIn
+          </ContactLink>
+        </ContactLinks>
+      </IntroText>
     </Container>
   );
 }
