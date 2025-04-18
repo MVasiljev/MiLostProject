@@ -1,4 +1,4 @@
-import { useState, ChangeEvent, JSX } from "react";
+import { useState } from "react";
 import {
   Container,
   Header,
@@ -6,898 +6,412 @@ import {
   Subtitle,
   Card,
   CardTitle,
-  FormGroup,
-  Label,
-  Input,
-  NumberInput,
-  PrimaryButton,
-  ErrorMessage,
-  ResultContainer,
-  ResultTitle,
-  ResultContent,
-  Pre,
-  CodeBlock,
-  SmallText,
   TabsContainer,
   Tab,
-  OperationGrid,
-  OperationButton,
-  InputRow,
-  InputColumn,
+  InfoBox,
+  FormGroup,
+  Label,
+  CodeBlock,
+  Pre,
+  SmallText,
 } from "./Strings.styles";
 
-import {
-  StringOperationCategory,
-  StringTransformOperation,
-  SubstringOperation,
-  SearchOperation,
-  StringOperationResult,
-  isStringAnalysisResult,
-  isStringTransformationResult,
-  isSubstringOperationResult,
-  isSearchOperationResult,
-  isCompareStringsResult,
-  isConcatenateStringsResult,
-  SubstringOperationRequest,
-  SearchOperationRequest,
-} from "./types";
-
-interface ApiResponse<T> {
-  data?: T;
-  error?: string;
-}
-
 function StringsPage() {
-  // Basic input states
-  const [inputValue, setInputValue] = useState("");
-  const [firstString, setFirstString] = useState("");
-  const [secondString, setSecondString] = useState("");
+  const [activeCategory, setActiveCategory] = useState("overview");
 
-  // Operation parameters
-  const [startIndex, setStartIndex] = useState<number>(0);
-  const [endIndex, setEndIndex] = useState<number>(0);
-  const [searchString, setSearchString] = useState("");
-  const [replaceString, setReplaceString] = useState("");
-  const [position, setPosition] = useState<number>(0);
-
-  // UI states
-  const [activeCategory, setActiveCategory] =
-    useState<StringOperationCategory>("analyze");
-  const [transformOperation, setTransformOperation] =
-    useState<StringTransformOperation>("uppercase");
-  const [substringOperation, setSubstringOperation] =
-    useState<SubstringOperation>("substring");
-  const [searchOperation, setSearchOperation] =
-    useState<SearchOperation>("contains");
-
-  // Result states
-  const [result, setResult] = useState<StringOperationResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const apiBaseUrl = "/api";
-
-  const handleAnalyzeString = async (): Promise<void> => {
-    if (!inputValue) {
-      setError("Please enter a string value");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`${apiBaseUrl}/string`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ value: inputValue }),
-      });
-
-      const data: ApiResponse<StringOperationResult> = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError("Failed to connect to API");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleTransformString = async (): Promise<void> => {
-    if (!inputValue) {
-      setError("Please enter a string value");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`${apiBaseUrl}/string/transformation`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          value: inputValue,
-          operation: transformOperation,
-        }),
-      });
-
-      const data: ApiResponse<StringOperationResult> = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError("Failed to connect to API");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubstringOperation = async (): Promise<void> => {
-    if (!inputValue) {
-      setError("Please enter a string value");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    const requestBody: SubstringOperationRequest = {
-      value: inputValue,
-      operation: substringOperation,
-    };
-
-    // Add parameters based on the operation
-    if (substringOperation === "substring") {
-      requestBody.start = startIndex;
-      requestBody.end = endIndex;
-    } else if (substringOperation === "charAt") {
-      requestBody.start = startIndex;
-    } else if (
-      substringOperation === "startsWith" ||
-      substringOperation === "endsWith"
-    ) {
-      requestBody.searchStr = searchString;
-    }
-
-    try {
-      const response = await fetch(`${apiBaseUrl}/string/substring`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      const data: ApiResponse<StringOperationResult> = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError("Failed to connect to API");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSearchOperation = async (): Promise<void> => {
-    if (!inputValue) {
-      setError("Please enter a string value");
-      return;
-    }
-
-    if (!searchString) {
-      setError("Please enter a search string");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    const requestBody: SearchOperationRequest = {
-      value: inputValue,
-      operation: searchOperation,
-      searchStr: searchString,
-    };
-
-    // Add parameters based on the operation
-    if (searchOperation === "indexOf") {
-      requestBody.position = position;
-    } else if (searchOperation === "replace") {
-      requestBody.replaceStr = replaceString;
-    }
-
-    try {
-      const response = await fetch(`${apiBaseUrl}/string/search`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      const data: ApiResponse<StringOperationResult> = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError("Failed to connect to API");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCompareStrings = async (): Promise<void> => {
-    if (!firstString || !secondString) {
-      setError("Please enter both strings for comparison");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`${apiBaseUrl}/string/compare`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          firstString,
-          secondString,
-        }),
-      });
-
-      const data: ApiResponse<StringOperationResult> = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError("Failed to connect to API");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleConcatenateStrings = async (): Promise<void> => {
-    if (!firstString || !secondString) {
-      setError("Please enter both strings for concatenation");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`${apiBaseUrl}/string/concatenate`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          firstString,
-          secondString,
-        }),
-      });
-
-      const data: ApiResponse<StringOperationResult> = await response.json();
-
-      if (response.ok && data.data) {
-        setResult(data.data);
-      } else {
-        setError(data.error || "Something went wrong");
-      }
-    } catch (err) {
-      setError("Failed to connect to API");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = (): void => {
-    switch (activeCategory) {
-      case "analyze":
-        handleAnalyzeString();
-        break;
-      case "transform":
-        handleTransformString();
-        break;
-      case "substring":
-        handleSubstringOperation();
-        break;
-      case "search":
-        handleSearchOperation();
-        break;
-      case "compare":
-        handleCompareStrings();
-        break;
-      case "concat":
-        handleConcatenateStrings();
-        break;
-    }
-  };
-
-  const renderInputForm = (): JSX.Element | null => {
-    switch (activeCategory) {
-      case "analyze":
-        return (
-          <>
-            <FormGroup>
-              <Label htmlFor="string-input">Enter a string to analyze</Label>
-              <Input
-                id="string-input"
-                type="text"
-                value={inputValue}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setInputValue(e.target.value)
-                }
-                placeholder="Enter text here..."
-              />
-            </FormGroup>
-          </>
-        );
-
-      case "transform":
-        return (
-          <>
-            <FormGroup>
-              <Label htmlFor="string-input">Enter a string to transform</Label>
-              <Input
-                id="string-input"
-                type="text"
-                value={inputValue}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setInputValue(e.target.value)
-                }
-                placeholder="Enter text here..."
-              />
-            </FormGroup>
-            <OperationGrid>
-              <OperationButton
-                active={transformOperation === "uppercase"}
-                onClick={() => setTransformOperation("uppercase")}
-              >
-                Uppercase
-              </OperationButton>
-              <OperationButton
-                active={transformOperation === "lowercase"}
-                onClick={() => setTransformOperation("lowercase")}
-              >
-                Lowercase
-              </OperationButton>
-              <OperationButton
-                active={transformOperation === "trim"}
-                onClick={() => setTransformOperation("trim")}
-              >
-                Trim
-              </OperationButton>
-              <OperationButton
-                active={transformOperation === "reverse"}
-                onClick={() => setTransformOperation("reverse")}
-              >
-                Reverse
-              </OperationButton>
-            </OperationGrid>
-          </>
-        );
-
-      case "substring":
-        return (
-          <>
-            <FormGroup>
-              <Label htmlFor="string-input">Enter a string</Label>
-              <Input
-                id="string-input"
-                type="text"
-                value={inputValue}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setInputValue(e.target.value)
-                }
-                placeholder="Enter text here..."
-              />
-            </FormGroup>
-            <OperationGrid>
-              <OperationButton
-                active={substringOperation === "substring"}
-                onClick={() => setSubstringOperation("substring")}
-              >
-                Substring
-              </OperationButton>
-              <OperationButton
-                active={substringOperation === "charAt"}
-                onClick={() => setSubstringOperation("charAt")}
-              >
-                CharAt
-              </OperationButton>
-              <OperationButton
-                active={substringOperation === "startsWith"}
-                onClick={() => setSubstringOperation("startsWith")}
-              >
-                StartsWith
-              </OperationButton>
-              <OperationButton
-                active={substringOperation === "endsWith"}
-                onClick={() => setSubstringOperation("endsWith")}
-              >
-                EndsWith
-              </OperationButton>
-            </OperationGrid>
-
-            {substringOperation === "substring" && (
-              <InputRow>
-                <InputColumn>
-                  <Label htmlFor="start-index">Start Index</Label>
-                  <NumberInput
-                    id="start-index"
-                    type="number"
-                    value={startIndex}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      setStartIndex(parseInt(e.target.value) || 0)
-                    }
-                    min={0}
-                  />
-                </InputColumn>
-                <InputColumn>
-                  <Label htmlFor="end-index">End Index</Label>
-                  <NumberInput
-                    id="end-index"
-                    type="number"
-                    value={endIndex}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      setEndIndex(parseInt(e.target.value) || 0)
-                    }
-                    min={0}
-                  />
-                </InputColumn>
-              </InputRow>
-            )}
-
-            {substringOperation === "charAt" && (
-              <FormGroup>
-                <Label htmlFor="char-index">Character Index</Label>
-                <NumberInput
-                  id="char-index"
-                  type="number"
-                  value={startIndex}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setStartIndex(parseInt(e.target.value) || 0)
-                  }
-                  min={0}
-                />
-              </FormGroup>
-            )}
-
-            {(substringOperation === "startsWith" ||
-              substringOperation === "endsWith") && (
-              <FormGroup>
-                <Label htmlFor="search-string">Search String</Label>
-                <Input
-                  id="search-string"
-                  type="text"
-                  value={searchString}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setSearchString(e.target.value)
-                  }
-                  placeholder="Text to search for..."
-                />
-              </FormGroup>
-            )}
-          </>
-        );
-
-      case "search":
-        return (
-          <>
-            <FormGroup>
-              <Label htmlFor="string-input">Enter a string</Label>
-              <Input
-                id="string-input"
-                type="text"
-                value={inputValue}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setInputValue(e.target.value)
-                }
-                placeholder="Enter text here..."
-              />
-            </FormGroup>
-            <OperationGrid>
-              <OperationButton
-                active={searchOperation === "contains"}
-                onClick={() => setSearchOperation("contains")}
-              >
-                Contains
-              </OperationButton>
-              <OperationButton
-                active={searchOperation === "indexOf"}
-                onClick={() => setSearchOperation("indexOf")}
-              >
-                IndexOf
-              </OperationButton>
-              <OperationButton
-                active={searchOperation === "lastIndexOf"}
-                onClick={() => setSearchOperation("lastIndexOf")}
-              >
-                LastIndexOf
-              </OperationButton>
-              <OperationButton
-                active={searchOperation === "replace"}
-                onClick={() => setSearchOperation("replace")}
-              >
-                Replace
-              </OperationButton>
-              <OperationButton
-                active={searchOperation === "split"}
-                onClick={() => setSearchOperation("split")}
-              >
-                Split
-              </OperationButton>
-            </OperationGrid>
-
-            <FormGroup>
-              <Label htmlFor="search-string">Search String</Label>
-              <Input
-                id="search-string"
-                type="text"
-                value={searchString}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setSearchString(e.target.value)
-                }
-                placeholder="Text to search for..."
-              />
-            </FormGroup>
-
-            {searchOperation === "indexOf" && (
-              <FormGroup>
-                <Label htmlFor="position">Starting Position</Label>
-                <NumberInput
-                  id="position"
-                  type="number"
-                  value={position}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setPosition(parseInt(e.target.value) || 0)
-                  }
-                  min={0}
-                />
-              </FormGroup>
-            )}
-
-            {searchOperation === "replace" && (
-              <FormGroup>
-                <Label htmlFor="replace-string">Replace With</Label>
-                <Input
-                  id="replace-string"
-                  type="text"
-                  value={replaceString}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    setReplaceString(e.target.value)
-                  }
-                  placeholder="Replacement text..."
-                />
-              </FormGroup>
-            )}
-          </>
-        );
-
-      case "compare":
-        return (
-          <>
-            <FormGroup>
-              <Label htmlFor="first-string">First String</Label>
-              <Input
-                id="first-string"
-                type="text"
-                value={firstString}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setFirstString(e.target.value)
-                }
-                placeholder="Enter first string..."
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label htmlFor="second-string">Second String</Label>
-              <Input
-                id="second-string"
-                type="text"
-                value={secondString}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setSecondString(e.target.value)
-                }
-                placeholder="Enter second string..."
-              />
-            </FormGroup>
-          </>
-        );
-
-      case "concat":
-        return (
-          <>
-            <FormGroup>
-              <Label htmlFor="first-string">First String</Label>
-              <Input
-                id="first-string"
-                type="text"
-                value={firstString}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setFirstString(e.target.value)
-                }
-                placeholder="Enter first string..."
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label htmlFor="second-string">Second String</Label>
-              <Input
-                id="second-string"
-                type="text"
-                value={secondString}
-                onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                  setSecondString(e.target.value)
-                }
-                placeholder="Enter second string..."
-              />
-            </FormGroup>
-          </>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  const renderResult = (): JSX.Element | null => {
-    if (!result) return null;
-
-    if (isStringAnalysisResult(result)) {
-      return (
-        <Pre>
-          {JSON.stringify(
-            {
-              original: result.original,
-              length: result.length,
-              isEmpty: result.isEmpty,
-            },
-            null,
-            2
-          )}
-        </Pre>
-      );
-    }
-
-    if (isStringTransformationResult(result)) {
-      return (
-        <Pre>
-          {JSON.stringify(
-            {
-              original: result.original,
-              operation: result.operation,
-              result: result.result,
-            },
-            null,
-            2
-          )}
-        </Pre>
-      );
-    }
-
-    if (isSubstringOperationResult(result)) {
-      return (
-        <Pre>
-          {JSON.stringify(
-            {
-              original: result.original,
-              operation: result.operation,
-              result: result.result,
-              params: result.params,
-            },
-            null,
-            2
-          )}
-        </Pre>
-      );
-    }
-
-    if (isSearchOperationResult(result)) {
-      return (
-        <Pre>
-          {JSON.stringify(
-            {
-              original: result.original,
-              operation: result.operation,
-              result: result.result,
-              params: result.params,
-            },
-            null,
-            2
-          )}
-        </Pre>
-      );
-    }
-
-    if (isCompareStringsResult(result)) {
-      return (
-        <Pre>
-          {JSON.stringify(
-            {
-              firstString: result.firstString,
-              secondString: result.secondString,
-              equal: result.equal,
-            },
-            null,
-            2
-          )}
-        </Pre>
-      );
-    }
-
-    if (isConcatenateStringsResult(result)) {
-      return (
-        <Pre>
-          {JSON.stringify(
-            {
-              firstString: result.firstString,
-              secondString: result.secondString,
-              result: result.result,
-            },
-            null,
-            2
-          )}
-        </Pre>
-      );
-    }
-
-    return <Pre>{JSON.stringify(result, null, 2)}</Pre>;
-  };
+  const categories = [
+    { id: "overview", label: "Overview" },
+    { id: "creation", label: "Creating Strings" },
+    { id: "transform", label: "Transformations" },
+    { id: "substring", label: "Working with Parts" },
+    { id: "search", label: "Searching" },
+    { id: "manipulate", label: "Manipulation" },
+    { id: "comparison", label: "Comparison" },
+    { id: "performance", label: "Performance" },
+    { id: "examples", label: "Examples" },
+  ];
 
   return (
     <Container>
       <Header>
-        <Title>String Operations</Title>
+        <Title>String Handling</Title>
         <Subtitle>
-          MiLost provides high-performance string operations powered by Rust and
-          WASM.
+          Learn how to safely and immutably manipulate strings with MiLost's
+          <code>Str</code> type powered by WebAssembly
         </Subtitle>
       </Header>
 
+      <TabsContainer>
+        {categories.map((category) => (
+          <Tab
+            key={category.id}
+            active={activeCategory === category.id}
+            onClick={() => setActiveCategory(category.id)}
+          >
+            {category.label}
+          </Tab>
+        ))}
+      </TabsContainer>
+
       <Card>
-        <CardTitle>String Operations</CardTitle>
-        <TabsContainer>
-          <Tab
-            active={activeCategory === "analyze"}
-            onClick={() => setActiveCategory("analyze")}
-          >
-            Analyze
-          </Tab>
-          <Tab
-            active={activeCategory === "transform"}
-            onClick={() => setActiveCategory("transform")}
-          >
-            Transform
-          </Tab>
-          <Tab
-            active={activeCategory === "substring"}
-            onClick={() => setActiveCategory("substring")}
-          >
-            Substring
-          </Tab>
-          <Tab
-            active={activeCategory === "search"}
-            onClick={() => setActiveCategory("search")}
-          >
-            Search
-          </Tab>
-          <Tab
-            active={activeCategory === "compare"}
-            onClick={() => setActiveCategory("compare")}
-          >
-            Compare
-          </Tab>
-          <Tab
-            active={activeCategory === "concat"}
-            onClick={() => setActiveCategory("concat")}
-          >
-            Concatenate
-          </Tab>
-        </TabsContainer>
+        <CardTitle>
+          {activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)}
+        </CardTitle>
 
-        {renderInputForm()}
+        {activeCategory === "overview" && (
+          <>
+            <InfoBox>
+              The <code>Str</code> type in MiLost provides an immutable,
+              Rust-inspired string API for JavaScript and TypeScript. It's
+              designed for predictability, performance, and correctness.
+            </InfoBox>
 
-        <PrimaryButton onClick={handleSubmit} disabled={loading}>
-          {loading ? "Processing..." : "Execute Operation"}
-        </PrimaryButton>
+            <FormGroup>
+              <Label>Why use Str over regular strings?</Label>
+              <ul>
+                <li>
+                  <strong>Immutability</strong>: Eliminates side effects
+                </li>
+                <li>
+                  <strong>Type-safety</strong>: Reduces reliance on
+                  null/undefined
+                </li>
+                <li>
+                  <strong>Functional API</strong>: Encourages transformation
+                  pipelines
+                </li>
+                <li>
+                  <strong>WASM-optimized</strong>: High-performance for large
+                  text
+                </li>
+              </ul>
+            </FormGroup>
 
-        {error && <ErrorMessage>{error}</ErrorMessage>}
+            <CodeBlock>
+              <Pre>{`import { Str } from "milost";
 
-        {result && (
-          <ResultContainer>
-            <ResultTitle>Result</ResultTitle>
-            <ResultContent>{renderResult()}</ResultContent>
-          </ResultContainer>
+const message = Str.fromRaw("Hello, World!");
+console.log(message.len()); // 13
+console.log(message.isEmpty()); // false`}</Pre>
+            </CodeBlock>
+
+            <SmallText>
+              Unlike native strings in JavaScript, <code>Str</code> enforces
+              immutability and correctness by default — no accidental mutation,
+              no silent failures.
+            </SmallText>
+          </>
         )}
-      </Card>
 
-      <Card>
-        <CardTitle>String API Examples</CardTitle>
+        {activeCategory === "creation" && (
+          <>
+            <InfoBox>
+              Strings in MiLost are created explicitly with safety in mind.
+            </InfoBox>
 
-        <CodeBlock>
-          <Pre>
-            {`import { Str } from "milost";
+            <FormGroup>
+              <Label>Construction Methods</Label>
+              <ul>
+                <li>
+                  <code>Str.fromRaw("text")</code>: Wrap a native string
+                </li>
+                <li>
+                  <code>Str.empty()</code>: Create an empty string
+                </li>
+                <li>
+                  <code>Str.fromChar('x')</code>: Build from a single character
+                </li>
+              </ul>
+            </FormGroup>
 
-// Create a string
-const hello = Str.fromRaw("Hello, World!");
+            <CodeBlock>
+              <Pre>{`import { Str } from "milost";
 
-// Basic properties
-console.log(hello.len());        // 13
-console.log(hello.isEmpty());    // false
+const greeting = Str.fromRaw("Hi");
+const space = Str.fromChar(" ");
+const empty = Str.empty();
 
-// Transformations
-const upper = hello.toUpperCase();
-console.log(upper.unwrap());     // "HELLO, WORLD!"
+console.log(greeting.len()); // 2
+console.log(empty.isEmpty()); // true`}</Pre>
+            </CodeBlock>
 
-const lower = hello.toLowerCase();
-console.log(lower.unwrap());     // "hello, world!"
+            <SmallText>
+              Always construct strings through <code>Str</code> to gain type
+              guarantees and avoid inconsistent behavior from native JS strings.
+            </SmallText>
+          </>
+        )}
 
-const trimmed = Str.fromRaw("  trim me  ").trim();
-console.log(trimmed.unwrap());   // "trim me"
+        {activeCategory === "transform" && (
+          <>
+            <InfoBox>
+              Every transformation in MiLost is pure and non-destructive. You’ll
+              never modify an existing string.
+            </InfoBox>
 
-// Substrings
-const sub = hello.substring(0, 5);
-console.log(sub.unwrap());       // "Hello"
+            <FormGroup>
+              <Label>Common Transformations</Label>
+              <ul>
+                <li>
+                  <code>.toUpperCase()</code>
+                </li>
+                <li>
+                  <code>.toLowerCase()</code>
+                </li>
+                <li>
+                  <code>.trim()</code>
+                </li>
+                <li>
+                  <code>.reverse()</code>
+                </li>
+              </ul>
+            </FormGroup>
 
-const char = hello.charAt(0);    // "H"
+            <CodeBlock>
+              <Pre>{`import { Str } from "milost";
+const input = Str.fromRaw("  Example String  ");
 
-// String searches
-console.log(hello.contains("World"));        // true
-console.log(hello.indexOf("o"));             // 4
-console.log(hello.lastIndexOf("o"));         // 8
-console.log(hello.startsWith("Hello"));      // true
-console.log(hello.endsWith("!"));            // true
+const upper = input.toUpperCase();
+const trimmed = input.trim();
+const reversed = input.reverse();
 
-// String manipulation
-const parts = hello.split(",");              // ["Hello", " World!"]
-const replaced = hello.replace("World", "MiLost");
-console.log(replaced.unwrap());              // "Hello, MiLost!"
+console.log(trimmed.unwrap()); // "Example String"
+console.log(reversed.unwrap()); // "  gnirtS elpmaxE  "`}</Pre>
+            </CodeBlock>
 
-// String comparison
-const str1 = Str.fromRaw("Hello");
-const str2 = Str.fromRaw("Hello");
-console.log(str1.equals(str2));              // true
+            <SmallText>
+              Use transformation chains to build clear data pipelines:
+              <code>input.trim().toUpperCase()</code>
+            </SmallText>
+          </>
+        )}
 
-// Concatenation
-const combined = str1.concat(Str.fromRaw(", MiLost!"));
-console.log(combined.unwrap());              // "Hello, MiLost!"`}
-          </Pre>
-        </CodeBlock>
+        {activeCategory === "substring" && (
+          <>
+            <InfoBox>
+              MiLost provides safe and expressive ways to access parts of
+              strings.
+            </InfoBox>
 
-        <SmallText>
-          MiLost's Str class provides a Rust-like immutable string
-          implementation with WASM acceleration when available. All operations
-          return new string instances instead of modifying the original.
-        </SmallText>
+            <FormGroup>
+              <Label>Working with Substrings</Label>
+              <ul>
+                <li>
+                  <code>.substring(start, end)</code>
+                </li>
+                <li>
+                  <code>.charAt(index)</code>
+                </li>
+                <li>
+                  <code>.startsWith()</code>, <code>.endsWith()</code>
+                </li>
+              </ul>
+            </FormGroup>
+
+            <CodeBlock>
+              <Pre>{`import { Str } from "milost";
+const word = Str.fromRaw("Immutable");
+
+console.log(word.substring(0, 5).unwrap()); // "Immut"
+console.log(word.charAt(2)); // "m"
+console.log(word.startsWith("Im")); // true
+console.log(word.endsWith("ble")); // true`}</Pre>
+            </CodeBlock>
+
+            <SmallText>
+              Indexing is bounds-checked and safe. You’ll never get
+              <code>undefined</code> — only valid results or handled errors.
+            </SmallText>
+          </>
+        )}
+
+        {activeCategory === "search" && (
+          <>
+            <InfoBox>
+              MiLost enables flexible search operations over string content.
+            </InfoBox>
+
+            <FormGroup>
+              <Label>Search Methods</Label>
+              <ul>
+                <li>
+                  <code>.contains(text)</code>
+                </li>
+                <li>
+                  <code>.indexOf(text)</code>
+                </li>
+                <li>
+                  <code>.lastIndexOf(text)</code>
+                </li>
+              </ul>
+            </FormGroup>
+
+            <CodeBlock>
+              <Pre>{`import { Str } from "milost";
+const title = Str.fromRaw("MiLost Library");
+
+console.log(title.contains("Lib")); // true
+console.log(title.indexOf("i")); // 1
+console.log(title.lastIndexOf("i")); // 10`}</Pre>
+            </CodeBlock>
+
+            <SmallText>
+              Searching is fast and safe — perfect for parsing structured or
+              freeform input.
+            </SmallText>
+          </>
+        )}
+
+        {activeCategory === "manipulate" && (
+          <>
+            <InfoBox>
+              Sometimes you want to modify structure, not just content. These
+              operations let you reshape strings.
+            </InfoBox>
+
+            <FormGroup>
+              <Label>Manipulation Methods</Label>
+              <ul>
+                <li>
+                  <code>.replace(old, new)</code>
+                </li>
+                <li>
+                  <code>.split(separator)</code>
+                </li>
+                <li>
+                  <code>.concat(otherStr)</code>
+                </li>
+              </ul>
+            </FormGroup>
+
+            <CodeBlock>
+              <Pre>{`import { Str } from "milost";
+const raw = Str.fromRaw("hello world");
+const updated = raw.replace("world", "MiLost");
+console.log(updated.unwrap()); // "hello MiLost"
+
+const parts = raw.split(" ");
+console.log(parts.map(p => p.unwrap())); // ["hello", "world"]
+
+const joined = raw.concat(Str.fromRaw("!"));
+console.log(joined.unwrap()); // "hello world!"`}</Pre>
+            </CodeBlock>
+
+            <SmallText>
+              Always remember: these operations don’t mutate the original
+              string. Capture their return value!
+            </SmallText>
+          </>
+        )}
+
+        {activeCategory === "comparison" && (
+          <>
+            <InfoBox>
+              String comparisons can be tricky in JS. MiLost makes them explicit
+              and safe.
+            </InfoBox>
+
+            <FormGroup>
+              <Label>Comparison Utilities</Label>
+              <ul>
+                <li>
+                  <code>.equals(otherStr)</code>: Deep equality check
+                </li>
+              </ul>
+            </FormGroup>
+
+            <CodeBlock>
+              <Pre>{`import { Str } from "milost";
+const a = Str.fromRaw("test");
+const b = Str.fromRaw("test");
+const c = Str.fromRaw("Test");
+
+console.log(a.equals(b)); // true
+console.log(a.equals(c)); // false`}</Pre>
+            </CodeBlock>
+
+            <SmallText>
+              Always use <code>equals()</code> for predictable, value-based
+              comparison.
+            </SmallText>
+          </>
+        )}
+
+        {activeCategory === "performance" && (
+          <>
+            <InfoBox>
+              MiLost's <code>Str</code> combines safety and speed using
+              WebAssembly.
+            </InfoBox>
+
+            <FormGroup>
+              <Label>Performance Design</Label>
+              <ul>
+                <li>
+                  <strong>WASM acceleration</strong> for core string logic
+                </li>
+                <li>
+                  <strong>Immutability</strong> allows structural sharing and
+                  caching
+                </li>
+                <li>
+                  <strong>Predictable costs</strong> for large-text workloads
+                </li>
+              </ul>
+            </FormGroup>
+
+            <CodeBlock>
+              <Pre>{`import { Str } from "milost";
+function benchmark() {
+  const start = performance.now();
+  let str = Str.empty();
+
+  for (let i = 0; i < 10000; i++) {
+    str = str.concat(Str.fromRaw("x"));
+  }
+
+  const end = performance.now();
+  console.log(\`Built string of len: \${str.len()} in \${end - start}ms\`);
+}
+
+benchmark();`}</Pre>
+            </CodeBlock>
+
+            <SmallText>
+              For small-scale or interactive workloads, performance will be more
+              than sufficient. Measure before optimizing.
+            </SmallText>
+          </>
+        )}
+
+        {activeCategory === "examples" && (
+          <>
+            <InfoBox>
+              Here’s a full walkthrough showing how to compose <code>Str</code>{" "}
+              operations in real code.
+            </InfoBox>
+
+            <CodeBlock>
+              <Pre>{`import { Str } from "milost";
+
+const raw = Str.fromRaw("  hello milost  ");
+const clean = raw.trim().toUpperCase();
+
+console.log(clean.unwrap()); // "HELLO MILOST"
+
+const hasWord = clean.contains("MILOST");
+console.log(hasWord); // true
+
+const final = clean.concat(Str.fromRaw("!"));
+console.log(final.unwrap()); // "HELLO MILOST!"`}</Pre>
+            </CodeBlock>
+
+            <SmallText>
+              Composing pure transformations gives you clean, safe code that’s
+              easy to follow.
+            </SmallText>
+          </>
+        )}
       </Card>
     </Container>
   );
