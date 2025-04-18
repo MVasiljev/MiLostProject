@@ -4,7 +4,7 @@
  * This file contains utilities to help with MiLost development and debugging.
  */
 
-import "./types";
+import "./types.js";
 
 /**
  * Configure MiLost for development environment

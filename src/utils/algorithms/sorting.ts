@@ -5,7 +5,11 @@
  * and JavaScript fallback capabilities.
  */
 
-import { WasmModule, registerModule, getWasmModule } from "../../initWasm";
+import {
+  WasmModule,
+  registerModule,
+  getWasmModule,
+} from "../../initWasm/index.js";
 
 /**
  * Comparator function type for sorting

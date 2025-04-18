@@ -1,5 +1,5 @@
 import { loadWasmModule } from "./init.js";
-import "./types";
+import "./types.js";
 //@ts-ignore
 import * as glue from "milost/dist/wasm/milost_wasm.js";
 /**

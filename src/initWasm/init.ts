@@ -5,7 +5,7 @@
  * handling various browser compatibility issues and MIME type problems.
  */
 
-import "./types";
+import "./types.js";
 
 /**
  * Checks if a path is a data URI

@@ -1,4 +1,4 @@
-import { RegexBuilder, RegexLanguage, RegexConversation } from "./index";
+import { RegexBuilder, RegexLanguage, RegexConversation } from "./index.js";
 
 export async function createRegexBuilder(): Promise<RegexBuilder> {
   return await RegexBuilder.create();

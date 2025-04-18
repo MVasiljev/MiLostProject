@@ -1,4 +1,4 @@
-import { RegexBuilder } from "./regex-builder";
+import { RegexBuilder } from "./regex-builder.js";
 
 export class RegexConversation {
   private builder: RegexBuilder;

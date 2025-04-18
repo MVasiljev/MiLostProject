@@ -1,4 +1,4 @@
-export { MatchBuilder, __ } from "./match_builder";
+export { MatchBuilder, __ } from "./match_builder.js";
 
 export {
   MatchPattern,
@@ -9,4 +9,4 @@ export {
   _,
   PatternMatcher,
   matchValue,
-} from "./matching";
+} from "./matching.js";

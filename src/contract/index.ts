@@ -1,3 +1,3 @@
-export { ContractError, requires, ensures, contract } from "./contract";
+export { ContractError, requires, ensures, contract } from "./contract.js";
 
-export { Invariant } from "./invariant";
+export { Invariant } from "./invariant.js";

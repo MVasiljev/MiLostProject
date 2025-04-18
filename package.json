@@ -1,6 +1,6 @@
 {
   "name": "milost",
-  "version": "1.0.35",
+  "version": "1.1.0",
   "description": "A Rust-like TypeScript library with WebAssembly optimizations",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -47,6 +47,7 @@
   "license": "MIT",
   "devDependencies": {
     "@types/jest": "^29.5.14",
+    "@types/node": "^22.14.1",
     "http-server": "^14.1.1",
     "typescript": "^5.0.0"
   },
@@ -71,5 +72,8 @@
   },
   "wasmInfo": {
     "notes": "WebAssembly binary files need proper MIME types (application/wasm) to be served correctly."
+  },
+  "dependencies": {
+    "fs-extra": "^11.3.0"
   }
 }

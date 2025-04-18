@@ -1,4 +1,4 @@
-import { WasmModule } from "./registry";
+import { WasmModule } from "./registry.js";
 
 interface WasmInitOptions {
   wasmPath?: string;

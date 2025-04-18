@@ -1,7 +1,7 @@
 import {
   initWasm as internalInitWasm,
   setExternalWasmInstance,
-} from "./registry";
+} from "./registry.js";
 
 /**
  * Automatically initialize WASM for both Node.js and browser environments

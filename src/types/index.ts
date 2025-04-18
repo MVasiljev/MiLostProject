@@ -1,4 +1,4 @@
-export { Brand, Branded } from "./branding";
+export { Brand, Branded } from "./branding.js";
 
 export {
   Fallible,
@@ -32,11 +32,11 @@ export {
   BrandTypes,
   iterableToVec,
   Types,
-} from "./common";
+} from "./common.js";
 
-export { HashMap } from "./hash_map";
+export { HashMap } from "./hash_map.js";
 
-export { HashSet } from "./hash_set";
+export { HashSet } from "./hash_set.js";
 
 export {
   u8,
@@ -103,12 +103,12 @@ export {
   to_binary,
   to_hex,
   to_octal,
-} from "./primitives";
+} from "./primitives.js";
 
-export { Str } from "./string";
+export { Str } from "./string.js";
 
-export { Struct } from "./struct";
+export { Struct } from "./struct.js";
 
-export { Tuple } from "./tuple";
+export { Tuple } from "./tuple.js";
 
-export { Vec } from "./vec";
+export { Vec } from "./vec.js";

@@ -9,7 +9,7 @@ export {
   createRefCell,
   createRcRefCell,
   createArc,
-} from "./smart_pointers";
+} from "./smart_pointers.js";
 
 export {
   Mutex,
@@ -18,6 +18,6 @@ export {
   createMutex,
   createRwLock,
   createArcMutex,
-} from "./sync_primitives";
+} from "./sync_primitives.js";
 
-export { Computed, Watcher, AsyncEffect } from "./computed";
+export { Computed, Watcher, AsyncEffect } from "./computed.js";

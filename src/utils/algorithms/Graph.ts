@@ -4,10 +4,14 @@
  * Provides a flexible graph data structure with WebAssembly acceleration
  * and JavaScript fallback capabilities.
  */
-import { AppError, Result, Ok } from "../../core";
-import { WasmModule, registerModule, getWasmModule } from "../../initWasm";
-import { Str, Vec, f64 } from "../../types";
-import { Option } from "../../index";
+import { AppError, Result, Ok } from "../../core/index.js";
+import {
+  WasmModule,
+  registerModule,
+  getWasmModule,
+} from "../../initWasm/index.js";
+import { Str, Vec, f64 } from "../../types/index.js";
+import { Option } from "../../index.js";
 
 /**
  * Custom error for Graph operations

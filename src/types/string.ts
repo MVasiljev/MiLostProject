@@ -5,7 +5,11 @@
  * acceleration when available.
  */
 
-import { WasmModule, registerModule, getWasmModule } from "../initWasm";
+import {
+  WasmModule,
+  registerModule,
+  getWasmModule,
+} from "../initWasm/index.js";
 
 /**
  * Module definition for Str WASM implementation

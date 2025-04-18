@@ -1,7 +1,7 @@
-export { Resource, ResourceError, withResource } from "./resource";
+export { Resource, ResourceError, withResource } from "./resource.js";
 
 export {
   DisposableGroup,
   IDisposable,
   useDisposableResource,
-} from "./disposable";
+} from "./disposable.js";

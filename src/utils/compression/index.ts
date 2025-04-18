@@ -1,3 +1,3 @@
-export { Compression, CompressionError } from "./compression";
-export * from "./compression";
-export { default } from "./compression";
+export { Compression, CompressionError } from "./compression.js";
+export * from "./compression.js";
+export { default } from "./compression.js";

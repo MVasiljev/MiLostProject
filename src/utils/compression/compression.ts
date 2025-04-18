@@ -5,8 +5,12 @@
  * and JavaScript fallback capabilities.
  */
 
-import { Result, Err, Ok } from "../../core";
-import { WasmModule, registerModule, getWasmModule } from "../../initWasm";
+import { Result, Err, Ok } from "../../core/index.js";
+import {
+  WasmModule,
+  registerModule,
+  getWasmModule,
+} from "../../initWasm/index.js";
 
 /**
  * Custom error for compression operations

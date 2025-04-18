@@ -1,5 +1,5 @@
-import { Result, ValidationError, Err, Ok } from "../core";
-import { Str } from "./string";
+import { Result, ValidationError, Err, Ok } from "../core/index.js";
+import { Str } from "./string.js";
 
 export type Brand<T, B extends Str> = T & { readonly __brand: B };
 

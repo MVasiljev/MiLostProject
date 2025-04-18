@@ -1,3 +1,3 @@
-export { Crypto, CryptoError } from "./crypto";
-export * from "./crypto";
-export { default } from "./crypto";
+export { Crypto, CryptoError } from "./crypto.js";
+export * from "./crypto.js";
+export { default } from "./crypto.js";
