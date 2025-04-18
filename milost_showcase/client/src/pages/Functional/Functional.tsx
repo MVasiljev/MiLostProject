@@ -1,4 +1,5 @@
-import { useState, ChangeEvent } from "react";
+// src/pages/Functional/Functional.tsx
+import { useState, ChangeEvent, useEffect } from "react";
 import {
   Container,
   Header,
@@ -29,6 +30,7 @@ import {
   parseArrayInput,
   parseObjectInput,
   parseFunctionArray,
+  safeStringify,
 } from "./parseHelpers";
 import PredicateOperations from "./PredicateOperations";
 import ResultDisplay from "./ResultDisplay";
@@ -36,7 +38,8 @@ import TransformOperations from "./TransformOperations";
 import UtilityOperations from "./UtilityOperations";
 
 function FunctionalPage() {
-  const [inputValues, setInputValues] = useState<string>("");
+  // Form state
+  const [inputValues, setInputValues] = useState<string>("1, 2, 3, 4, 5");
   const [parsedValues, setParsedValues] = useState<any[]>([]);
   const [functionCode, setFunctionCode] = useState<string>("(x) => x * 2");
   const [objectInput, setObjectInput] = useState<string>(
@@ -44,22 +47,26 @@ function FunctionalPage() {
   );
   const [parsedObject, setParsedObject] = useState<Record<string, any>>({});
 
-  const [keyFunction, setKeyFunction] = useState<string>("(x) => x.id");
+  // Map operation specific state
+  const [keyFunction, setKeyFunction] = useState<string>("(x) => x");
   const [mapFunction, setMapFunction] = useState<string>(
     "([key, value]) => [key, value * 2]"
   );
   const [filterPredicate, setFilterPredicate] = useState<string>(
-    "([key, value]) => value > 2"
+    "([key, value]) => value > 1"
   );
 
+  // Transform operation specific state
   const [pipeFunctions, setPipeFunctions] = useState<string>(
     "[(x) => x * 2, (x) => x + 1]"
   );
   const [parsedPipeFunctions, setParsedPipeFunctions] = useState<string[]>([]);
   const [arity, setArity] = useState<number>(2);
 
+  // Execution operation specific state
   const [waitTime, setWaitTime] = useState<number>(300);
 
+  // Predicate operation specific state
   const [predicates, setPredicates] = useState<string>(
     "[(x) => x > 2, (x) => x < 10]"
   );
@@ -67,15 +74,16 @@ function FunctionalPage() {
   const [propKey, setPropKey] = useState<string>("name");
   const [propValue, setPropValue] = useState<string>("John");
 
-  const [partialArgs, setPartialArgs] = useState<string>("[1, 2]");
+  // Utility operation specific state
+  const [partialArgs, setPartialArgs] = useState<string>("1, 2");
   const [parsedPartialArgs, setParsedPartialArgs] = useState<any[]>([]);
   const [juxtFunctions, setJuxtFunctions] = useState<string>(
     "[(x) => x * 2, (x) => x + 1]"
   );
   const [parsedJuxtFunctions, setParsedJuxtFunctions] = useState<string[]>([]);
-  const [firstArray, setFirstArray] = useState<string>("[1, 2, 3]");
+  const [firstArray, setFirstArray] = useState<string>("1, 2, 3");
   const [parsedFirstArray, setParsedFirstArray] = useState<any[]>([]);
-  const [secondArray, setSecondArray] = useState<string>("[4, 5, 6]");
+  const [secondArray, setSecondArray] = useState<string>("4, 5, 6");
   const [parsedSecondArray, setParsedSecondArray] = useState<any[]>([]);
   const [convergeAfter, setConvergeAfter] = useState<string>(
     "(x, y, z) => x + y + z"
@@ -85,6 +93,7 @@ function FunctionalPage() {
   );
   const [parsedTransformers, setParsedTransformers] = useState<string[]>([]);
 
+  // UI state
   const [activeCategory, setActiveCategory] =
     useState<FunctionalCategory>("map");
   const [mapOperation, setMapOperation] =
@@ -104,94 +113,140 @@ function FunctionalPage() {
 
   const apiBaseUrl = "/api";
 
+  // Parse inputs when they change
+  useEffect(() => {
+    try {
+      const parsed = parseArrayInput(inputValues);
+      setParsedValues(parsed);
+    } catch (err) {
+      console.error("Error parsing input values:", err);
+    }
+  }, [inputValues]);
+
+  useEffect(() => {
+    try {
+      const parsed = parseObjectInput(objectInput);
+      setParsedObject(parsed);
+    } catch (err) {
+      console.error("Error parsing object input:", err);
+    }
+  }, [objectInput]);
+
+  useEffect(() => {
+    try {
+      const parsed = parseFunctionArray(pipeFunctions);
+      setParsedPipeFunctions(parsed);
+    } catch (err) {
+      console.error("Error parsing pipe functions:", err);
+    }
+  }, [pipeFunctions]);
+
+  useEffect(() => {
+    try {
+      const parsed = parseFunctionArray(predicates);
+      setParsedPredicates(parsed);
+    } catch (err) {
+      console.error("Error parsing predicates:", err);
+    }
+  }, [predicates]);
+
+  useEffect(() => {
+    try {
+      const parsed = parseArrayInput(partialArgs);
+      setParsedPartialArgs(parsed);
+    } catch (err) {
+      console.error("Error parsing partial args:", err);
+    }
+  }, [partialArgs]);
+
+  useEffect(() => {
+    try {
+      const parsed = parseFunctionArray(juxtFunctions);
+      setParsedJuxtFunctions(parsed);
+    } catch (err) {
+      console.error("Error parsing juxt functions:", err);
+    }
+  }, [juxtFunctions]);
+
+  useEffect(() => {
+    try {
+      const parsed = parseArrayInput(firstArray);
+      setParsedFirstArray(parsed);
+    } catch (err) {
+      console.error("Error parsing first array:", err);
+    }
+  }, [firstArray]);
+
+  useEffect(() => {
+    try {
+      const parsed = parseArrayInput(secondArray);
+      setParsedSecondArray(parsed);
+    } catch (err) {
+      console.error("Error parsing second array:", err);
+    }
+  }, [secondArray]);
+
+  useEffect(() => {
+    try {
+      const parsed = parseFunctionArray(transformers);
+      setParsedTransformers(parsed);
+    } catch (err) {
+      console.error("Error parsing transformers:", err);
+    }
+  }, [transformers]);
+
   const handleInputValuesChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setInputValues(value);
-    try {
-      const parsed = parseArrayInput(value);
-      setParsedValues(parsed);
-      setError(null);
-    } catch (err) {}
+    setError(null);
   };
 
   const handleObjectInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setObjectInput(value);
-    try {
-      const parsed = parseObjectInput(value);
-      setParsedObject(parsed);
-      setError(null);
-    } catch (err) {}
+    setError(null);
   };
 
   const handlePipeFunctionsChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setPipeFunctions(value);
-    try {
-      const parsed = parseFunctionArray(value);
-      setParsedPipeFunctions(parsed);
-      setError(null);
-    } catch (err) {}
+    setError(null);
   };
 
   const handlePredicatesChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setPredicates(value);
-    try {
-      const parsed = parseFunctionArray(value);
-      setParsedPredicates(parsed);
-      setError(null);
-    } catch (err) {}
+    setError(null);
   };
 
   const handlePartialArgsChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setPartialArgs(value);
-    try {
-      const parsed = parseArrayInput(value);
-      setParsedPartialArgs(parsed);
-      setError(null);
-    } catch (err) {}
+    setError(null);
   };
 
   const handleJuxtFunctionsChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setJuxtFunctions(value);
-    try {
-      const parsed = parseFunctionArray(value);
-      setParsedJuxtFunctions(parsed);
-      setError(null);
-    } catch (err) {}
+    setError(null);
   };
 
   const handleFirstArrayChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setFirstArray(value);
-    try {
-      const parsed = parseArrayInput(value);
-      setParsedFirstArray(parsed);
-      setError(null);
-    } catch (err) {}
+    setError(null);
   };
 
   const handleSecondArrayChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setSecondArray(value);
-    try {
-      const parsed = parseArrayInput(value);
-      setParsedSecondArray(parsed);
-      setError(null);
-    } catch (err) {}
+    setError(null);
   };
 
   const handleTransformersChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setTransformers(value);
-    try {
-      const parsed = parseFunctionArray(value);
-      setParsedTransformers(parsed);
-      setError(null);
-    } catch (err) {}
+    setError(null);
   };
 
   const handleMapOperation = async (): Promise<void> => {
@@ -212,7 +267,7 @@ function FunctionalPage() {
             return;
           }
           body.values = parsedValues;
-          body.keyFn = keyFunction;
+          body.fn = keyFunction; // Send as string, server will evaluate
           break;
         case "toHashSet":
         case "toVec":
@@ -230,7 +285,7 @@ function FunctionalPage() {
             return;
           }
           body.value = parsedObject;
-          body.fn = mapFunction;
+          body.fn = mapFunction; // Send as string, server will evaluate
           break;
         case "filterObject":
           if (Object.keys(parsedObject).length === 0) {
@@ -239,7 +294,7 @@ function FunctionalPage() {
             return;
           }
           body.value = parsedObject;
-          body.fn = filterPredicate;
+          body.fn = filterPredicate; // Send as string, server will evaluate
           break;
       }
 
@@ -260,8 +315,10 @@ function FunctionalPage() {
         setError(data.error || "Something went wrong");
       }
     } catch (err) {
-      setError("Failed to connect to API");
-      console.error(err);
+      console.error("Error in map operation:", err);
+      setError(
+        `API request failed: ${err instanceof Error ? err.message : String(err)}`
+      );
     } finally {
       setLoading(false);
     }
@@ -284,7 +341,10 @@ function FunctionalPage() {
             setLoading(false);
             return;
           }
-          body.values = [parsedObject, { ...parsedObject }];
+          // Create two slightly different objects to demonstrate merge
+          const obj1 = { ...parsedObject };
+          const obj2 = { ...parsedObject, extraKey: "extraValue" };
+          body.values = [obj1, obj2];
           break;
         case "pipe":
         case "compose":
@@ -293,20 +353,22 @@ function FunctionalPage() {
             setLoading(false);
             return;
           }
-          body.values = parsedPipeFunctions;
+          body.values = parsedPipeFunctions; // Array of function strings
           break;
         case "curry":
-          if (!functionCode) {
+          if (!functionCode.trim()) {
             setError("Please enter a valid function to curry");
             setLoading(false);
             return;
           }
           body.fn = functionCode;
-          body.arity = arity;
+          if (arity > 0) {
+            body.arity = arity;
+          }
           break;
         case "memoize":
         case "once":
-          if (!functionCode) {
+          if (!functionCode.trim()) {
             setError("Please enter a valid function");
             setLoading(false);
             return;
@@ -332,8 +394,10 @@ function FunctionalPage() {
         setError(data.error || "Something went wrong");
       }
     } catch (err) {
-      setError("Failed to connect to API");
-      console.error(err);
+      console.error("Error in transform operation:", err);
+      setError(
+        `API request failed: ${err instanceof Error ? err.message : String(err)}`
+      );
     } finally {
       setLoading(false);
     }
@@ -352,23 +416,32 @@ function FunctionalPage() {
       switch (executionOperation) {
         case "throttle":
         case "debounce":
-          if (!functionCode) {
+          if (!functionCode.trim()) {
             setError("Please enter a valid function");
             setLoading(false);
             return;
           }
           body.fn = functionCode;
-          body.wait = waitTime;
+          body.wait = waitTime > 0 ? waitTime : 300;
           break;
         case "noop":
+          // No additional params needed
           break;
         case "identity":
-          if (parsedValues.length === 0) {
-            setError("Please enter a valid value");
+          // For identity, we need a value to demonstrate
+          if (!inputValues.trim()) {
+            setError("Please enter a value");
             setLoading(false);
             return;
           }
-          body.value = parsedValues[0];
+
+          try {
+            // Use the first parsed value for identity demonstration
+            body.value =
+              parsedValues.length > 0 ? parsedValues[0] : inputValues.trim();
+          } catch (e) {
+            body.value = inputValues.trim();
+          }
           break;
       }
 
@@ -389,8 +462,10 @@ function FunctionalPage() {
         setError(data.error || "Something went wrong");
       }
     } catch (err) {
-      setError("Failed to connect to API");
-      console.error(err);
+      console.error("Error in execution operation:", err);
+      setError(
+        `API request failed: ${err instanceof Error ? err.message : String(err)}`
+      );
     } finally {
       setLoading(false);
     }
@@ -408,12 +483,12 @@ function FunctionalPage() {
 
       switch (predicateOperation) {
         case "not":
-          if (!functionCode) {
+          if (!functionCode.trim()) {
             setError("Please enter a valid predicate function");
             setLoading(false);
             return;
           }
-          body.value = functionCode;
+          body.value = functionCode; // Send as string, server will evaluate
           break;
         case "allOf":
         case "anyOf":
@@ -422,11 +497,11 @@ function FunctionalPage() {
             setLoading(false);
             return;
           }
-          body.predicates = parsedPredicates;
+          body.predicates = parsedPredicates; // Array of predicate function strings
           break;
         case "prop":
         case "hasProp":
-          if (!propKey) {
+          if (!propKey.trim()) {
             setError("Please enter a valid property key");
             setLoading(false);
             return;
@@ -434,7 +509,7 @@ function FunctionalPage() {
           body.key = propKey;
           break;
         case "propEq":
-          if (!propKey) {
+          if (!propKey.trim()) {
             setError("Please enter a valid property key");
             setLoading(false);
             return;
@@ -461,8 +536,10 @@ function FunctionalPage() {
         setError(data.error || "Something went wrong");
       }
     } catch (err) {
-      setError("Failed to connect to API");
-      console.error(err);
+      console.error("Error in predicate operation:", err);
+      setError(
+        `API request failed: ${err instanceof Error ? err.message : String(err)}`
+      );
     } finally {
       setLoading(false);
     }
@@ -480,7 +557,7 @@ function FunctionalPage() {
 
       switch (utilityOperation) {
         case "partial":
-          if (!functionCode) {
+          if (!functionCode.trim()) {
             setError("Please enter a valid function");
             setLoading(false);
             return;
@@ -494,7 +571,7 @@ function FunctionalPage() {
           body.partialArgs = parsedPartialArgs;
           break;
         case "flip":
-          if (!functionCode) {
+          if (!functionCode.trim()) {
             setError("Please enter a valid function");
             setLoading(false);
             return;
@@ -507,10 +584,10 @@ function FunctionalPage() {
             setLoading(false);
             return;
           }
-          body.values = parsedJuxtFunctions;
+          body.values = parsedJuxtFunctions; // Array of function strings
           break;
         case "zipWith":
-          if (!functionCode) {
+          if (!functionCode.trim()) {
             setError("Please enter a valid function");
             setLoading(false);
             return;
@@ -523,7 +600,7 @@ function FunctionalPage() {
           body.values = [functionCode, parsedFirstArray, parsedSecondArray];
           break;
         case "converge":
-          if (!convergeAfter) {
+          if (!convergeAfter.trim()) {
             setError("Please enter a valid after function");
             setLoading(false);
             return;
@@ -554,8 +631,10 @@ function FunctionalPage() {
         setError(data.error || "Something went wrong");
       }
     } catch (err) {
-      setError("Failed to connect to API");
-      console.error(err);
+      console.error("Error in utility operation:", err);
+      setError(
+        `API request failed: ${err instanceof Error ? err.message : String(err)}`
+      );
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,12 @@ export const Container = styled.div`
   max-width: 960px;
   margin: 0 auto;
   padding: 0 16px;
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
 `;
 
 export const Header = styled.div`
@@ -320,5 +326,42 @@ export const SmallText = styled.p`
 
   @media (max-width: 640px) {
     font-size: 12px;
+  }
+`;
+
+export const InfoBox = styled.div`
+  background-color: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+  color: #0369a1;
+`;
+
+export const Table = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+  font-size: 14px;
+
+  th,
+  td {
+    padding: 8px 12px;
+    text-align: left;
+    border: 1px solid #e2e8f0;
+  }
+
+  th {
+    background-color: #f8fafc;
+    font-weight: 500;
+  }
+
+  @media (max-width: 640px) {
+    font-size: 12px;
+
+    th,
+    td {
+      padding: 6px 8px;
+    }
   }
 `;

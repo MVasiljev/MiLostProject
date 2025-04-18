@@ -48,40 +48,40 @@ export type FunctionalOperation =
   | FunctionalPredicateOperation
   | FunctionalUtilityOperation;
 
-export interface MapOperationResult {
+interface BaseOperationResult {
   original: any;
-  operation: FunctionalMapOperation;
+  operation: FunctionalOperation;
   result: any;
+  success: boolean;
+  error: string | null;
+}
+
+export interface MapOperationResult extends BaseOperationResult {
+  operation: FunctionalMapOperation;
   params?: {
     fn?: string;
     keyFn?: string;
   };
 }
 
-export interface TransformOperationResult {
-  original: any;
+export interface TransformOperationResult extends BaseOperationResult {
   operation: FunctionalTransformOperation;
-  result: any;
   params?: {
     functions?: string[];
     arity?: number;
   };
 }
 
-export interface ExecutionOperationResult {
-  original: any;
+export interface ExecutionOperationResult extends BaseOperationResult {
   operation: FunctionalExecutionOperation;
-  result: any;
   params?: {
     wait?: number;
     value?: any;
   };
 }
 
-export interface PredicateOperationResult {
-  original: any;
+export interface PredicateOperationResult extends BaseOperationResult {
   operation: FunctionalPredicateOperation;
-  result: any;
   params?: {
     predicates?: string[];
     key?: string;
@@ -89,10 +89,8 @@ export interface PredicateOperationResult {
   };
 }
 
-export interface UtilityOperationResult {
-  original: any;
+export interface UtilityOperationResult extends BaseOperationResult {
   operation: FunctionalUtilityOperation;
-  result: any;
   params?: {
     fn?: string;
     partialArgs?: any[];
@@ -165,76 +163,6 @@ export function isUtilityOperationResult(
         (result as UtilityOperationResult).operation
       )
   );
-}
-
-export interface ToHashMapRequest {
-  values: any[];
-  keyFn: string;
-}
-
-export interface MapObjectRequest {
-  object: Record<string, any>;
-  fn: string;
-}
-
-export interface FilterObjectRequest {
-  object: Record<string, any>;
-  predicate: string;
-}
-
-export interface MergeDeepRequest {
-  objects: Record<string, any>[];
-}
-
-export interface PipeComposeRequest {
-  functions: string[];
-}
-
-export interface CurryRequest {
-  fn: string;
-  arity?: number;
-}
-
-export interface ThrottleDebounceRequest {
-  fn: string;
-  wait: number;
-}
-
-export interface NotRequest {
-  predicate: string;
-}
-
-export interface AllOfAnyOfRequest {
-  predicates: string[];
-}
-
-export interface PropRequest {
-  key: string;
-}
-
-export interface PropEqRequest {
-  key: string;
-  value: any;
-}
-
-export interface PartialRequest {
-  fn: string;
-  partialArgs: any[];
-}
-
-export interface JuxtRequest {
-  functions: string[];
-}
-
-export interface ZipWithRequest {
-  fn: string;
-  first: any[];
-  second: any[];
-}
-
-export interface ConvergeRequest {
-  after: string;
-  transformers: string[];
 }
 
 export interface ApiResponse<T> {

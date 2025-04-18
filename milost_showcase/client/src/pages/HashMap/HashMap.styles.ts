@@ -4,6 +4,16 @@ export const Container = styled.div`
   max-width: 960px;
   margin: 0 auto;
   padding: 0 16px;
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  tr {
+    display: flex;
+  }
 `;
 
 export const Header = styled.div`
@@ -339,5 +349,20 @@ export const Tab = styled.button<{ active: boolean }>`
   @media (max-width: 640px) {
     font-size: 14px;
     padding: 6px 12px;
+  }
+`;
+
+export const InfoBox = styled.div`
+  background-color: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 16px;
+  color: #0369a1;
+  font-size: 14px;
+
+  @media (max-width: 640px) {
+    padding: 10px;
+    font-size: 13px;
   }
 `;
