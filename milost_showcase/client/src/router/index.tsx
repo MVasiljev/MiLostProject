@@ -16,9 +16,9 @@ import OptionPage from "../pages/Option/Option";
 import ResultPage from "../pages/Result/Result";
 import IterPage from "../pages/Iter/Iter";
 import FunctionalPage from "../pages/Functional/Functional";
-// import SyncPrimitivesPage from "../pages/SyncPrimitives/SyncPrimitives";
-// import SmartPointersPage from "../pages/SmartPointers/SmartPointers";
-// import ComputedPage from "../pages/Computed/Computed";
+import SyncPrimitivesPage from "../pages/SyncPrimitives/SyncPrimitives";
+import SmartPointersPage from "../pages/SmartPointers/SmartPointers";
+import ComputedPage from "../pages/Computed/Computed";
 // import OwnershipPage from "../pages/Ownership/Ownership";
 // import ReferencePage from "../pages/Reference/Reference";
 // import MatchingPage from "../pages/Matching/Matching";
@@ -97,18 +97,18 @@ const router = createBrowserRouter([
         path: "functional",
         element: <FunctionalPage />,
       },
-      // {
-      //   path: "sync-primitives",
-      //   element: <SyncPrimitivesPage />,
-      // },
-      // {
-      //   path: "smart-pointers",
-      //   element: <SmartPointersPage />,
-      // },
-      // {
-      //   path: "computed",
-      //   element: <ComputedPage />,
-      // },
+      {
+        path: "sync-primitives",
+        element: <SyncPrimitivesPage />,
+      },
+      {
+        path: "smart-pointers",
+        element: <SmartPointersPage />,
+      },
+      {
+        path: "computed",
+        element: <ComputedPage />,
+      },
       // {
       //   path: "ownership",
       //   element: <OwnershipPage />,
