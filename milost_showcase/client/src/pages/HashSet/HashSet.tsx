@@ -16,6 +16,7 @@ import {
   InfoBox,
 } from "./HashSet.styles";
 import HashSetExamples from "./HashSetExamples";
+import { Table } from "../Vector/Vector.styles";
 
 function HashSetPage() {
   const [activeCategory, setActiveCategory] = useState("overview");
@@ -92,7 +93,7 @@ function HashSetPage() {
 
             <FormGroup>
               <Label>When to Use HashSet</Label>
-              <table>
+              <Table>
                 <thead>
                   <tr>
                     <th>Use HashSet when you need...</th>
@@ -102,22 +103,22 @@ function HashSetPage() {
                 <tbody>
                   <tr>
                     <td>Fast membership testing</td>
-                    <td>Array.includes() which is O(n)</td>
+                    <td>Linear search through arrays</td>
                   </tr>
                   <tr>
-                    <td>To eliminate duplicates</td>
-                    <td>Filtering arrays with custom logic</td>
+                    <td>Eliminating duplicates</td>
+                    <td>Manual filtering and tracking unique items</td>
                   </tr>
                   <tr>
-                    <td>Set operations (union, intersection)</td>
-                    <td>Complex array manipulation code</td>
+                    <td>Efficient set operations</td>
+                    <td>Complex, manual array comparisons</td>
                   </tr>
                   <tr>
-                    <td>To track visited/processed items</td>
-                    <td>Arrays or objects with manual checks</td>
+                    <td>Tracking visited/processed items</td>
+                    <td>Manual tracking with additional data structures</td>
                   </tr>
                 </tbody>
-              </table>
+              </Table>
             </FormGroup>
 
             <CodeBlock>

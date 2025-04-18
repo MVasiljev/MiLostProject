@@ -15,6 +15,7 @@ import {
   Pre,
   SmallText,
 } from "./Struct.styles";
+import { Table } from "../Vector/Vector.styles";
 
 function StructPage() {
   const [activeCategory, setActiveCategory] = useState("overview");
@@ -72,6 +73,36 @@ function StructPage() {
                 <li>Lack of clear data transformation paths</li>
                 <li>Hidden side effects</li>
               </ul>
+            </FormGroup>
+
+            <FormGroup>
+              <Label>When to Use Struct</Label>
+              <Table>
+                <thead>
+                  <tr>
+                    <th>Use Struct when you need...</th>
+                    <th>Instead of...</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Immutable, type-safe data representation</td>
+                    <td>Mutable objects with unclear state management</td>
+                  </tr>
+                  <tr>
+                    <td>Explicit data transformations</td>
+                    <td>In-place mutations with potential side effects</td>
+                  </tr>
+                  <tr>
+                    <td>Clear, predictable data structures</td>
+                    <td>Loosely typed objects with ambiguous properties</td>
+                  </tr>
+                  <tr>
+                    <td>Functional data processing</td>
+                    <td>Imperative, stateful data manipulation</td>
+                  </tr>
+                </tbody>
+              </Table>
             </FormGroup>
 
             <CodeBlock>

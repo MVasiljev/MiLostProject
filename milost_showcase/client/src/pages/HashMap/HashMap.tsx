@@ -15,6 +15,7 @@ import {
   Label,
   InfoBox,
 } from "./HashMap.styles";
+import { Table } from "../Vector/Vector.styles";
 
 function HashMapPage() {
   const [activeCategory, setActiveCategory] = useState("overview");
@@ -91,7 +92,7 @@ function HashMapPage() {
 
             <FormGroup>
               <Label>When to Use HashMap</Label>
-              <table>
+              <Table>
                 <thead>
                   <tr>
                     <th>Use HashMap when you need...</th>
@@ -116,7 +117,7 @@ function HashMapPage() {
                     <td>JavaScript objects with inconsistent key ordering</td>
                   </tr>
                 </tbody>
-              </table>
+              </Table>
             </FormGroup>
 
             <CodeBlock>

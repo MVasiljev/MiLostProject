@@ -10,10 +10,6 @@ export const Container = styled.div`
     padding: 0;
     margin: 0;
   }
-
-  tr {
-    display: flex;
-  }
 `;
 
 export const Header = styled.div`

@@ -102,7 +102,7 @@ function VectorPage() {
                 <tbody>
                   <tr>
                     <td>Predictable data that won't change unexpectedly</td>
-                    <td>Regular arrays that might be modified elsewhere</td>
+                    <td>Mutable arrays with potential side effects</td>
                   </tr>
                   <tr>
                     <td>Clear data transformation pipelines</td>
@@ -110,9 +110,7 @@ function VectorPage() {
                   </tr>
                   <tr>
                     <td>Safe iteration without modification concerns</td>
-                    <td>
-                      Defensive copying to prevent modification during iteration
-                    </td>
+                    <td>Defensive copying to prevent modification</td>
                   </tr>
                   <tr>
                     <td>Functional programming patterns</td>

@@ -15,6 +15,7 @@ import {
   Pre,
   SmallText,
 } from "./Tuple.styles";
+import { Table } from "../Vector/Vector.styles";
 
 function TuplePage() {
   const [activeCategory, setActiveCategory] = useState("overview");
@@ -70,6 +71,36 @@ function TuplePage() {
                 <li>Unclear data relationships</li>
                 <li>Difficulty in expressing intent</li>
               </ul>
+            </FormGroup>
+
+            <FormGroup>
+              <Label>When to Use Tuples</Label>
+              <Table>
+                <thead>
+                  <tr>
+                    <th>Use Tuples when you need...</th>
+                    <th>Instead of...</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Fixed-length, heterogeneous data grouping</td>
+                    <td>Dynamic arrays with unclear element meanings</td>
+                  </tr>
+                  <tr>
+                    <td>Semantic, positionally meaningful data</td>
+                    <td>Unnamed, context-less data collections</td>
+                  </tr>
+                  <tr>
+                    <td>Immutable data representations</td>
+                    <td>Mutable objects that can change unexpectedly</td>
+                  </tr>
+                  <tr>
+                    <td>Multiple return value handling</td>
+                    <td>Complex object returns or reference passing</td>
+                  </tr>
+                </tbody>
+              </Table>
             </FormGroup>
 
             <CodeBlock>

@@ -15,6 +15,7 @@ import {
   Pre,
   SmallText,
 } from "./Strings.styles";
+import { Table } from "../Vector/Vector.styles";
 
 function StringsPage() {
   const [activeCategory, setActiveCategory] = useState("overview");
@@ -67,24 +68,64 @@ function StringsPage() {
             </InfoBox>
 
             <FormGroup>
-              <Label>Why use Str over regular strings?</Label>
+              <Label>Key Features</Label>
               <ul>
                 <li>
-                  <strong>Immutability</strong>: Eliminates side effects
+                  <strong>Immutability</strong>: Eliminate unexpected string
+                  mutations
                 </li>
                 <li>
-                  <strong>Type-safety</strong>: Reduces reliance on
-                  null/undefined
+                  <strong>Type-safety</strong>: Robust protection against
+                  null/undefined errors
                 </li>
                 <li>
-                  <strong>Functional API</strong>: Encourages transformation
-                  pipelines
+                  <strong>Functional API</strong>: Chain transformations with
+                  clear intent
                 </li>
                 <li>
-                  <strong>WASM-optimized</strong>: High-performance for large
-                  text
+                  <strong>WebAssembly Optimization</strong>: High-performance
+                  text processing
+                </li>
+                <li>
+                  <strong>Explicit Operations</strong>: Clear, predictable
+                  string manipulations
                 </li>
               </ul>
+            </FormGroup>
+
+            <FormGroup>
+              <Label>Why Use Str?</Label>
+              <Table>
+                <thead>
+                  <tr>
+                    <th>Scenario</th>
+                    <th>Traditional Approach</th>
+                    <th>Str Approach</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Text Manipulation</td>
+                    <td>Mutable, error-prone string methods</td>
+                    <td>Immutable, safe transformations</td>
+                  </tr>
+                  <tr>
+                    <td>Error Handling</td>
+                    <td>Silent failures, unexpected mutations</td>
+                    <td>Explicit error handling, predictable behavior</td>
+                  </tr>
+                  <tr>
+                    <td>Performance</td>
+                    <td>Inefficient string operations</td>
+                    <td>WebAssembly-accelerated processing</td>
+                  </tr>
+                  <tr>
+                    <td>Code Clarity</td>
+                    <td>Complex, imperative string logic</td>
+                    <td>Declarative, chainable transformations</td>
+                  </tr>
+                </tbody>
+              </Table>
             </FormGroup>
 
             <CodeBlock>
@@ -92,7 +133,14 @@ function StringsPage() {
 
 const message = Str.fromRaw("Hello, World!");
 console.log(message.len()); // 13
-console.log(message.isEmpty()); // false`}</Pre>
+console.log(message.isEmpty()); // false
+
+// Chained transformations
+const processed = message
+  .trim()
+  .toUpperCase()
+  .concat(Str.fromRaw("!"));
+console.log(processed.unwrap()); // "HELLO, WORLD!!"`}</Pre>
             </CodeBlock>
 
             <SmallText>

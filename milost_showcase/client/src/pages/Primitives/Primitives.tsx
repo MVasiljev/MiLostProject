@@ -65,6 +65,16 @@ function PrimitivesPage() {
             </InfoBox>
 
             <FormGroup>
+              <Label>Key Benefits</Label>
+              <ul>
+                <li>Range validation prevents common overflow errors</li>
+                <li>Type-safe operations with explicit error handling</li>
+                <li>WebAssembly acceleration for performance-critical code</li>
+                <li>Compatible with TypeScript's type system</li>
+              </ul>
+            </FormGroup>
+
+            <FormGroup>
               <Label>Types Overview</Label>
               <Table>
                 <thead>
@@ -97,16 +107,6 @@ function PrimitivesPage() {
                   </tr>
                 </tbody>
               </Table>
-            </FormGroup>
-
-            <FormGroup>
-              <Label>Key Benefits</Label>
-              <ul>
-                <li>Range validation prevents common overflow errors</li>
-                <li>Type-safe operations with explicit error handling</li>
-                <li>WebAssembly acceleration for performance-critical code</li>
-                <li>Compatible with TypeScript's type system</li>
-              </ul>
             </FormGroup>
 
             <CodeBlock>
